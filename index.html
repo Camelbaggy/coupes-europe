@@ -1,0 +1,1035 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#0b0f17" />
+  <title>Coupes d'Europe — Dashboard Mobile</title>
+  <style>
+    :root {
+      --bg-main: #0b0f17;
+      --bg-card: #151c28;
+      --bg-card-hover: #1c2536;
+      --bg-elevated: #202b3d;
+      --border: #263248;
+      --text-main: #f1f5f9;
+      --text-muted: #94a3b8;
+      --accent-ucl: #38bdf8;
+      --accent-uel: #fb923c;
+      --accent-uecl: #34d399;
+      --french-accent: #60a5fa;
+      --zone-top8: #10b981;
+      --zone-playoff: #f59e0b;
+      --zone-elim: #ef4444;
+      --home-color: #38bdf8;
+      --away-color: #f43f5e;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, sans-serif;
+      background-color: var(--bg-main);
+      color: var(--text-main);
+      line-height: 1.45;
+      padding-bottom: 48px;
+      overflow-x: hidden;
+    }
+
+    /* HEADER & NAVIGATION PAR ONGLETS */
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 30;
+      background: rgba(11, 15, 23, 0.92);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      padding: 12px 16px 0;
+    }
+
+    .header-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .app-title {
+      font-size: 1.05rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .badge-live {
+      font-size: 0.7rem;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 99px;
+      background: rgba(16, 185, 129, 0.15);
+      color: var(--zone-top8);
+      border: 1px solid rgba(16, 185, 129, 0.35);
+    }
+
+    .tabs-bar {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+    }
+
+    .tab-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      font-weight: 600;
+      padding: 10px 4px;
+      cursor: pointer;
+      border-bottom: 3px solid transparent;
+      transition: all 0.2s ease;
+    }
+
+    .tab-btn.active[data-comp="ucl"] {
+      color: var(--accent-ucl);
+      border-bottom-color: var(--accent-ucl);
+    }
+    .tab-btn.active[data-comp="uel"] {
+      color: var(--accent-uel);
+      border-bottom-color: var(--accent-uel);
+    }
+    .tab-btn.active[data-comp="uecl"] {
+      color: var(--accent-uecl);
+      border-bottom-color: var(--accent-uecl);
+    }
+
+    /* CONTENEUR PRINCIPAL */
+    main {
+      max-width: 680px;
+      margin: 0 auto;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 10px;
+    }
+
+    .section-title {
+      font-size: 0.92rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      font-weight: 700;
+    }
+
+    .section-sub {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+    }
+
+    /* 1. FOCUS CLUBS FRANÇAIS */
+    .fr-cards-list {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .fr-card {
+      background: linear-gradient(160deg, #172133 0%, #131a26 100%);
+      border: 1px solid #2b3b57;
+      border-left: 4px solid var(--french-accent);
+      border-radius: 14px;
+      padding: 15px;
+      cursor: pointer;
+      transition: transform 0.15s ease, background 0.15s ease;
+    }
+
+    .fr-card:active {
+      transform: scale(0.99);
+    }
+
+    .fr-card-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .fr-club-tag {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--french-accent);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .rank-pill {
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 6px;
+    }
+
+    .rank-pill.top8 {
+      background: rgba(16, 185, 129, 0.16);
+      color: #34d399;
+      border: 1px solid rgba(16, 185, 129, 0.35);
+    }
+    .rank-pill.playoff {
+      background: rgba(245, 158, 11, 0.16);
+      color: #fbbf24;
+      border: 1px solid rgba(245, 158, 11, 0.35);
+    }
+    .rank-pill.eliminated {
+      background: rgba(239, 68, 68, 0.16);
+      color: #f87171;
+      border: 1px solid rgba(239, 68, 68, 0.35);
+    }
+
+    .fr-scoreline {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      align-items: center;
+      gap: 10px;
+      background: rgba(11, 15, 23, 0.55);
+      padding: 10px 12px;
+      border-radius: 10px;
+      margin-bottom: 10px;
+    }
+
+    .team-name {
+      font-weight: 600;
+      font-size: 0.95rem;
+    }
+    .team-name.home { text-align: right; }
+    .team-name.away { text-align: left; }
+    .team-name.is-fr { color: #ffffff; font-weight: 700; }
+
+    .score-box {
+      background: var(--bg-elevated);
+      padding: 4px 12px;
+      border-radius: 8px;
+      font-weight: 800;
+      font-size: 1.1rem;
+      letter-spacing: 0.04em;
+      border: 1px solid var(--border);
+    }
+
+    .goals-timeline {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 10px;
+    }
+
+    .goal-chip {
+      font-size: 0.74rem;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.09);
+      padding: 2px 8px;
+      border-radius: 6px;
+      color: #cbd5e1;
+    }
+
+    .ai-summary-text {
+      font-size: 0.87rem;
+      color: #dbeafe;
+      line-height: 1.52;
+      background: rgba(15, 23, 42, 0.5);
+      padding: 10px 12px;
+      border-radius: 8px;
+      border: 1px solid rgba(56, 189, 248, 0.14);
+    }
+
+    .fr-card-footer {
+      margin-top: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.72rem;
+      color: var(--text-muted);
+    }
+
+    /* 2. GRILLE DES RÉSULTATS DE LA SOIRÉE */
+    .matches-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 10px;
+    }
+
+    .match-tile {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px 14px;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: background 0.15s ease;
+    }
+
+    .match-tile:hover {
+      background: var(--bg-card-hover);
+    }
+
+    .tile-teams {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      flex: 1;
+    }
+
+    .tile-team-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-right: 12px;
+    }
+
+    .tile-team-name {
+      font-size: 0.9rem;
+      color: var(--text-main);
+    }
+    .tile-team-name.is-fr {
+      font-weight: 700;
+      color: var(--french-accent);
+    }
+
+    .tile-team-score {
+      font-weight: 700;
+      font-size: 0.95rem;
+    }
+
+    .tile-meta {
+      border-left: 1px solid var(--border);
+      padding-left: 12px;
+      text-align: center;
+      min-width: 64px;
+      font-size: 0.72rem;
+      color: var(--text-muted);
+    }
+
+    /* 4. CLASSEMENT DES 36 ÉQUIPES */
+    .legend-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 10px;
+      font-size: 0.74rem;
+      color: var(--text-muted);
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .legend-dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+    }
+
+    .standings-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    table.standings-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.83rem;
+    }
+
+    .standings-table th {
+      background: rgba(255, 255, 255, 0.03);
+      color: var(--text-muted);
+      font-weight: 600;
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      padding: 9px 8px;
+      text-align: center;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .standings-table th.col-team,
+    .standings-table td.col-team {
+      text-align: left;
+    }
+
+    .standings-table td {
+      padding: 9px 8px;
+      text-align: center;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    }
+
+    .standings-table tr.is-fr-row {
+      background: rgba(56, 189, 248, 0.11);
+      font-weight: 700;
+    }
+
+    .rank-cell {
+      font-weight: 700;
+      position: relative;
+      padding-left: 12px !important;
+    }
+
+    .rank-cell::before {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 4px;
+      bottom: 4px;
+      width: 4px;
+      border-radius: 0 3px 3px 0;
+    }
+
+    tr.zone-top8 .rank-cell::before { background: var(--zone-top8); }
+    tr.zone-playoff .rank-cell::before { background: var(--zone-playoff); }
+    tr.zone-eliminated .rank-cell::before { background: var(--zone-elim); }
+
+    /* Délimitation explicite entre les zones (Places 8 et 24) */
+    tr.zone-cutoff td {
+      border-bottom: 2px dashed rgba(148, 163, 184, 0.45);
+    }
+
+    .fr-badge-inline {
+      font-size: 0.65rem;
+      background: rgba(56, 189, 248, 0.2);
+      color: var(--accent-ucl);
+      padding: 1px 5px;
+      border-radius: 4px;
+      margin-left: 5px;
+      vertical-align: middle;
+    }
+
+    /* 3. TIROIR MODAL : FICHE DE MATCH COMPLÈTE */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(4px);
+      z-index: 50;
+      display: none;
+      align-items: flex-end;
+      justify-content: center;
+    }
+
+    .modal-backdrop.open {
+      display: flex;
+    }
+
+    .modal-sheet {
+      background: var(--bg-card);
+      width: 100%;
+      max-width: 680px;
+      max-height: 90vh;
+      border-radius: 20px 20px 0 0;
+      border-top: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      animation: slideUp 0.22s ease-out;
+    }
+
+    @keyframes slideUp {
+      from { transform: translateY(100%); }
+      to { transform: translateY(0); }
+    }
+
+    .modal-header {
+      padding: 14px 16px;
+      background: var(--bg-elevated);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .modal-close-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .btn-close {
+      background: rgba(255, 255, 255, 0.08);
+      border: none;
+      color: var(--text-main);
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+
+    .modal-subtabs {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      background: var(--bg-main);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .subtab-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      padding: 11px 4px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+    }
+
+    .subtab-btn.active {
+      color: var(--accent-ucl);
+      border-bottom-color: var(--accent-ucl);
+    }
+
+    .modal-body {
+      padding: 16px;
+      overflow-y: auto;
+      flex: 1;
+    }
+
+    /* VUE 1 : ÉVÉNEMENTS */
+    .event-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 10px;
+      border-radius: 8px;
+      margin-bottom: 6px;
+      background: rgba(255, 255, 255, 0.02);
+      font-size: 0.85rem;
+    }
+    .event-row.away {
+      flex-direction: row-reverse;
+      text-align: right;
+    }
+    .ev-min {
+      font-weight: 700;
+      color: var(--accent-ucl);
+      min-width: 34px;
+    }
+
+    /* VUE 2 : MOMENTUM (GRAPHIQUE PRESSION SVG) */
+    .momentum-box {
+      background: var(--bg-main);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px;
+    }
+    .momentum-legend {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.76rem;
+      margin-bottom: 8px;
+      font-weight: 600;
+    }
+
+    /* VUE 3 : TERRAIN TACTIQUE */
+    .pitch-container {
+      position: relative;
+      width: 100%;
+      height: 460px;
+      background: linear-gradient(180deg, #14532d 0%, #166534 50%, #14532d 100%);
+      border: 2px solid rgba(255, 255, 255, 0.35);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+    .pitch-midline {
+      position: absolute;
+      top: 50%;
+      left: 0;
+      right: 0;
+      border-top: 1px solid rgba(255, 255, 255, 0.35);
+    }
+    .pitch-circle {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 72px;
+      height: 72px;
+      transform: translate(-50%, -50%);
+      border: 1px solid rgba(255, 255, 255, 0.35);
+      border-radius: 50%;
+    }
+    .player-node {
+      position: absolute;
+      transform: translate(-50%, -50%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      width: 64px;
+      text-align: center;
+    }
+    .player-dot {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.74rem;
+      font-weight: 800;
+      color: #fff;
+      border: 2px solid #fff;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.45);
+    }
+    .player-dot.home { background: #0284c7; }
+    .player-dot.away { background: #e11d48; }
+    .player-label {
+      font-size: 0.65rem;
+      font-weight: 600;
+      background: rgba(11, 15, 23, 0.82);
+      padding: 1px 5px;
+      border-radius: 4px;
+      margin-top: 2px;
+      white-space: nowrap;
+    }
+    .player-rating {
+      font-size: 0.62rem;
+      font-weight: 800;
+      padding: 0 4px;
+      border-radius: 3px;
+      margin-top: 1px;
+      background: #10b981;
+      color: #052e16;
+    }
+
+    /* VUE 4 : STATISTIQUES DÉTAILLÉES */
+    .period-pills {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 14px;
+      justify-content: center;
+    }
+    .period-btn {
+      background: var(--bg-main);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      padding: 5px 12px;
+      border-radius: 99px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .period-btn.active {
+      background: var(--accent-ucl);
+      color: #0b0f17;
+      border-color: var(--accent-ucl);
+    }
+    .stat-item {
+      margin-bottom: 12px;
+    }
+    .stat-row-labels {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.8rem;
+      margin-bottom: 4px;
+      font-weight: 600;
+    }
+    .stat-bars {
+      display: flex;
+      height: 7px;
+      border-radius: 99px;
+      overflow: hidden;
+      background: var(--bg-main);
+      gap: 3px;
+    }
+    .stat-bar-home { background: var(--home-color); }
+    .stat-bar-away { background: var(--away-color); }
+
+    .empty-state {
+      background: var(--bg-card);
+      border: 1px dashed var(--border);
+      border-radius: 12px;
+      padding: 24px;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.88rem;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="header-top">
+      <div class="app-title">
+        <span>⚽ Coupes d'Europe</span>
+      </div>
+      <span class="badge-live" id="last-updated-badge">Mise à jour 23h30</span>
+    </div>
+    <nav class="tabs-bar">
+      <button class="tab-btn active" data-comp="ucl" onclick="switchCompetition('ucl')">Ligue des Champions</button>
+      <button class="tab-btn" data-comp="uel" onclick="switchCompetition('uel')">Ligue Europa</button>
+      <button class="tab-btn" data-comp="uecl" onclick="switchCompetition('uecl')">Ligue Conférence</button>
+    </nav>
+  </header>
+
+  <main>
+    <!-- 1. FOCUS CLUBS FRANÇAIS -->
+    <section>
+      <div class="section-header">
+        <h2 class="section-title">🇫🇷 Focus Clubs Français</h2>
+        <span class="section-sub" id="matchday-indicator"></span>
+      </div>
+      <div id="french-focus-container" class="fr-cards-list"></div>
+    </section>
+
+    <!-- 2. TOUS LES RÉSULTATS DE LA SOIRÉE -->
+    <section>
+      <div class="section-header">
+        <h2 class="section-title">Résultats de la soirée</h2>
+        <span class="section-sub">Toucher un match pour les détails</span>
+      </div>
+      <div id="matches-grid-container" class="matches-grid"></div>
+    </section>
+
+    <!-- 4. CLASSEMENT GÉNÉRAL DES 36 ÉQUIPES OU BRACKET -->
+    <section>
+      <div class="section-header">
+        <h2 class="section-title" id="standings-title">Classement Phase de Ligue (36 équipes)</h2>
+      </div>
+      <div class="legend-bar" id="standings-legend">
+        <span class="legend-item"><i class="legend-dot" style="background:var(--zone-top8)"></i>1-8 : 8es directs</span>
+        <span class="legend-item"><i class="legend-dot" style="background:var(--zone-playoff)"></i>9-24 : Barrages (16es)</span>
+        <span class="legend-item"><i class="legend-dot" style="background:var(--zone-elim)"></i>25-36 : Élimination</span>
+      </div>
+      <div id="standings-container" class="standings-card"></div>
+    </section>
+  </main>
+
+  <!-- 3. TIROIR MODAL : FICHE DE MATCH -->
+  <div class="modal-backdrop" id="match-modal" onclick="closeModalOnBackdrop(event)">
+    <div class="modal-sheet">
+      <div class="modal-header">
+        <div class="modal-close-row">
+          <span class="section-sub" id="modal-comp-label">Fiche de match</span>
+          <button class="btn-close" onclick="closeMatchModal()">✕</button>
+        </div>
+        <div class="fr-scoreline" style="margin-bottom:0">
+          <div class="team-name home" id="modal-home-name"></div>
+          <div class="score-box" id="modal-score"></div>
+          <div class="team-name away" id="modal-away-name"></div>
+        </div>
+      </div>
+
+      <div class="modal-subtabs">
+        <button class="subtab-btn active" data-view="events" onclick="switchModalView('events')">Déroulé</button>
+        <button class="subtab-btn" data-view="momentum" onclick="switchModalView('momentum')">Momentum</button>
+        <button class="subtab-btn" data-view="lineups" onclick="switchModalView('lineups')">Compos</button>
+        <button class="subtab-btn" data-view="stats" onclick="switchModalView('stats')">Stats</button>
+      </div>
+
+      <div class="modal-body" id="modal-body-content"></div>
+    </div>
+  </div>
+
+  <script>
+    // Données embarquées par défaut (remplacées automatiquement par fetch('data.json') sur GitHub Pages)
+    const FALLBACK_DATA = {"last_updated": "2026-11-05T23:30:00Z", "notification": {"title": "Coupes d'Europe : Résultats et classements à jour", "summary": "Victoire de Monaco, nul du PSG, succès de Lyon en Ligue Europa. Classements des 36 équipes mis à jour.", "match_night": true}, "competitions": {"ucl": {"id": "ucl", "name": "Ligue des Champions", "short_name": "LDC", "stage_type": "league", "matchday_label": "Journée 4 sur 8", "french_clubs_focus": [{"match_id": "ucl_2026_j4_psg_atm", "club_name": "Paris Saint-Germain", "club_rank": 19, "club_zone": "playoff", "home_team": {"name": "Paris Saint-Germain", "short": "PSG", "is_french": true, "score": 1}, "away_team": {"name": "Atlético de Madrid", "short": "ATM", "is_french": false, "score": 1}, "status": "Terminé", "goals": [{"minute": "14'", "scorer": "W. Zaïre-Emery", "assist": "O. Dembélé", "team": "home", "score_after": "1-0"}, {"minute": "18'", "scorer": "N. Molina", "assist": "G. Simeone", "team": "away", "score_after": "1-1"}], "ai_summary": "Le Paris Saint-Germain concède le partage des points au Parc des Princes malgré une domination territoriale écrasante (71 % de possession et 22 tirs à 4). Après l'ouverture du score rapide de Warren Zaïre-Emery d'un piqué subtil (14'), les Parisiens ont été surpris quatre minutes plus tard par la réplique de Nahuel Molina (18'). Le tournant du match a résidé dans la performance XXL de Jan Oblak, auteur de 8 arrêts décisifs face à Barcola et Hakimi en seconde période. Avec ce match nul (5 points en 4 journées), le PSG stagne à la 19e place dans la zone des barrages et devra impérativement s'imposer lors de ses déplacements de l'hiver pour espérer viser le Top 8.", "ai_verified": true}, {"match_id": "ucl_2026_j4_bol_asm", "club_name": "AS Monaco", "club_rank": 3, "club_zone": "top8", "home_team": {"name": "Bologne FC", "short": "BOL", "is_french": false, "score": 0}, "away_team": {"name": "AS Monaco", "short": "ASM", "is_french": true, "score": 1}, "status": "Terminé", "goals": [{"minute": "86'", "scorer": "T. Kehrer", "assist": "B. Embolo", "team": "away", "score_after": "0-1"}], "ai_summary": "L'AS Monaco réalise une superbe opération en Italie en s'imposant sur le fil face à Bologne (0-1). Dans une rencontre longtemps fermée et hachée par les fautes (27 au total), les Monégasques ont fait preuve d'une grande solidité défensive avant d'accélérer dans le dernier quart d'heure. Le tournant est intervenu à la 86e minute sur un corner prolongé par Breel Embolo vers Thilo Kehrer, qui a poussé le ballon au fond des filets à bout portant. Grâce à ce troisième succès en quatre rencontres (10 points), Monaco grimpe sur le podium provisoire de la phase de ligue (3e) et prend une sérieuse option sur la qualification directe en huitièmes de finale.", "ai_verified": true}], "matches": [{"match_id": "ucl_2026_j4_psg_atm", "kickoff": "21:00", "status": "Terminé", "is_french_match": true, "home_team": {"name": "Paris Saint-Germain", "short": "PSG", "is_french": true, "score": 1, "formation": "4-3-3"}, "away_team": {"name": "Atlético de Madrid", "short": "ATM", "is_french": false, "score": 1, "formation": "5-3-2"}, "events": [{"minute": 14, "type": "goal", "team": "home", "player": "W. Zaïre-Emery", "detail": "Passe déc. : O. Dembélé"}, {"minute": 18, "type": "goal", "team": "away", "player": "N. Molina", "detail": "Tir du pied droit"}, {"minute": 62, "type": "yellow_card", "team": "away", "player": "Koke", "detail": "Faute d'antijeu"}, {"minute": 67, "type": "sub", "team": "home", "player": "F. Ruiz", "detail": "Remplace Vitinha"}, {"minute": 78, "type": "yellow_card", "team": "home", "player": "A. Hakimi", "detail": "Contestation"}], "momentum": [{"minute": 1, "value": 15}, {"minute": 5, "value": 32}, {"minute": 10, "value": 45}, {"minute": 14, "value": 68}, {"minute": 18, "value": -42}, {"minute": 25, "value": 28}, {"minute": 35, "value": 52}, {"minute": 45, "value": 38}, {"minute": 50, "value": 60}, {"minute": 60, "value": 74}, {"minute": 70, "value": 48}, {"minute": 80, "value": 82}, {"minute": 85, "value": -25}, {"minute": 90, "value": 88}], "lineups": {"home": [{"number": 1, "name": "G. Donnarumma", "pos": "GK", "x": 50, "y": 8, "rating": 6.7, "subbed_out": null}, {"number": 2, "name": "A. Hakimi", "pos": "RB", "x": 85, "y": 28, "rating": 7.8, "subbed_out": null}, {"number": 5, "name": "Marquinhos", "pos": "CB", "x": 62, "y": 24, "rating": 7.2, "subbed_out": null}, {"number": 51, "name": "W. Pacho", "pos": "CB", "x": 38, "y": 24, "rating": 7.1, "subbed_out": null}, {"number": 25, "name": "N. Mendes", "pos": "LB", "x": 15, "y": 28, "rating": 7.0, "subbed_out": null}, {"number": 33, "name": "W. Zaïre-Emery", "pos": "CM", "x": 70, "y": 52, "rating": 8.1, "subbed_out": null}, {"number": 17, "name": "Vitinha", "pos": "CM", "x": 50, "y": 46, "rating": 7.3, "subbed_out": 67}, {"number": 87, "name": "J. Neves", "pos": "CM", "x": 30, "y": 52, "rating": 7.4, "subbed_out": null}, {"number": 10, "name": "O. Dembélé", "pos": "RW", "x": 82, "y": 78, "rating": 7.6, "subbed_out": null}, {"number": 11, "name": "M. Asensio", "pos": "ST", "x": 50, "y": 82, "rating": 6.8, "subbed_out": 67}, {"number": 29, "name": "B. Barcola", "pos": "LW", "x": 18, "y": 78, "rating": 7.5, "subbed_out": null}], "away": [{"number": 13, "name": "J. Oblak", "pos": "GK", "x": 50, "y": 92, "rating": 8.9, "subbed_out": null}, {"number": 16, "name": "N. Molina", "pos": "RWB", "x": 86, "y": 72, "rating": 7.7, "subbed_out": null}, {"number": 20, "name": "A. Witsel", "pos": "CB", "x": 68, "y": 76, "rating": 7.1, "subbed_out": null}, {"number": 15, "name": "C. Lenglet", "pos": "CB", "x": 50, "y": 76, "rating": 6.9, "subbed_out": null}, {"number": 21, "name": "J. Galán", "pos": "LWB", "x": 14, "y": 72, "rating": 6.8, "subbed_out": null}, {"number": 5, "name": "R. De Paul", "pos": "CM", "x": 65, "y": 54, "rating": 6.9, "subbed_out": null}, {"number": 4, "name": "C. Gallagher", "pos": "CM", "x": 35, "y": 54, "rating": 7.0, "subbed_out": null}, {"number": 7, "name": "A. Griezmann", "pos": "ST", "x": 62, "y": 30, "rating": 7.1, "subbed_out": null}, {"number": 19, "name": "J. Álvarez", "pos": "ST", "x": 38, "y": 30, "rating": 6.8, "subbed_out": null}]}, "stats": {"all": [{"key": "ballPossession", "label": "Possession (%)", "home": 71, "away": 29}, {"key": "totalShotsOnGoal", "label": "Tirs totaux", "home": 22, "away": 4}, {"key": "shotsOnGoal", "label": "Tirs cadrés", "home": 9, "away": 2}, {"key": "bigChanceCreated", "label": "Grosses occasions", "home": 5, "away": 1}, {"key": "goalkeeperSaves", "label": "Arrêts du gardien", "home": 1, "away": 8}, {"key": "cornerKicks", "label": "Corners", "home": 7, "away": 1}, {"key": "fouls", "label": "Fautes", "home": 8, "away": 11}, {"key": "totalTackle", "label": "Tacles", "home": 14, "away": 21}, {"key": "accuratePasses", "label": "Passes réussies", "home": 684, "away": 241}, {"key": "yellowCards", "label": "Cartons jaunes", "home": 1, "away": 1}], "1st": [{"key": "ballPossession", "label": "Possession (%)", "home": 69, "away": 31}, {"key": "totalShotsOnGoal", "label": "Tirs totaux", "home": 9, "away": 2}, {"key": "shotsOnGoal", "label": "Tirs cadrés", "home": 4, "away": 1}], "2nd": [{"key": "ballPossession", "label": "Possession (%)", "home": 73, "away": 27}, {"key": "totalShotsOnGoal", "label": "Tirs totaux", "home": 13, "away": 2}, {"key": "shotsOnGoal", "label": "Tirs cadrés", "home": 5, "away": 1}]}}], "standings": [{"rank": 1, "team": "Liverpool FC", "is_french": false, "played": 4, "won": 4, "drawn": 0, "lost": 0, "gf": 10, "ga": 1, "gd": "+9", "points": 12, "zone": "top8"}, {"rank": 2, "team": "Sporting CP", "is_french": false, "played": 4, "won": 3, "drawn": 1, "lost": 0, "gf": 9, "ga": 2, "gd": "+7", "points": 10, "zone": "top8"}, {"rank": 3, "team": "AS Monaco", "is_french": true, "played": 4, "won": 3, "drawn": 1, "lost": 0, "gf": 10, "ga": 4, "gd": "+6", "points": 10, "zone": "top8"}, {"rank": 4, "team": "Stade Brestois 29", "is_french": true, "played": 4, "won": 3, "drawn": 1, "lost": 0, "gf": 9, "ga": 3, "gd": "+6", "points": 10, "zone": "top8"}, {"rank": 14, "team": "LOSC Lille", "is_french": true, "played": 4, "won": 2, "drawn": 1, "lost": 1, "gf": 5, "ga": 4, "gd": "+1", "points": 7, "zone": "playoff"}, {"rank": 19, "team": "Paris Saint-Germain", "is_french": true, "played": 4, "won": 1, "drawn": 2, "lost": 1, "gf": 3, "ga": 4, "gd": "-1", "points": 5, "zone": "playoff"}, {"rank": 25, "team": "VfB Stuttgart", "is_french": false, "played": 4, "won": 1, "drawn": 1, "lost": 2, "gf": 3, "ga": 6, "gd": "-3", "points": 4, "zone": "eliminated"}], "bracket": null}, "uel": {"id": "uel", "name": "Ligue Europa", "short_name": "EL", "stage_type": "league", "matchday_label": "Journée 4 sur 8", "french_clubs_focus": [{"match_id": "uel_2026_j4_tsg_ol", "club_name": "Olympique Lyonnais", "club_rank": 7, "club_zone": "top8", "home_team": {"name": "TSG Hoffenheim", "short": "TSG", "is_french": false, "score": 1}, "away_team": {"name": "Olympique Lyonnais", "short": "OL", "is_french": true, "score": 2}, "status": "Terminé", "goals": [{"minute": "47'", "scorer": "V. Gendrey", "assist": "A. Kramarić", "team": "home", "score_after": "1-0"}, {"minute": "66'", "scorer": "Abner", "assist": "S. Benrahma", "team": "away", "score_after": "1-1"}, {"minute": "90+3'", "scorer": "A. Lacazette", "assist": "R. Cherki", "team": "away", "score_after": "1-2"}], "ai_summary": "L'Olympique Lyonnais arrache une victoire précieuse en Allemagne face à Hoffenheim au bout du temps additionnel (1-2). Surpris dès le retour des vestiaires par Valentin Gendrey (47'), les Gones ont réagi grâce à l'égalisation d'Abner (66') avant que les changements offensifs ne fassent basculer la rencontre. Le tournant s'est joué à la 90+3e minute sur une inspiration de Rayan Cherki servant Alexandre Lacazette pour le but de la victoire. Avec 9 points en quatre journées, Lyon se hisse à la 7e place du classement général, directement dans le Top 8 qualificatif pour les huitièmes de finale.", "ai_verified": true}], "matches": [{"match_id": "uel_2026_j4_tsg_ol", "kickoff": "21:00", "status": "Terminé", "is_french_match": true, "home_team": {"name": "TSG Hoffenheim", "short": "TSG", "is_french": false, "score": 1, "formation": "3-5-2"}, "away_team": {"name": "Olympique Lyonnais", "short": "OL", "is_french": true, "score": 2, "formation": "4-3-3"}, "events": [{"minute": 47, "type": "goal", "team": "home", "player": "V. Gendrey", "detail": "Passe déc. : A. Kramarić"}, {"minute": 61, "type": "sub", "team": "away", "player": "R. Cherki", "detail": "Remplace M. Fofana"}, {"minute": 66, "type": "goal", "team": "away", "player": "Abner", "detail": "Passe déc. : S. Benrahma"}, {"minute": 93, "type": "goal", "team": "away", "player": "A. Lacazette", "detail": "Passe déc. : R. Cherki"}], "momentum": [{"minute": 5, "value": 20}, {"minute": 15, "value": -35}, {"minute": 30, "value": 25}, {"minute": 47, "value": 72}, {"minute": 60, "value": -48}, {"minute": 66, "value": -78}, {"minute": 80, "value": 30}, {"minute": 90, "value": -85}], "lineups": {"home": [{"number": 1, "name": "O. Baumann", "pos": "GK", "x": 50, "y": 8, "rating": 6.8}, {"number": 19, "name": "V. Gendrey", "pos": "RWB", "x": 82, "y": 45, "rating": 7.6}, {"number": 27, "name": "A. Kramarić", "pos": "ST", "x": 50, "y": 80, "rating": 7.3}], "away": [{"number": 23, "name": "L. Perri", "pos": "GK", "x": 50, "y": 92, "rating": 7.4}, {"number": 16, "name": "Abner", "pos": "LB", "x": 18, "y": 72, "rating": 7.8}, {"number": 18, "name": "R. Cherki", "pos": "CAM", "x": 65, "y": 48, "rating": 8.2}, {"number": 10, "name": "A. Lacazette", "pos": "ST", "x": 50, "y": 25, "rating": 8.0}]}, "stats": {"all": [{"key": "ballPossession", "label": "Possession (%)", "home": 46, "away": 54}, {"key": "totalShotsOnGoal", "label": "Tirs totaux", "home": 12, "away": 15}, {"key": "shotsOnGoal", "label": "Tirs cadrés", "home": 4, "away": 6}, {"key": "bigChanceCreated", "label": "Grosses occasions", "home": 2, "away": 3}, {"key": "goalkeeperSaves", "label": "Arrêts du gardien", "home": 4, "away": 3}, {"key": "cornerKicks", "label": "Corners", "home": 5, "away": 6}], "1st": [{"key": "ballPossession", "label": "Possession (%)", "home": 48, "away": 52}], "2nd": [{"key": "ballPossession", "label": "Possession (%)", "home": 44, "away": 56}]}}], "standings": [{"rank": 1, "team": "SS Lazio", "is_french": false, "played": 4, "won": 4, "drawn": 0, "lost": 0, "gf": 11, "ga": 2, "gd": "+9", "points": 12, "zone": "top8"}, {"rank": 7, "team": "Olympique Lyonnais", "is_french": true, "played": 4, "won": 3, "drawn": 0, "lost": 1, "gf": 8, "ga": 4, "gd": "+4", "points": 9, "zone": "top8"}, {"rank": 22, "team": "OGC Nice", "is_french": true, "played": 4, "won": 1, "drawn": 1, "lost": 2, "gf": 4, "ga": 6, "gd": "-2", "points": 4, "zone": "playoff"}, {"rank": 29, "team": "Dynamo Kiev", "is_french": false, "played": 4, "won": 0, "drawn": 0, "lost": 4, "gf": 0, "ga": 10, "gd": "-10", "points": 0, "zone": "eliminated"}], "bracket": null}, "uecl": {"id": "uecl", "name": "Ligue Conférence", "short_name": "ECL", "stage_type": "league", "matchday_label": "Journée 3 sur 6", "french_clubs_focus": [], "matches": [], "standings": [], "bracket": null}}};
+
+    let appData = FALLBACK_DATA;
+    let currentComp = 'ucl';
+    let activeMatch = null;
+    let currentModalView = 'events';
+    let currentStatsPeriod = 'all';
+
+    async function initDashboard() {
+      try {
+        const response = await fetch('data.json?t=' + Date.now());
+        if (response.ok) {
+          appData = await response.json();
+        }
+      } catch (e) {
+        // Utilisation transparente de FALLBACK_DATA en local
+      }
+      renderCompetition(currentComp);
+    }
+
+    function switchCompetition(compKey) {
+      currentComp = compKey;
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.comp === compKey);
+      });
+      renderCompetition(compKey);
+    }
+
+    function getZoneLabel(zone, rank) {
+      if (!rank) return '';
+      if (zone === 'top8') return `${rank}e • Top 8 (8es)`;
+      if (zone === 'playoff') return `${rank}e • Barrages`;
+      return `${rank}e • Zone élim.`;
+    }
+
+    function renderCompetition(compKey) {
+      const comp = appData.competitions[compKey];
+      if (!comp) return;
+
+      document.getElementById('matchday-indicator').textContent = comp.matchday_label || '';
+
+      // 1. Rendu Focus Clubs Français
+      const frContainer = document.getElementById('french-focus-container');
+      if (!comp.french_clubs_focus || comp.french_clubs_focus.length === 0) {
+        frContainer.innerHTML = `<div class="empty-state">Aucune rencontre de club français enregistrée sur cette journée en ${comp.name}.</div>`;
+      } else {
+        frContainer.innerHTML = comp.french_clubs_focus.map(fc => {
+          const goalsHtml = (fc.goals || []).map(g =>
+            `<span class="goal-chip">⚽ ${g.scorer} (${g.minute})</span>`
+          ).join('');
+
+          return `
+            <article class="fr-card" onclick="openMatchModal('${fc.match_id}')">
+              <div class="fr-card-top">
+                <span class="fr-club-tag">🇫🇷 ${fc.club_name}</span>
+                <span class="rank-pill ${fc.club_zone || 'playoff'}">${getZoneLabel(fc.club_zone, fc.club_rank)}</span>
+              </div>
+              <div class="fr-scoreline">
+                <div class="team-name home ${fc.home_team.is_french ? 'is-fr' : ''}">${fc.home_team.name}</div>
+                <div class="score-box">${fc.home_team.score} - ${fc.away_team.score}</div>
+                <div class="team-name away ${fc.away_team.is_french ? 'is-fr' : ''}">${fc.away_team.name}</div>
+              </div>
+              ${goalsHtml ? `<div class="goals-timeline">${goalsHtml}</div>` : ''}
+              <p class="ai-summary-text">${fc.ai_summary}</p>
+              <div class="fr-card-footer">
+                <span>✓ Données officielles vérifiées</span>
+                <span>Ouvrir la fiche complète →</span>
+              </div>
+            </article>
+          `;
+        }).join('');
+      }
+
+      // 2. Rendu Grille des Matchs
+      const gridContainer = document.getElementById('matches-grid-container');
+      if (!comp.matches || comp.matches.length === 0) {
+        gridContainer.innerHTML = `<div class="empty-state">Aucun match disputé ce soir dans cette compétition.</div>`;
+      } else {
+        gridContainer.innerHTML = comp.matches.map(m => `
+          <div class="match-tile" onclick="openMatchModal('${m.match_id}')">
+            <div class="tile-teams">
+              <div class="tile-team-row">
+                <span class="tile-team-name ${m.home_team.is_french ? 'is-fr' : ''}">${m.home_team.name}</span>
+                <span class="tile-team-score">${m.home_team.score}</span>
+              </div>
+              <div class="tile-team-row">
+                <span class="tile-team-name ${m.away_team.is_french ? 'is-fr' : ''}">${m.away_team.name}</span>
+                <span class="tile-team-score">${m.away_team.score}</span>
+              </div>
+            </div>
+            <div class="tile-meta">
+              <div>${m.status}</div>
+              <div style="margin-top:4px;color:var(--accent-ucl)">Détails ›</div>
+            </div>
+          </div>
+        `).join('');
+      }
+
+      // 4. Rendu Classement 36 équipes
+      const stContainer = document.getElementById('standings-container');
+      if (!comp.standings || comp.standings.length === 0) {
+        stContainer.innerHTML = `<div class="empty-state">Classement en attente d'actualisation.</div>`;
+      } else {
+        const rowsHtml = comp.standings.map(r => {
+          const isCutoff = (r.rank === 8 || r.rank === 24) ? 'zone-cutoff' : '';
+          return `
+            <tr class="zone-${r.zone} ${r.is_french ? 'is-fr-row' : ''} ${isCutoff}">
+              <td class="rank-cell">${r.rank}</td>
+              <td class="col-team">
+                ${r.team}
+                ${r.is_french ? '<span class="fr-badge-inline">FRA</span>' : ''}
+              </td>
+              <td>${r.played}</td>
+              <td>${r.gd}</td>
+              <td style="font-weight:800">${r.points}</td>
+            </tr>
+          `;
+        }).join('');
+
+        stContainer.innerHTML = `
+          <table class="standings-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th class="col-team">Club</th>
+                <th>MJ</th>
+                <th>Diff</th>
+                <th>Pts</th>
+              </tr>
+            </thead>
+            <tbody>${rowsHtml}</tbody>
+          </table>
+        `;
+      }
+    }
+
+    // 3. LOGIQUE DU TIROIR MODAL (4 VUES)
+    function openMatchModal(matchId) {
+      const comp = appData.competitions[currentComp];
+      activeMatch = (comp.matches || []).find(m => m.match_id === matchId);
+      if (!activeMatch) return;
+
+      document.getElementById('modal-comp-label').textContent = `${comp.name} • ${activeMatch.status}`;
+      document.getElementById('modal-home-name').textContent = activeMatch.home_team.name;
+      document.getElementById('modal-away-name').textContent = activeMatch.away_team.name;
+      document.getElementById('modal-score').textContent = `${activeMatch.home_team.score} - ${activeMatch.away_team.score}`;
+
+      document.getElementById('match-modal').classList.add('open');
+      switchModalView('events');
+    }
+
+    function closeMatchModal() {
+      document.getElementById('match-modal').classList.remove('open');
+    }
+
+    function closeModalOnBackdrop(e) {
+      if (e.target.id === 'match-modal') closeMatchModal();
+    }
+
+    function switchModalView(viewName) {
+      currentModalView = viewName;
+      document.querySelectorAll('.subtab-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.view === viewName);
+      });
+      renderModalContent();
+    }
+
+    function switchStatsPeriod(periodKey) {
+      currentStatsPeriod = periodKey;
+      renderModalContent();
+    }
+
+    function renderModalContent() {
+      const container = document.getElementById('modal-body-content');
+      if (!activeMatch) return;
+
+      if (currentModalView === 'events') {
+        const evs = activeMatch.events || [];
+        if (evs.length === 0) {
+          container.innerHTML = `<div class="empty-state">Aucun événement majeur enregistré.</div>`;
+          return;
+        }
+        const iconMap = { goal: '⚽', yellow_card: '🟨', red_card: '🟥', sub: '🔄' };
+        container.innerHTML = evs.map(e => `
+          <div class="event-row ${e.team}">
+            <span class="ev-min">${e.minute}'</span>
+            <span>${iconMap[e.type] || '•'}</span>
+            <div>
+              <div style="font-weight:700">${e.player}</div>
+              <div style="font-size:0.74rem;color:var(--text-muted)">${e.detail || ''}</div>
+            </div>
+          </div>
+        `).join('');
+      }
+
+      else if (currentModalView === 'momentum') {
+        const pts = activeMatch.momentum || [];
+        if (pts.length === 0) {
+          container.innerHTML = `<div class="empty-state">Graphique de pression indisponible pour cette rencontre.</div>`;
+          return;
+        }
+        const barsSvg = pts.map(pt => {
+          const x = (pt.minute / 90) * 300;
+          const h = Math.min(Math.abs(pt.value) * 0.45, 45);
+          const y = pt.value >= 0 ? 50 - h : 50;
+          const color = pt.value >= 0 ? '#38bdf8' : '#f43f5e';
+          return `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="4.5" height="${h.toFixed(1)}" rx="1.5" fill="${color}" />`;
+        }).join('');
+
+        container.innerHTML = `
+          <div class="momentum-box">
+            <div class="momentum-legend">
+              <span style="color:var(--home-color)">▲ Domination ${activeMatch.home_team.short}</span>
+              <span style="color:var(--away-color)">▼ Domination ${activeMatch.away_team.short}</span>
+            </div>
+            <svg viewBox="0 0 310 100" style="width:100%;height:160px">
+              <line x1="0" y1="50" x2="310" y2="50" stroke="#334155" stroke-width="1" />
+              <line x1="155" y1="0" x2="155" y2="100" stroke="#334155" stroke-dasharray="3,3" stroke-width="1" />
+              ${barsSvg}
+            </svg>
+            <div style="display:flex;justify-content:space-between;font-size:0.7rem;color:var(--text-muted);margin-top:4px">
+              <span>1'</span><span>Mi-temps (45')</span><span>90'</span>
+            </div>
+          </div>
+        `;
+      }
+
+      else if (currentModalView === 'lineups') {
+        const homePlayers = (activeMatch.lineups && activeMatch.lineups.home) || [];
+        const awayPlayers = (activeMatch.lineups && activeMatch.lineups.away) || [];
+        const renderNodes = (list, side) => list.map(p => `
+          <div class="player-node" style="left:${p.x || 50}%;top:${p.y || 50}%">
+            <div class="player-dot ${side}">${p.number || ''}</div>
+            <span class="player-label">${p.name}</span>
+            ${p.rating ? `<span class="player-rating">${p.rating}</span>` : ''}
+          </div>
+        `).join('');
+
+        container.innerHTML = `
+          <div style="display:flex;justify-content:space-between;font-size:0.78rem;color:var(--text-muted);margin-bottom:8px">
+            <span>🔵 ${activeMatch.home_team.name} (${activeMatch.home_team.formation || 'Titulaires'})</span>
+            <span>🔴 ${activeMatch.away_team.name} (${activeMatch.away_team.formation || 'Titulaires'})</span>
+          </div>
+          <div class="pitch-container">
+            <div class="pitch-midline"></div>
+            <div class="pitch-circle"></div>
+            ${renderNodes(homePlayers, 'home')}
+            ${renderNodes(awayPlayers, 'away')}
+          </div>
+        `;
+      }
+
+      else if (currentModalView === 'stats') {
+        const statsObj = activeMatch.stats || {};
+        const items = statsObj[currentStatsPeriod] || statsObj.all || [];
+        const barsHtml = items.map(s => {
+          const total = (Number(s.home) + Number(s.away)) || 1;
+          const homePct = Math.round((Number(s.home) / total) * 100);
+          const awayPct = 100 - homePct;
+          return `
+            <div class="stat-item">
+              <div class="stat-row-labels">
+                <span style="color:var(--home-color)">${s.home}</span>
+                <span style="color:var(--text-muted)">${s.label}</span>
+                <span style="color:var(--away-color)">${s.away}</span>
+              </div>
+              <div class="stat-bars">
+                <div class="stat-bar-home" style="width:${homePct}%"></div>
+                <div class="stat-bar-away" style="width:${awayPct}%"></div>
+              </div>
+            </div>
+          `;
+        }).join('');
+
+        container.innerHTML = `
+          <div class="period-pills">
+            <button class="period-btn ${currentStatsPeriod === 'all' ? 'active' : ''}" onclick="switchStatsPeriod('all')">Match complet</button>
+            <button class="period-btn ${currentStatsPeriod === '1st' ? 'active' : ''}" onclick="switchStatsPeriod('1st')">1re Mi-temps</button>
+            <button class="period-btn ${currentStatsPeriod === '2nd' ? 'active' : ''}" onclick="switchStatsPeriod('2nd')">2e Mi-temps</button>
+          </div>
+          ${barsHtml || '<div class="empty-state">Statistiques non disponibles pour cette période.</div>'}
+        `;
+      }
+    }
+
+    initDashboard();
+  </script>
+</body>
+</html>
