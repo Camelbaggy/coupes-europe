@@ -31,13 +31,7 @@ jobs:
         with:
           python-version: '3.11'
 
-      # L'ajout crucial est ici : --with-deps
-      - name: Installation de Playwright (Chromium et dépendances OS)
-        run: |
-          pip install playwright
-          playwright install --with-deps chromium
-
-      - name: Exécution du Pipeline (Collecte SofaScore + Agents Flash + Push ntfy)
+      - name: Exécution du Pipeline (Collecte FotMob + Agents Flash + Push ntfy)
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
@@ -63,6 +57,6 @@ jobs:
           if git diff --staged --quiet; then
             echo "Aucune modification de data.json à publier."
           else
-            git commit -m "chore: mise à jour automatique des résultats européens (SofaScore)"
+            git commit -m "chore: mise à jour automatique des résultats (FotMob)"
             git push
           fi
