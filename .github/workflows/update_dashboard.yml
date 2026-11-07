@@ -31,10 +31,12 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Installation du contournement TLS anti-Cloudflare (curl_cffi)
-        run: pip install curl_cffi
+      - name: Installation de Playwright (Chromium headless pour SofaScore)
+        run: |
+          pip install playwright
+          playwright install chromium
 
-      - name: Exécution du Pipeline (Collecte + Agents Flash + Push ntfy)
+      - name: Exécution du Pipeline (Collecte SofaScore + Agents Flash + Push ntfy)
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
@@ -60,6 +62,6 @@ jobs:
           if git diff --staged --quiet; then
             echo "Aucune modification de data.json à publier."
           else
-            git commit -m "chore: mise à jour automatique des résultats européens"
+            git commit -m "chore: mise à jour automatique des résultats européens (SofaScore)"
             git push
           fi
