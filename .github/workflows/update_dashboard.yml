@@ -33,6 +33,7 @@ jobs:
 
       - name: Exécution du Pipeline (Collecte FotMob + Agents Flash + Push ntfy)
         env:
+          PYTHONUNBUFFERED: "1"
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
           DASHBOARD_URL: ${{ secrets.DASHBOARD_URL }}
