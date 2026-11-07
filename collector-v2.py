@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Collecteur Déterministe des Coupes d'Europe (Zéro IA) — v7 (Moteur FOTMOB Sécurisé)
+Collecteur Déterministe des Coupes d'Europe (Zéro IA) — v8 (Moteur FOTMOB Sécurisé par curl_cffi)
 """
 
 import argparse
@@ -12,6 +12,12 @@ from datetime import datetime, date, timedelta
 from typing import Dict, List, Any, Optional
 import urllib.request
 import urllib.error
+
+try:
+    from curl_cffi import requests as cffi_requests
+    HAS_CURL_CFFI = True
+except ImportError:
+    HAS_CURL_CFFI = False
 
 # Identifiants des tournois sur FotMob
 TOURNAMENTS = {
@@ -33,17 +39,23 @@ HEADERS = {
 
 
 def fetch_json(url: str, retries: int = 2) -> Optional[Dict[str, Any]]:
+    """Utilise curl_cffi pour usurper une empreinte Chrome et éviter le 403."""
     for attempt in range(retries + 1):
         try:
             time.sleep(random.uniform(0.3, 0.6))
-            req = urllib.request.Request(url, headers=HEADERS)
-            with urllib.request.urlopen(req, timeout=12) as resp:
-                if resp.status == 200:
-                    return json.loads(resp.read().decode("utf-8"))
-        except urllib.error.HTTPError as e:
-            if e.code == 404:
-                return None
-            print(f"[WARN] HTTP {e.code} sur {url}")
+            if HAS_CURL_CFFI:
+                resp = cffi_requests.get(url, headers=HEADERS, impersonate="chrome124", timeout=12)
+                if resp.status_code == 200:
+                    return resp.json()
+                elif resp.status_code == 404:
+                    return None
+                else:
+                    print(f"[WARN] HTTP {resp.status_code} sur {url}")
+            else:
+                req = urllib.request.Request(url, headers=HEADERS)
+                with urllib.request.urlopen(req, timeout=12) as resp:
+                    if resp.status == 200:
+                        return json.loads(resp.read().decode("utf-8"))
         except Exception as e:
             print(f"[WARN] Erreur sur {url} : {e}")
         time.sleep(1.0)
@@ -51,7 +63,6 @@ def fetch_json(url: str, retries: int = 2) -> Optional[Dict[str, Any]]:
 
 
 def is_french_team(name: str, ccode: str = "") -> bool:
-    """Détecte si une équipe est française via le code pays FotMob (ccode) ou son nom."""
     if ccode and ccode.upper() in ("FRA", "FR"):
         return True
     lower_name = name.lower()
@@ -143,14 +154,12 @@ def collect_dates_data(target_dates: List[str], label_prefix: str = "Soirée") -
     t_id_to_key = {v["id"]: k for k, v in TOURNAMENTS.items()}
     european_events = {"ucl": [], "uel": [], "uecl": []}
 
-    print(f"[INFO] Interrogation FotMob pour {target_dates}...")
+    print(f"[INFO] Interrogation FotMob pour {target_dates} avec curl_cffi ({HAS_CURL_CFFI})...")
     for d_str in target_dates:
-        # L'API FotMob s'attend à la date au format YYYYMMDD
         ymd = d_str.replace("-", "")
         url = f"https://www.fotmob.com/api/matches?date={ymd}"
         
         data = fetch_json(url)
-        # Fallback format de date si l'API a changé
         if not data or "leagues" not in data:
             url_fallback = f"https://www.fotmob.com/api/matches?date={d_str}"
             data = fetch_json(url_fallback)
@@ -293,7 +302,7 @@ def collect_dates_data(target_dates: List[str], label_prefix: str = "Soirée") -
                             })
                     lineups_out[side] = compute_spatial_coords(starters, is_home=(side == "home"))
 
-            # Stats (Map FotMob keys to our keys)
+            # Stats
             fotmob_stat_map = {
                 "Ball possession": ("ballPossession", "Possession (%)"),
                 "Total shots": ("totalShotsOnGoal", "Tirs totaux"),
@@ -412,7 +421,7 @@ def get_current_week_european_dates(ref_date: Optional[date] = None) -> List[str
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Collecteur Coupes d'Europe v7 (FotMob)")
+    parser = argparse.ArgumentParser(description="Collecteur Coupes d'Europe v8 (FotMob + curl_cffi)")
     parser.add_argument("--date", type=str, help="Date précise YYYY-MM-DD")
     parser.add_argument("--week", action="store_true", help="Semaine complète (Mardi à Jeudi)")
     args = parser.parse_args()
