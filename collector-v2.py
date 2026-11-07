@@ -1,13 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Collecteur Déterministe des Coupes d'Europe (Zéro IA) — v6 (Moteur FOTMOB 100 % Fiable)
-----------------------------------------------------------------------------------------
-Correction définitive du blocage Cloudflare (403) :
-Le moteur passe intégralement sur l'API publique de FotMob (`www.fotmob.com/api/`),
-qui n'utilise pas Cloudflare de manière agressive sur les IP serveurs (GitHub Actions).
-Fournit toutes les stats (possession, tirs, grosses occasions), les compos spatiales
-avec notes sur 10, la chronologie des buts et le Momentum.
+Collecteur Déterministe des Coupes d'Europe (Zéro IA) — v7 (Moteur FOTMOB Sécurisé)
 """
 
 import argparse
@@ -64,7 +58,6 @@ def is_french_team(name: str, ccode: str = "") -> bool:
     for bl in NON_FRENCH_BLACKLIST:
         if bl in lower_name:
             return False
-    # Vérification stricte
     if lower_name in ["lille", "brest"]:
         return True
     return any(kw in lower_name for kw in FRENCH_CLUBS_KEYWORDS)
@@ -102,14 +95,12 @@ def compute_spatial_coords(players: List[Dict[str, Any]], is_home: bool) -> List
 
 
 def fetch_fotmob_standings(league_id: int) -> List[Dict[str, Any]]:
-    """Récupère le classement des 36 équipes sur FotMob."""
     url = f"https://www.fotmob.com/api/tDetails?id={league_id}"
     data = fetch_json(url)
     rows_out = []
     if not data or "table" not in data or not data["table"]:
         return rows_out
 
-    # FotMob structure souvent ses tables de ligue unique dans le premier élément
     tables = data["table"]
     target_table = tables[0].get("data", {}) if isinstance(tables[0], dict) and "data" in tables[0] else tables[0]
     
@@ -149,16 +140,23 @@ def fetch_fotmob_standings(league_id: int) -> List[Dict[str, Any]]:
 
 
 def collect_dates_data(target_dates: List[str], label_prefix: str = "Soirée") -> Dict[str, Any]:
-    """Collecte les matchs sur l'API FotMob (anti-censure garantie)."""
     t_id_to_key = {v["id"]: k for k, v in TOURNAMENTS.items()}
     european_events = {"ucl": [], "uel": [], "uecl": []}
 
     print(f"[INFO] Interrogation FotMob pour {target_dates}...")
     for d_str in target_dates:
+        # L'API FotMob s'attend à la date au format YYYYMMDD
         ymd = d_str.replace("-", "")
         url = f"https://www.fotmob.com/api/matches?date={ymd}"
+        
         data = fetch_json(url)
+        # Fallback format de date si l'API a changé
         if not data or "leagues" not in data:
+            url_fallback = f"https://www.fotmob.com/api/matches?date={d_str}"
+            data = fetch_json(url_fallback)
+            
+        if not data or "leagues" not in data:
+            print(f"[WARN] Impossible de charger le calendrier FotMob pour le {d_str}.")
             continue
         
         for league in data["leagues"]:
@@ -170,10 +168,10 @@ def collect_dates_data(target_dates: List[str], label_prefix: str = "Soirée") -
 
     total_matches = sum(len(v) for v in european_events.values())
     if total_matches == 0:
-        print("[INFO] Aucun match européen trouvé sur FotMob.")
+        print("[INFO] Aucun match de Coupe d'Europe n'a été retourné par FotMob sur ces dates.")
         return {"notification": {"match_night": False}}
 
-    print(f"[INFO] {total_matches} matchs trouvés. Extraction des fiches complètes...")
+    print(f"[INFO] {total_matches} match(s) européen(s) trouvé(s) sur FotMob. Extraction des fiches complètes...")
 
     output = {
         "last_updated": datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
@@ -337,7 +335,7 @@ def collect_dates_data(target_dates: List[str], label_prefix: str = "Soirée") -
 
             match_obj = {
                 "match_id": str(m_id),
-                "kickoff": datetime.fromtimestamp(m.get("status", {}).get("utcTime", time.time())).strftime("%d/%m %H:%M"),
+                "kickoff": datetime.fromtimestamp(m.get("status", {}).get("utcTime", time.time()) / 1000 if m.get("status", {}).get("utcTime") else time.time()).strftime("%d/%m %H:%M"),
                 "status": status_desc,
                 "is_french_match": is_fr_match,
                 "home_team": {
@@ -414,7 +412,7 @@ def get_current_week_european_dates(ref_date: Optional[date] = None) -> List[str
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Collecteur Coupes d'Europe v6 (FotMob)")
+    parser = argparse.ArgumentParser(description="Collecteur Coupes d'Europe v7 (FotMob)")
     parser.add_argument("--date", type=str, help="Date précise YYYY-MM-DD")
     parser.add_argument("--week", action="store_true", help="Semaine complète (Mardi à Jeudi)")
     args = parser.parse_args()
