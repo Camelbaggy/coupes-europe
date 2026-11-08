@@ -888,7 +888,7 @@
       activeMatch = (comp.matches || []).find(m => m.match_id === matchId);
       if (!activeMatch) return;
       currentStatsPeriod = 'all';
-      const meta = [comp.name, activeMatch.kickoff, activeMatch.status].filter(Boolean).join(' • ');
+      const meta = [comp.name, activeMatch.matchday, activeMatch.kickoff, activeMatch.status].filter(Boolean).join(' • ');
       document.getElementById('modal-comp-label').textContent = meta;
       document.getElementById('modal-home-name').textContent = activeMatch.home_team.name;
       document.getElementById('modal-away-name').textContent = activeMatch.away_team.name;
@@ -929,8 +929,11 @@
           container.innerHTML = `<div class="empty-state">Aucun événement enregistré.</div>`;
           return;
         }
-        const iconMap = { goal: '⚽', yellow_card: '🟨', red_card: '🟥', sub: '🔄' };
-        container.innerHTML = evs.map(e => `
+        const iconMap = { goal: '⚽', yellow_card: '🟨', red_card: '🟥', sub: '🔄', var: '📺' };
+        const info = [m.venue ? '🏟️ ' + esc(m.venue) : '', m.attendance ? esc(Number(m.attendance).toLocaleString('fr-FR')) + ' spectateurs' : '',
+                      m.player_of_match ? '⭐ Homme du match : ' + esc(m.player_of_match) : '', m.penalties ? 'Tirs au but : ' + esc(m.penalties) : '']
+                     .filter(Boolean).join(' · ');
+        container.innerHTML = (info ? `<p class="momentum-note" style="margin:0 0 10px">${info}</p>` : '') + evs.map(e => `
           <div class="event-row ${esc(e.team)}">
             <span class="ev-min">${esc(e.minute_label || (e.minute + "'"))}</span>
             <span>${iconMap[e.type] || '•'}</span>
@@ -977,7 +980,7 @@
             <div style="display:flex;justify-content:space-between;font-size:0.7rem;color:var(--text-muted);margin-top:4px">
               <span>1'</span><span>45'</span><span>${maxMin}'</span>
             </div>
-            <p class="momentum-note">Pression offensive par tranche de 5 min, calculée depuis le fil du match : tirs, tirs cadrés, poteaux, corners et coups francs obtenus dans le camp adverse.</p>
+            <p class="momentum-note">Pression offensive par tranche de 5 min, calculée à partir des actions officielles UEFA : buts, tirs cadrés, non cadrés et contrés, corners.</p>
           </div>`;
       }
 
@@ -989,12 +992,13 @@
           return;
         }
         const renderNodes = (list, side) => list.map(p => `
-          <div class="player-node" style="left:${p.x ?? 50}%;top:${p.y ?? 50}%">
+          <div class="player-node" style="left:${p.x ?? 50}%;top:${p.y ?? 50}%" title="${esc(pStats(p))}">
             <div class="player-dot ${side}">${esc(p.number)}</div>
-            <span class="player-label">${p.subbed_out ? '🔻 ' : ''}${esc(p.name)}</span>
+            <span class="player-label">${p.captain ? '© ' : ''}${p.potm ? '⭐ ' : ''}${esc(p.name)}${p.subbed_out ? ' 🔻' + esc(p.subbed_out) : ''}</span>
             ${p.rating ? `<span class="player-rating">${esc(p.rating)}</span>` : ''}
           </div>`).join('');
-        const subs = (list) => list.length ? list.map(p => `${esc(p.number)} ${esc(p.name)}`).join(', ') : '—';
+        const subs = (list) => list.length ? list.map(p => `${esc(p.number)} ${p.potm ? '⭐ ' : ''}${esc(p.name)}${p.minute ? ' (' + esc(p.minute) + ')' : ''}`).join(', ') : '—';
+        const pStats = (p) => { const s = p.stats || {}; return [s.buts ? `${s.buts} but(s)` : '', s.passes_dec ? `${s.passes_dec} passe(s) déc.` : '', s.tirs ? `${s.tirs} tir(s)` : '', s.arrets ? `${s.arrets} arrêt(s)` : '', s.distance_km ? `${s.distance_km} km` : ''].filter(Boolean).join(' · '); };
         container.innerHTML = `
           <div style="display:flex;justify-content:space-between;font-size:0.78rem;color:var(--text-muted);margin-bottom:8px">
             <span>🔵 ${esc(m.home_team.short)} ${esc(m.home_team.formation || '')}</span>
@@ -1009,7 +1013,8 @@
           <div class="subs-list">
             <div><b style="color:var(--home-color)">Entrés (${esc(m.home_team.short)})</b> : ${subs(L.home_subs || [])}</div>
             <div><b style="color:var(--away-color)">Entrés (${esc(m.away_team.short)})</b> : ${subs(L.away_subs || [])}</div>
-            <div style="margin-top:4px">🔻 = remplacé en cours de match</div>
+            ${(L.home_coach || L.away_coach) ? `<div>Entraîneurs : ${esc(L.home_coach || '—')} / ${esc(L.away_coach || '—')}</div>` : ''}
+            <div style="margin-top:4px">© capitaine · ⭐ homme du match · 🔻 minute de sortie</div>
           </div>`;
       }
 
@@ -1040,7 +1045,8 @@
             <button class="period-btn ${period === '1st' ? 'active' : ''}" onclick="switchStatsPeriod('1st')">1re mi-temps</button>
             <button class="period-btn ${period === '2nd' ? 'active' : ''}" onclick="switchStatsPeriod('2nd')">2e mi-temps</button>
           </div>` : '';
-        container.innerHTML = pills + (barsHtml || '<div class="empty-state">Statistiques indisponibles.</div>');
+        const note = period !== 'all' ? '<p class="momentum-note">Par mi-temps : décompte des actions officielles UEFA de la période.</p>' : '<p class="momentum-note">Source : statistiques officielles UEFA.</p>';
+        container.innerHTML = pills + (barsHtml || '<div class="empty-state">Statistiques indisponibles.</div>') + (barsHtml ? note : '');
       }
     }
 

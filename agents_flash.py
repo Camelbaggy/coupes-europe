@@ -157,6 +157,46 @@ def named_stats(stats: List[Dict[str, Any]], names: Dict[str, str]) -> Dict[str,
     return {s["label"]: {names["home"]: s["home"], names["away"]: s["away"]} for s in stats}
 
 
+ACTION_FR = {
+    "GOAL": "But", "SHOT_ON_GOAL": "Tir cadré", "SHOT_WIDE": "Tir non cadré", "SHOT_BLOCKED": "Tir contré",
+    "SAVE": "Arrêt", "VAR": "Intervention VAR", "RED_CARD": "Carton rouge", "YELLOW_CARD": "Carton jaune",
+    "SUBSTITUTION": "Remplacement", "PENALTY_MISSED": "Penalty manqué", "OFFSIDE": "Hors-jeu",
+}
+NOISE_ACTIONS = {"FOUL", "FREE_KICK", "CORNER", "OFFSIDE", "THROW_IN", "GOAL_KICK"}
+
+
+def official_actions(match: Dict[str, Any], names: Dict[str, str], limit: int = 150) -> List[str]:
+    """Actions officielles UEFA lisibles : « 23' — Tir cadré : X (Équipe) »."""
+    out = []
+    for a in match.get("actions", []):
+        if a["type"] in NOISE_ACTIONS:
+            continue
+        label = ACTION_FR.get(a["type"], a["type"].replace("_", " ").lower())
+        team = names.get(a.get("team") or "", "")
+        who = a.get("player") or ""
+        txt = f"{a['minute']} — {label} : {who}" + (f" ({team})" if team else "")
+        if a["type"] == "SUBSTITUTION" and a.get("other"):
+            txt = f"{a['minute']} — Remplacement ({team}) : {a['other']} remplace {who}"
+        out.append(txt)
+    return out[:limit]
+
+
+def standout_players(match: Dict[str, Any], names: Dict[str, str]) -> List[Dict[str, Any]]:
+    """Joueurs aux statistiques marquantes (buts, passes déc., tirs, passes clés, arrêts)."""
+    players = []
+    lu = match.get("lineups") or {}
+    for side in ("home", "away"):
+        for p in (lu.get(side) or []) + (lu.get(f"{side}_subs") or []):
+            st = p.get("stats") or {}
+            score = (st.get("buts", 0) * 5 + st.get("passes_dec", 0) * 4 + st.get("arrets", 0) * 1.5
+                     + st.get("tirs_cadres", 0) * 1.5 + st.get("passes_cles", 0) + st.get("tirs", 0) * 0.5)
+            if score >= 3 or p.get("potm"):
+                players.append((score, {"joueur": p.get("name"), "equipe": names[side],
+                                        "homme_du_match": bool(p.get("potm")), **st}))
+    players.sort(key=lambda x: -x[0])
+    return [p for _, p in players[:8]]
+
+
 def build_match_dossier(comp_name: str, card: Dict[str, Any], match: Dict[str, Any],
                         standings_row: Dict[str, Any]) -> Dict[str, Any]:
     names = _side_names(card)
@@ -164,20 +204,28 @@ def build_match_dossier(comp_name: str, card: Dict[str, Any], match: Dict[str, A
     comments = card.get("raw_comments_for_llm", [])
     return {
         "competition": comp_name,
+        "journee": match.get("matchday", ""),
         "club_suivi": card["club_name"],
         "domicile": names["home"],
         "exterieur": names["away"],
+        "stade": match.get("venue", ""),
+        "affluence": match.get("attendance"),
         "score_final": f"{names['home']} {card['home_team']['score']} - {card['away_team']['score']} {names['away']}",
         "score_mi_temps": halftime_score(goals),
+        "tirs_au_but": match.get("penalties") or None,
         "buts": [{"minute": g["minute"], "buteur": g["scorer"], "passeur": g.get("assist"),
                   "equipe": names[g["team"]], "type": {"pen": "penalty", "csc": "contre son camp"}.get(g.get("kind"), ""),
                   "score_apres": g["score_after"]} for g in goals],
-        "cartons_et_remplacements": [{"minute": e.get("minute_label", e.get("minute")), "type": e["type"],
-                                      "equipe": names[e["team"]], "joueur": e["player"], "detail": e.get("detail", "")}
-                                     for e in match.get("events", []) if e["type"] != "goal"],
+        "homme_du_match": match.get("player_of_match") or None,
+        "joueurs_en_vue": standout_players(match, names),
         "phases_de_domination": dominance_phases(match.get("momentum", []), names),
-        "moments_cles_du_fil": key_moments(comments),
+        "actions_officielles_uefa": official_actions(match, names),
         "statistiques": named_stats(match.get("stats", {}).get("all", []), names),
+        "statistiques_par_mi_temps": {
+            "1re": named_stats(match.get("stats", {}).get("1st", []), names),
+            "2e": named_stats(match.get("stats", {}).get("2nd", []), names),
+        },
+        "fil_commentaires_espn_en_anglais": key_moments(comments),
         "classement_apres_match": {k: standings_row.get(k) for k in ("rank", "points", "played", "won", "drawn", "lost", "gd", "zone")}
         if standings_row else None,
     }
@@ -190,7 +238,7 @@ WRITER_SYSTEM_PROMPT = """Tu es journaliste sportif pour un quotidien français.
 
 CE QUE TU DOIS RACONTER : le DÉROULÉ du match, pas une fiche technique.
 - Phrase 1 : le résultat et ce qui a caractérisé la rencontre (qui a dominé, comment).
-- Phrases 2-3 : le récit chronologique — l'entame et la première période, le score à la pause, ce qui change en seconde période, le tournant (but, occasion manquée, arrêt décisif, expulsion, temps fort). Appuie-toi sur `phases_de_domination` et `moments_cles_du_fil`.
+- Phrases 2-3 : le récit chronologique — l'entame et la première période, le score à la pause, ce qui change en seconde période, le tournant (but, occasion manquée, arrêt décisif, expulsion, temps fort, entrée d'un remplaçant). Appuie-toi sur `actions_officielles_uefa`, `phases_de_domination`, `statistiques_par_mi_temps`, `joueurs_en_vue` et le fil ESPN.
 - Phrase 4 (et éventuellement 5) : la conséquence au classement, en UNE phrase courte.
 
 INTERDIT :
@@ -198,7 +246,7 @@ INTERDIT :
 - toute phrase commençant par « Score final vérifié » ou « Chronologie des buts » ;
 - tout chiffre, nom ou minute absent du dossier ; n'invente ni ambiance, ni blessure, ni déclaration.
 
-Les moments du fil sont en anglais (format Opta) : traduis-les naturellement.
+Le fil ESPN est en anglais : traduis-le naturellement. En cas de désaccord entre le fil ESPN et les données UEFA, les données UEFA font foi.
 Réponds uniquement avec le texte du résumé."""
 
 
@@ -218,8 +266,8 @@ AUDITOR_SYSTEM_PROMPT = """Tu es le contrôleur qualité d'une rédaction sporti
 Réponds UNIQUEMENT avec un objet JSON : {"is_valid": true|false, "issues": "explication courte et précise de chaque erreur"}
 
 Rejette (is_valid=false) si :
-1. un score, un vainqueur, une minute, un buteur, un passeur ou un joueur cité est absent du dossier ou contredit le dossier ;
-2. une statistique chiffrée contredit `statistiques` ;
+1. un score, un vainqueur, une minute, un buteur, un passeur ou un joueur cité est absent du dossier (buts, actions_officielles_uefa, joueurs_en_vue, fil ESPN) ou le contredit ;
+2. une statistique chiffrée contredit `statistiques`, `statistiques_par_mi_temps` ou `joueurs_en_vue` ;
 3. le rang, les points ou la zone contredisent `classement_apres_match` ;
 4. le texte affirme un fait précis introuvable dans le dossier (blessure, déclaration, record...) ;
 5. le texte n'est qu'une liste de buts et de classement, sans récit du déroulé.
@@ -260,9 +308,9 @@ def build_deterministic_fallback_summary(card: Dict[str, Any], match: Dict[str, 
         s1 = f"{club} s'incline {where} ({score_txt})"
     else:
         s1 = f"{club} fait match nul {where} ({score_txt})"
-    if "ballPossession" in stats and "totalShotsOnGoal" in stats:
-        poss = str(stats["ballPossession"][me]).replace(".", ",")
-        shots_me, shots_opp = stats["totalShotsOnGoal"][me], stats["totalShotsOnGoal"][opp]
+    if "ball_possession" in stats and "attempts" in stats:
+        poss = str(stats["ball_possession"][me]).replace(".", ",")
+        shots_me, shots_opp = stats["attempts"][me], stats["attempts"][opp]
         s1 += f", avec {poss} % de possession et {_pl(shots_me, 'tir')} contre {shots_opp}."
     else:
         s1 += "."
@@ -296,6 +344,9 @@ def build_deterministic_fallback_summary(card: Dict[str, Any], match: Dict[str, 
         s3 += f", marquée par l'expulsion de {r['player']} ({names[r['team']]}, {r.get('minute_label', r['minute'])})"
     s3 += "."
 
+    potm = match.get("player_of_match")
+    if potm:
+        s3 += f" {potm} est désigné homme du match par l'UEFA."
     s4 = ""
     rank = card.get("club_rank") or (standings_row or {}).get("rank")
     if rank:
@@ -362,10 +413,10 @@ def orchestrate_flash_agents(input_path: str = "data_raw.json", output_path: str
     recap: List[str] = []
     for comp in data.get("competitions", {}).values():
         matches = {m["match_id"]: m for m in comp.get("matches", [])}
-        standings = {s["team"].lower(): s for s in comp.get("standings", [])}
+        standings = {s.get("team_id") or s["team"].lower(): s for s in comp.get("standings", [])}
         for card in comp.get("french_clubs_focus", []):
             match = matches.get(card["match_id"], {})
-            row = standings.get(card["club_name"].lower(), {})
+            row = standings.get(card.get("club_id")) or standings.get(card["club_name"].lower(), {})
             h, a = card["home_team"], card["away_team"]
             line = f"{h['short']} {h['score']}-{a['score']} {a['short']}"
             if line not in recap:
@@ -387,6 +438,9 @@ def orchestrate_flash_agents(input_path: str = "data_raw.json", output_path: str
             card["ai_verified"] = True
             card.pop("raw_comments_for_llm", None)
 
+    for comp in data.get("competitions", {}).values():
+        for m in comp.get("matches", []):
+            m.pop("actions", None)  # matière première de l'IA, inutile côté dashboard
     data["notification"]["summary"] = run_notif_agent(recap)
     with open(output_path, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
