@@ -68,7 +68,7 @@ def call_gemini_flash(system_instruction: str, user_prompt: str, temperature: fl
     """prefer_lite : commence par un modèle Flash-Lite (quota distinct sur l'offre gratuite)."""
     if not GEMINI_API_KEY:
         raise RuntimeError("GEMINI_API_KEY absente.")
-    if _DEADLINE and time.monotonic() > _DEADLINE:
+    if AI_BUDGET_SECONDS <= 0 or (_DEADLINE and time.monotonic() > _DEADLINE):
         raise RuntimeError("budget de temps IA épuisé")
     last_err = "aucun modèle"
     models = get_flash_models()
@@ -179,7 +179,7 @@ ACTION_FR = {
     "SAVE": "Arrêt", "VAR": "Intervention VAR", "RED_CARD": "Carton rouge", "YELLOW_CARD": "Carton jaune",
     "SUBSTITUTION": "Remplacement", "PENALTY_MISSED": "Penalty manqué", "OFFSIDE": "Hors-jeu",
 }
-NOISE_ACTIONS = {"FOUL", "FREE_KICK", "CORNER", "OFFSIDE", "THROW_IN", "GOAL_KICK"}
+NOISE_ACTIONS = {"FOUL", "FREE_KICK", "CORNER", "OFFSIDE", "THROW_IN", "GOAL_KICK", "DANGEROUS_ATTACK"}
 
 
 def official_actions(match: Dict[str, Any], names: Dict[str, str], limit: int = 150) -> List[str]:
@@ -198,20 +198,23 @@ def official_actions(match: Dict[str, Any], names: Dict[str, str], limit: int = 
     return out[:limit]
 
 
+STAT_FR = {"goals": "buts", "assists": "passes_decisives", "attempts": "tirs", "attempts_on_target": "tirs_cadres",
+           "key_passes": "passes_cles", "dribbling_successful": "dribbles_reussis", "recovered_ball": "ballons_recuperes",
+           "tackles_won": "duels_gagnes", "clearance_completed": "degagements", "saves": "arrets",
+           "goals_conceded": "buts_encaisses", "distance_covered": "distance_km"}
+
+
 def standout_players(match: Dict[str, Any], names: Dict[str, str]) -> List[Dict[str, Any]]:
-    """Joueurs aux statistiques marquantes (buts, passes déc., tirs, passes clés, arrêts)."""
-    players = []
-    lu = match.get("lineups") or {}
-    for side in ("home", "away"):
-        for p in (lu.get(side) or []) + (lu.get(f"{side}_subs") or []):
-            st = p.get("stats") or {}
-            score = (st.get("buts", 0) * 5 + st.get("passes_dec", 0) * 4 + st.get("arrets", 0) * 1.5
-                     + st.get("tirs_cadres", 0) * 1.5 + st.get("passes_cles", 0) + st.get("tirs", 0) * 0.5)
-            if score >= 3 or p.get("potm"):
-                players.append((score, {"joueur": p.get("name"), "equipe": names[side],
-                                        "homme_du_match": bool(p.get("potm")), **st}))
-    players.sort(key=lambda x: -x[0])
-    return [p for _, p in players[:8]]
+    """Les joueurs les mieux notés du match (note calculée par ratings.py) et l'homme du match UEFA."""
+    players = [p for p in (match.get("players") or {}).values() if p.get("rating") is not None]
+    players.sort(key=lambda p: -p["rating"])
+    chosen = players[:6] + [p for p in players[6:] if p.get("potm")]
+    out = []
+    for p in chosen:
+        st = {STAT_FR[k]: v for k, v in (p.get("stats") or {}).items() if k in STAT_FR}
+        out.append({"joueur": p["name"], "equipe": names[p["team"]], "poste": p.get("pos_fr"),
+                    "minutes": p.get("minutes"), "homme_du_match": bool(p.get("potm")), **st})
+    return out
 
 
 JOURS = ["lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche"]

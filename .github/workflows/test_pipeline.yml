@@ -11,7 +11,7 @@ permissions:
 jobs:
   test:
     # uniquement si le message de commit contient [test] (économise le quota Gemini)
-    if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[test]')
+    if: github.event_name == 'workflow_dispatch' || (contains(github.event.head_commit.message, '[test]') || contains(github.event.head_commit.message, '[sans-ia]'))
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:
@@ -23,6 +23,8 @@ jobs:
         env:
           PYTHONUNBUFFERED: "1"
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          # [sans-ia] dans le message de commit : aucun appel Gemini (résumés de repli)
+          AI_BUDGET_SECONDS: ${{ contains(github.event.head_commit.message, '[sans-ia]') && '0' || '900' }}
         run: |
           python - <<'PY'
           import sys, collector, agents_flash

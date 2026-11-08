@@ -17,10 +17,12 @@ Pièges connus :
   - GOAL : secondaryActor = gardien battu (le passeur est dans un événement ASSIST).
 """
 
+import math
+import re
 from datetime import date, timedelta
 from typing import Any, Dict, List, Optional, Tuple
 
-from netutil import fetch_json, fr, to_number
+from netutil import FLAG_CODES, fetch_json, fr, to_number
 
 COMPETITION_IDS = {"ucl": 1, "uel": 14, "uecl": 2019}
 STATUS_FR = {"FINISHED": "Terminé", "LIVE": "En cours", "UPCOMING": "À venir", "POSTPONED": "Reporté",
@@ -53,16 +55,24 @@ TEAM_STATS = [
     ("sprints", "Sprints"),
 ]
 
-# Statistiques individuelles conservées (pour les compos et le dossier de l'IA)
-PLAYER_STATS = {
-    "minutes_played_official": "minutes", "goals": "buts", "assists": "passes_dec", "attempts": "tirs",
-    "attempts_on_target": "tirs_cadres", "key_passes": "passes_cles", "passes_accuracy": "precision_passes",
-    "recovered_ball": "ballons_recuperes", "saves": "arrets", "distance_covered": "distance_km",
-    "top_speed": "vitesse_max", "dribbling_successful": "dribbles_reussis",
-}
+# Statistiques individuelles conservées (notation + fiche joueur). Clés UEFA telles quelles.
+PLAYER_STAT_KEYS = [
+    "minutes_played_official", "goals", "assists", "attempts", "attempts_on_target", "attempts_off_target",
+    "attempts_blocked", "key_passes", "dribbling", "dribbling_successful", "cross_attempted", "cross_completed",
+    "offsides", "passes_attempted", "passes_completed", "passes_accuracy", "passes_short_completed",
+    "passes_completed_forward", "delivery_into_penalty_area", "recovered_ball", "tackles", "tackles_won",
+    "clearance_attempted", "clearance_completed", "saves_and_blocks", "lost_balls", "fouls_committed",
+    "fouls_suffered", "yellow_cards", "red_cards", "saves", "goals_conceded", "shots_on_target_suffered",
+    "saves_over_shot_on_target_ratio", "clean_sheet", "distance_covered", "top_speed", "sprints",
+]
 
 SHOT_TYPES = {"GOAL", "SHOT_ON_GOAL", "SHOT_WIDE", "SHOT_BLOCKED"}
-MOMENTUM_WEIGHTS = {"GOAL": 5.0, "SHOT_ON_GOAL": 3.0, "SHOT_WIDE": 2.0, "SHOT_BLOCKED": 1.5, "CORNER": 1.0}
+# Poids des actions dans le momentum, attribuées à l'équipe qui ATTAQUE.
+# (Vérifié sur les données : SAVE a pour acteur principal le défenseur ou le gardien -> crédit à l'adversaire ;
+#  CORNER, OFFSIDE, FREE_KICK, DANGEROUS_ATTACK ont pour acteur l'équipe en possession.)
+MOMENTUM_WEIGHTS = {"GOAL": 6.0, "SHOT_ON_GOAL": 4.0, "SHOT_WIDE": 3.0, "SHOT_BLOCKED": 2.5,
+                    "DANGEROUS_ATTACK": 2.0, "CORNER": 2.0, "SAVE": 1.5, "OFFSIDE": 1.0, "FREE_KICK": 0.5}
+MOMENTUM_FOR_OPPONENT = {"SAVE"}
 
 
 # ------------------------------------------------------------------------------
@@ -88,18 +98,6 @@ def time_of(ev: Dict[str, Any]) -> Tuple[str, int, float]:
 
 def season_year_for(d: date) -> int:
     return d.year + 1 if d.month >= 7 else d.year
-
-
-# Code de fédération UEFA -> code de drapeau (ISO 3166-1, sous-divisions pour le Royaume-Uni), pour flagcdn.com
-FLAG_CODES = {
-    "ALB": "al", "AND": "ad", "ARM": "am", "AUT": "at", "AZE": "az", "BLR": "by", "BEL": "be", "BIH": "ba",
-    "BUL": "bg", "CRO": "hr", "CYP": "cy", "CZE": "cz", "DEN": "dk", "ENG": "gb-eng", "EST": "ee", "FRO": "fo",
-    "FIN": "fi", "FRA": "fr", "GEO": "ge", "GER": "de", "GIB": "gi", "GRE": "gr", "HUN": "hu", "ISL": "is",
-    "IRL": "ie", "ISR": "il", "ITA": "it", "KAZ": "kz", "KOS": "xk", "LVA": "lv", "LIE": "li", "LTU": "lt",
-    "LUX": "lu", "MLT": "mt", "MDA": "md", "MNE": "me", "NED": "nl", "MKD": "mk", "NIR": "gb-nir", "NOR": "no",
-    "POL": "pl", "POR": "pt", "ROU": "ro", "RUS": "ru", "SMR": "sm", "SCO": "gb-sct", "SRB": "rs", "SVK": "sk",
-    "SVN": "si", "ESP": "es", "SWE": "se", "SUI": "ch", "TUR": "tr", "UKR": "ua", "WAL": "gb-wls", "MON": "mc",
-}
 
 
 def team_info(t: Dict[str, Any]) -> Dict[str, Any]:
@@ -159,11 +157,16 @@ def fetch_team_stats(match_id: str) -> Dict[str, Dict[str, Any]]:
 
 
 def fetch_player_stats(match_id: str) -> Dict[str, Dict[str, Any]]:
+    """Statistiques individuelles officielles (fichier volumineux : ~4,7 Mo par match, on n'en garde qu'une partie)."""
     data = fetch_json(f"https://matchstats.uefa.com/v1/player-statistics/{match_id}") or []
     out = {}
     for p in data if isinstance(data, list) else []:
         raw = {s.get("name"): s.get("value") for s in p.get("statistics", [])}
-        kept = {label: to_number(raw.get(k)) for k, label in PLAYER_STATS.items() if to_number(raw.get(k))}
+        kept = {}
+        for k in PLAYER_STAT_KEYS:
+            v = to_number(raw.get(k))
+            if v:
+                kept[k] = round(v, 1) if isinstance(v, float) else v
         out[str(p.get("playerId"))] = kept
     return out
 
@@ -237,6 +240,8 @@ def build_events(events: List[Dict[str, Any]], match: Dict[str, Any], home_id: s
         label, minute, sk = time_of(e)
         pa, sa = e.get("primaryActor") or {}, e.get("secondaryActor") or {}
         p1, p2 = person_name(pa.get("person")), person_name(sa.get("person"))
+        id1 = str((pa.get("person") or {}).get("id") or "")
+        id2 = str((sa.get("person") or {}).get("id") or "")
         side = side_of(pa.get("team"))
 
         if etype == "GOAL":
@@ -245,23 +250,27 @@ def build_events(events: List[Dict[str, Any]], match: Dict[str, Any], home_id: s
             kind = "csc" if "OWN" in gtype else "pen" if "PENALTY" in gtype else ""
             if kind == "csc" and side:
                 side = "away" if side == "home" else "home"
-            assist = None
+            assist, assist_id = None, ""
             for a in assists:
                 if abs(time_of(a)[2] - sk) < 0.02 and side_of((a.get("primaryActor") or {}).get("team")) == side:
                     assist = person_name((a.get("primaryActor") or {}).get("person"))
+                    assist_id = str(((a.get("primaryActor") or {}).get("person") or {}).get("id") or "")
                     break
-            goals.append({"minute": label, "scorer": p1 or "—", "assist": assist, "team": side or "home", "kind": kind})
+            goals.append({"minute": label, "scorer": p1 or "—", "assist": assist, "team": side or "home", "kind": kind,
+                          "scorer_id": id1, "assist_id": assist_id, "base_minute": minute, "phase": e.get("phase", "")})
             detail = "Contre son camp" if kind == "csc" else "Penalty" if kind == "pen" else \
                 (f"Passe déc. : {assist}" if assist else "But")
             shown.append({"minute": minute, "minute_label": label, "type": "goal", "team": side or "home",
-                          "player": p1 or "—", "detail": detail})
+                          "player": p1 or "—", "player_id": id1, "detail": detail, "other_id": assist_id})
         elif etype in ("YELLOW_CARD", "RED_CARD") or "RED" in etype:
             ctype = "yellow_card" if etype == "YELLOW_CARD" else "red_card"
             shown.append({"minute": minute, "minute_label": label, "type": ctype, "team": side or "home",
-                          "player": p1 or "—", "detail": "Carton jaune" if ctype == "yellow_card" else "Carton rouge"})
+                          "player": p1 or "—", "player_id": id1,
+                          "detail": "Carton jaune" if ctype == "yellow_card" else "Carton rouge"})
         elif etype == "SUBSTITUTION":
             shown.append({"minute": minute, "minute_label": label, "type": "sub", "team": side or "home",
-                          "player": p2 or "Entrant", "detail": f"Remplace {p1}" if p1 else "Entrée en jeu"})
+                          "player": p2 or "Entrant", "player_id": id2, "other_id": id1,
+                          "detail": f"Remplace {p1}" if p1 else "Entrée en jeu"})
         elif etype == "VAR":
             decision = var_decision(e)
             if decision:
@@ -287,24 +296,54 @@ def build_events(events: List[Dict[str, Any]], match: Dict[str, Any], home_id: s
     return shown, goals, actions
 
 
-def compute_momentum(actions: List[Dict[str, Any]], bucket: int = 5) -> List[Dict[str, Any]]:
-    buckets: Dict[int, List[float]] = {}
+def compute_momentum(actions: List[Dict[str, Any]], sigma: float = 2.0) -> List[Dict[str, Any]]:
+    """
+    Indice de pression minute par minute (-100 = domination extérieur, +100 = domination domicile).
+    1. chaque action officielle est créditée à l'équipe qui attaque (poids MOMENTUM_WEIGHTS) ;
+    2. on calcule la différence domicile - extérieur pour chaque minute (temps additionnel inclus) ;
+    3. on lisse avec un noyau gaussien (sigma = 2 min), séparément pour chaque période ;
+    4. on normalise par la valeur maximale du match.
+    """
+    periods: Dict[str, Dict[Tuple[int, int], List[float]]] = {}
     for act in actions:
         w = MOMENTUM_WEIGHTS.get(act["type"])
-        if not w or act["team"] not in ("home", "away"):
+        side = act.get("team")
+        if not w or side not in ("home", "away") or not act.get("minute"):
             continue
-        base = int(str(act["minute"]).split("'")[0] or 0) if act["minute"] else 0
-        idx = min(max((max(base, 1) - 1) // bucket, 0), 23)
-        b = buckets.setdefault(idx, [0.0, 0.0])
-        b[0 if act["team"] == "home" else 1] += w
-    if not buckets:
+        if act["type"] in MOMENTUM_FOR_OPPONENT:
+            side = "away" if side == "home" else "home"
+        nums = [int(n) for n in re.findall(r"\d+", act["minute"])]
+        key = (nums[0], nums[1] if len(nums) > 1 else 0)
+        bucket = periods.setdefault(act.get("phase") or "", {}).setdefault(key, [0.0, 0.0])
+        bucket[0 if side == "home" else 1] += w
+    if not periods:
         return []
-    last = max(max(buckets), 17)
-    peak = max(abs(x - y) for x, y in buckets.values()) or 1.0
-    return [{"minute": (i + 1) * bucket, "home": round(buckets.get(i, [0, 0])[0], 1),
-             "away": round(buckets.get(i, [0, 0])[1], 1),
-             "value": round(100 * (buckets.get(i, [0, 0])[0] - buckets.get(i, [0, 0])[1]) / peak)}
-            for i in range(last + 1)]
+
+    points: List[Dict[str, Any]] = []
+    for phase, start_min, end_min in (("FIRST_HALF", 1, 45), ("SECOND_HALF", 46, 90),
+                                      ("FIRST_EXTRA_TIME", 91, 105), ("SECOND_EXTRA_TIME", 106, 120)):
+        data = periods.get(phase)
+        if data is None:
+            continue
+        extra = max([k[1] for k in data if k[0] == end_min] + [0])
+        keys = [(m, 0) for m in range(start_min, end_min + 1)] + [(end_min, i) for i in range(1, extra + 1)]
+        raw = [data.get(k, [0.0, 0.0]) for k in keys]
+        diff = [h - a for h, a in raw]
+        span = int(3 * sigma)
+        kernel = [math.exp(-(d * d) / (2 * sigma * sigma)) for d in range(-span, span + 1)]
+        for i, (m, x) in enumerate(keys):
+            acc = norm = 0.0
+            for j, kv in enumerate(kernel):
+                idx = i + j - span
+                if 0 <= idx < len(diff):
+                    acc += diff[idx] * kv
+                    norm += kv
+            points.append({"minute": m, "label": f"{m}'+{x}" if x else f"{m}'", "phase": phase,
+                           "home": round(raw[i][0], 1), "away": round(raw[i][1], 1), "smooth": acc / norm})
+    peak = max(abs(p["smooth"]) for p in points) or 1.0
+    for p in points:
+        p["value"] = round(100 * p.pop("smooth") / peak)
+    return points
 
 
 def half_stats(actions: List[Dict[str, Any]], phase: str) -> List[Dict[str, Any]]:
@@ -340,14 +379,45 @@ def build_team_stats(stats_by_team: Dict[str, Dict[str, Any]], home_id: str, awa
 # ------------------------------------------------------------------------------
 # Compositions
 # ------------------------------------------------------------------------------
+POSITION_FR = {"GOALKEEPER": "Gardien", "DEFENDER": "Défenseur", "MIDFIELDER": "Milieu", "FORWARD": "Attaquant"}
+
+
 def build_lineups(lineups: Dict[str, Any], events: List[Dict[str, Any]], potm_id: str,
-                  player_stats: Dict[str, Dict[str, Any]]) -> Dict[str, Any]:
+                  player_stats: Dict[str, Dict[str, Any]]) -> Tuple[Dict[str, Any], Dict[str, Dict[str, Any]]]:
+    """Retourne (compositions positionnées, fiches joueurs indexées par id)."""
     subs_out, subs_in = {}, {}
     for e in events:
         if e.get("type") == "SUBSTITUTION":
-            label = time_of(e)[0]
-            subs_out[str(((e.get("primaryActor") or {}).get("person") or {}).get("id"))] = label
-            subs_in[str(((e.get("secondaryActor") or {}).get("person") or {}).get("id"))] = label
+            label, minute, _ = time_of(e)
+            subs_out[str(((e.get("primaryActor") or {}).get("person") or {}).get("id"))] = (label, minute)
+            subs_in[str(((e.get("secondaryActor") or {}).get("person") or {}).get("id"))] = (label, minute)
+
+    players: Dict[str, Dict[str, Any]] = {}
+
+    def player_card(p: Dict[str, Any], side: str, starter: bool) -> Dict[str, Any]:
+        pl = p.get("player") or {}
+        pid = str(pl.get("id", ""))
+        country = (pl.get("countryCode") or "").upper()
+        stats = player_stats.get(pid, {})
+        out_ = subs_out.get(pid)
+        in_ = subs_in.get(pid)
+        minutes = stats.get("minutes_played_official")
+        if minutes is None:
+            start = 0 if starter else (in_[1] if in_ else 90)
+            end = out_[1] if out_ else 90
+            minutes = max(0, end - start)
+        players[pid] = {
+            "id": pid, "name": person_name(pl), "short": person_name(pl, short=True),
+            "number": str(p.get("jerseyNumber", "")), "team": side,
+            "pos": pl.get("fieldPosition", ""), "pos_fr": POSITION_FR.get(pl.get("fieldPosition", ""), ""),
+            "nationality": fr(pl.get("translations"), "countryName", country), "flag": FLAG_CODES.get(country, ""),
+            "age": to_number(pl.get("age")), "photo": pl.get("imageUrl", ""),
+            "captain": p.get("type") == "CAPTAIN", "potm": pid == potm_id, "starter": starter,
+            "subbed_in": in_[0] if in_ else None, "subbed_in_minute": in_[1] if in_ else None,
+            "subbed_out": out_[0] if out_ else None, "subbed_out_minute": out_[1] if out_ else None,
+            "minutes": int(minutes or 0), "stats": stats, "rating": None, "factors": [],
+        }
+        return players[pid]
 
     out: Dict[str, Any] = {"home": [], "away": [], "home_subs": [], "away_subs": [],
                            "home_formation": "", "away_formation": "", "home_coach": "", "away_coach": ""}
@@ -363,24 +433,21 @@ def build_lineups(lineups: Dict[str, Any], events: List[Dict[str, Any]], potm_id
         if coaches:
             out[f"{side}_coach"] = fr((coaches[0].get("person") or {}).get("translations"), "name")
         for p in field:
-            pl = p.get("player") or {}
-            pid = str(pl.get("id", ""))
+            card = player_card(p, side, starter=True)
             c = p.get("fieldCoordinate") or {}
             x, y = (to_number(c.get("x")) or 500) / 10, (to_number(c.get("y")) or 500) / 10
             depth = 4 + y * 0.44  # 0..100 -> 4..48 (demi-terrain)
             out[side].append({
-                "number": str(p.get("jerseyNumber", "")), "name": person_name(pl, short=True),
-                "pos": pl.get("fieldPosition", ""), "captain": p.get("type") == "CAPTAIN",
+                "id": card["id"], "number": card["number"], "name": card["short"], "pos": card["pos"],
+                "captain": card["captain"], "potm": card["potm"],
                 "x": round(x if side == "home" else 100 - x, 1),
                 "y": round(depth if side == "home" else 100 - depth, 1),
-                "rating": None, "potm": pid == potm_id,
-                "subbed_out": subs_out.get(pid), "stats": player_stats.get(pid, {}),
+                "rating": None, "subbed_out": card["subbed_out"],
             })
         for p in block.get("bench") or []:
-            pl = p.get("player") or {}
-            pid = str(pl.get("id", ""))
+            pid = str((p.get("player") or {}).get("id", ""))
             if pid in subs_in:
-                out[f"{side}_subs"].append({"number": str(p.get("jerseyNumber", "")), "name": person_name(pl, short=True),
-                                            "minute": subs_in[pid], "potm": pid == potm_id,
-                                            "stats": player_stats.get(pid, {})})
-    return out
+                card = player_card(p, side, starter=False)
+                out[f"{side}_subs"].append({"id": pid, "number": card["number"], "name": card["short"],
+                                            "minute": card["subbed_in"], "potm": card["potm"], "rating": None})
+    return out, players

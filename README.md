@@ -36,11 +36,39 @@ flagcdn.com. Angleterre, Écosse, pays de Galles et Irlande du Nord ont leur pro
 match UEFA par date, score et nom d'équipe. Il sert uniquement de matière première au récit de l'IA.
 
 **Valeurs calculées (jamais inventées)** :
-- *momentum* : actions offensives officielles (buts, tirs, corners) pondérées, par tranche de 5 minutes ;
+- *momentum* : indice de pression minute par minute. Les actions officielles (buts, tirs, attaques dangereuses,
+  corners, arrêts adverses, hors-jeu, coups francs obtenus) sont pondérées et créditées à l'équipe qui attaque,
+  puis lissées sur environ 5 minutes ;
 - *statistiques par mi-temps* : comptage des actions officielles de chaque période.
 
 FotMob et SofaScore ont été écartés : leurs protections anti-robots (en-tête signé, Cloudflare) bloquent les
 serveurs de GitHub Actions, et les contourner irait contre leurs conditions d'utilisation.
+
+## Notes des joueurs (`ratings.py`)
+
+Chaque joueur ayant joué au moins 10 minutes reçoit une note sur 10, calculée à partir des statistiques officielles
+UEFA :
+
+1. **Joueurs de champ** : chaque statistique est standardisée sur l'ensemble des joueurs de champ de la collecte,
+   puis pondérée par les coefficients qui expliquent les notes FotMob dans Ball, Huynh & Varley (2025),
+   *Journal of Sports Sciences* 43:7 (Table 2) : tirs cadrés, passes clés, ballons récupérés, dribbles réussis,
+   dégagements, duels, passes courtes, fautes obtenues, pertes de balle… Les variables absentes chez l'UEFA
+   (xG, touches, interceptions) sont exclues ou remplacées par une variable proche.
+2. **Contributions directes**, que l'étude retire de son modèle : bonus pour les buts et les passes décisives,
+   malus pour les cartons.
+3. **Gardiens** (exclus de l'étude) : arrêts, buts encaissés, clean sheet, jeu au pied.
+4. **Résultat pendant le temps de jeu**, d'après Wolf, Schmitt & Schuller (2020), *Journal of Sports Analytics* 6 :
+   écart de buts de l'équipe quand le joueur était sur le terrain, comparé au résultat attendu. Les défenseurs
+   reçoivent aussi un bonus de clean sheet.
+5. **Calibrage par compétition** : la partie « statistiques » des joueurs de champ est ramenée à une moyenne de 6,8
+   et un écart-type de 0,55. Buts, passes décisives et cartons s'ajoutent tels quels, ce qui redonne une
+   distribution proche de celle de l'étude (moyenne ~6,9, écart-type ~0,75, bornes 3-10). Les gardiens ont une
+   échelle fixe. Pour les entrées tardives, la partie « statistiques » est ramenée vers la moyenne, mais pas les
+   buts ni les passes décisives.
+
+La fiche de chaque joueur (cliquable sur la compo, dans le déroulé et sur les buteurs) affiche sa note, les
+facteurs qui l'expliquent et ses statistiques. Contrôle : la collecte journalise à quelle fréquence le joueur le
+mieux noté est l'homme du match désigné par l'UEFA.
 
 ## Résumés
 
@@ -64,8 +92,8 @@ Aucune dépendance externe (bibliothèque standard Python 3.9+).
 ## Tests sur une branche
 
 Le workflow `test_pipeline.yml` exécute tout le pipeline sur la semaine du 3 au 5 novembre 2026, sans push ntfy
-ni commit, lorsqu'un commit de la branche contient `[test]` dans son message. C'est fait ainsi pour économiser le
-quota Gemini.
+ni commit, lorsqu'un commit de la branche contient `[test]` dans son message (ou `[sans-ia]` pour un test sans appel à
+Gemini). C'est fait ainsi pour économiser le quota Gemini.
 
 ## Secrets GitHub Actions
 
