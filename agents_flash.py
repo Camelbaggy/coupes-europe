@@ -13,6 +13,7 @@ Agents Gemini Flash : rédaction et contrôle des résumés des matchs des clubs
 
 import json
 import os
+from datetime import date
 import re
 import time
 import urllib.error
@@ -213,6 +214,20 @@ def standout_players(match: Dict[str, Any], names: Dict[str, str]) -> List[Dict[
     return [p for _, p in players[:8]]
 
 
+JOURS = ["lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche"]
+MOIS = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre",
+        "novembre", "décembre"]
+
+
+def date_fr(iso: str) -> Optional[str]:
+    """« 2026-11-05 » -> « jeudi 5 novembre 2026 »."""
+    try:
+        d = date.fromisoformat(iso[:10])
+    except (TypeError, ValueError):
+        return None
+    return f"{JOURS[d.weekday()]} {d.day}{'er' if d.day == 1 else ''} {MOIS[d.month - 1]} {d.year}"
+
+
 def build_match_dossier(comp_name: str, card: Dict[str, Any], match: Dict[str, Any],
                         standings_row: Dict[str, Any]) -> Dict[str, Any]:
     names = _side_names(card)
@@ -221,6 +236,7 @@ def build_match_dossier(comp_name: str, card: Dict[str, Any], match: Dict[str, A
     return {
         "competition": comp_name,
         "journee": match.get("matchday", ""),
+        "date": date_fr(match.get("date", "")),
         "club_suivi": card["club_name"],
         "domicile": names["home"],
         "exterieur": names["away"],
@@ -260,7 +276,7 @@ CE QUE TU DOIS RACONTER : le DÉROULÉ du match, pas une fiche technique.
 INTERDIT :
 - énumérer les buts sous forme de liste (« buts de X (9'), Y (12'), Z (50') ») ; intègre-les au récit, au besoin en n'en citant que les plus importants ;
 - toute phrase commençant par « Score final vérifié » ou « Chronologie des buts » ;
-- tout chiffre, nom ou minute absent du dossier ; n'invente ni ambiance, ni blessure, ni déclaration.
+- tout chiffre, nom, minute, jour ou date absent du dossier (le jour du match est dans `date`) ; n'invente ni ambiance, ni blessure, ni déclaration, ni type d'action (contre-attaque, centre…) non décrit dans le dossier.
 
 Le fil ESPN est en anglais : traduis-le naturellement. En cas de désaccord entre le fil ESPN et les données UEFA, les données UEFA font foi.
 Réponds uniquement avec le texte du résumé."""
@@ -286,7 +302,8 @@ Rejette (is_valid=false) si :
 2. une statistique chiffrée contredit `statistiques`, `statistiques_par_mi_temps` ou `joueurs_en_vue` ;
 3. le rang, les points ou la zone contredisent `classement_apres_match` ;
 4. le texte affirme un fait précis introuvable dans le dossier (blessure, déclaration, record...) ;
-5. le texte n'est qu'une liste de buts et de classement, sans récit du déroulé.
+5. le texte n'est qu'une liste de buts et de classement, sans récit du déroulé ;
+6. un jour de la semaine, une date, un stade ou une compétition cité ne correspond pas au dossier.
 
 N'objecte PAS au style, aux traductions des moments du fil, ni aux formulations interprétatives raisonnables (« a dominé », « a souffert », « temps fort ») cohérentes avec `phases_de_domination`, les statistiques ou le fil."""
 
@@ -467,7 +484,7 @@ def orchestrate_flash_agents(input_path: str = "data_raw.json", output_path: str
                 print(f"[REPLI] Résumé déterministe pour {card['club_name']}.")
                 text = build_deterministic_fallback_summary(card, match, row)
                 card["summary_source"] = "deterministe"
-            card["ai_summary"] = text
+            card["ai_summary"] = " ".join(text.split())
             card["ai_verified"] = True
             card.pop("raw_comments_for_llm", None)
 
