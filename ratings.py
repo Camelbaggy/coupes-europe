@@ -32,6 +32,7 @@ MIN_MINUTES = 10
 TARGET_MEAN = 6.8          # moyenne des joueurs de champ hors contributions directes
 PERF_SD = 0.55             # dispersion de la partie « statistiques » ; buts/passes déc. ajoutent le reste
 GK_BASE = 6.6
+Z_CAP = 3.0                # une statistique rare (ex. 4 passes clés) ne peut pas dépasser 3 écarts-types
 
 # (clé UEFA, poids, libellé du facteur) — poids d'après la colonne FotMob de la Table 2 de [1]
 OUTFIELD_WEIGHTS: List[Tuple[str, float, str]] = [
@@ -138,7 +139,8 @@ def rate_matches(matches: List[Dict[str, Any]]) -> Dict[str, Any]:
             factors = []
             for key, w, label in OUTFIELD_WEIGHTS:
                 mu, sd = z[key]
-                factors.append((label, w * (float(st.get(key, 0) or 0) - mu) / sd, False))
+                zval = max(-Z_CAP, min(Z_CAP, (float(st.get(key, 0) or 0) - mu) / sd))
+                factors.append((label, w * zval, False))
             if p["pos"] == "DEFENDER" and conceded == 0 and (p.get("minutes") or 0) >= 60:
                 factors.append(("clean sheet", CLEAN_SHEET_DEF, False))
         factors.append(("résultat pendant son temps de jeu", res, False))
@@ -172,6 +174,8 @@ def rate_matches(matches: List[Dict[str, Any]]) -> Dict[str, Any]:
         else:
             k = scale
             rating = TARGET_MEAN + scale * (perf - mu_perf) * weight + direct
+        if rating > 9.0:  # au-delà de 9, compression : le 10 reste exceptionnel
+            rating = 9.0 + (rating - 9.0) * 0.5
         p["rating"] = round(max(3.0, min(10.0, rating)), 1)
         visible = [(lbl, v * (1 if d else k * weight)) for lbl, v, d in factors
                    if abs(v * (1 if d else k * weight)) >= 0.05]

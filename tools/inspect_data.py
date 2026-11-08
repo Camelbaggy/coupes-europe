@@ -32,8 +32,11 @@ for k, c in d["competitions"].items():
         if ps:
             print("facteurs du mieux noté:", ps[0]["factors"])
     allp = [p for m in c["matches"] for p in (m.get("players") or {}).values() if p.get("rating") is not None]
+    best = sorted(allp, key=lambda p: -p["rating"])[:5]
+    print("meilleures notes:", [(p["name"], p["pos_fr"], p["rating"], [f["label"] for f in p["factors"][:3]]) for p in best])
     for pos in ("GOALKEEPER", "DEFENDER", "MIDFIELDER", "FORWARD"):
         r = [p["rating"] for p in allp if p["pos"] == pos]
         if r:
-            print(f"  {pos}: {len(r)} joueurs, moyenne {sum(r) / len(r):.2f}, min {min(r)}, max {max(r)}")
+            print(f"  {pos}: {len(r)} joueurs, moyenne {sum(r) / len(r):.2f}, min {min(r)}, max {max(r)}, "
+                  f">= 9 : {sum(1 for x in r if x >= 9)}")
     print("sans drapeau de nationalité:", sorted({p["nationality"] for m in c["matches"] for p in (m.get("players") or {}).values() if not p.get("flag")}))
