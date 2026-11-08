@@ -3,6 +3,8 @@ name: Mise à jour Coupes d'Europe (23h30 & Test Semaine)
 on:
   schedule:
     - cron: '30 22 * * 2,3,4'
+    # finale de la Ligue des champions : un samedi de fin mai / début juin (sans match, le pipeline s'arrête seul)
+    - cron: '30 22 * 5,6 6'
 
   workflow_dispatch:
     inputs:
