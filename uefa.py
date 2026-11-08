@@ -117,9 +117,16 @@ def fetch_matches(comp_key: str, dates: List[str]) -> List[Dict[str, Any]]:
 
 
 def fetch_events(match_id: str) -> List[Dict[str, Any]]:
-    data = fetch_json(f"https://match.uefa.com/v5/matches/{match_id}/events?filter=ALL&offset=0&limit=1000"
-                      f"&order=ASC&language=FR", raw_name=f"uefa_events_{match_id}.json")
-    evs = data if isinstance(data, list) else []
+    evs: List[Dict[str, Any]] = []
+    page = 500  # au-delà, l'API répond HTTP 400
+    for offset in range(0, 5000, page):
+        data = fetch_json(f"https://match.uefa.com/v5/matches/{match_id}/events?filter=ALL&offset={offset}"
+                          f"&limit={page}&order=ASC&language=FR", raw_name=f"uefa_events_{match_id}_{offset}.json")
+        if not isinstance(data, list):
+            break
+        evs.extend(data)
+        if len(data) < page:
+            break
     evs.sort(key=lambda e: (0 if e.get("phase") == "FIRST_HALF" else 1, time_of(e)[2]))
     return evs
 

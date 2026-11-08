@@ -23,7 +23,7 @@ GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "").strip()
 API_ROOT = "https://generativelanguage.googleapis.com/v1beta"
 FALLBACK_MODELS = ["gemini-flash-latest", "gemini-2.5-flash"]
 _MODELS_CACHE: List[str] = []
-AI_BUDGET_SECONDS = int(os.environ.get("AI_BUDGET_SECONDS", "600"))  # budget global de la phase IA
+AI_BUDGET_SECONDS = int(os.environ.get("AI_BUDGET_SECONDS", "900"))  # budget global de la phase IA
 _DEADLINE: Optional[float] = None
 
 
@@ -83,7 +83,7 @@ def call_gemini_flash(system_instruction: str, user_prompt: str, temperature: fl
         )
         for attempt in range(2):
             try:
-                with urllib.request.urlopen(req, timeout=60) as resp:
+                with urllib.request.urlopen(req, timeout=75) as resp:
                     body = json.loads(resp.read().decode("utf-8"))
                 cand = (body.get("candidates") or [{}])[0]
                 parts = cand.get("content", {}).get("parts", [])
@@ -127,6 +127,13 @@ def halftime_score(goals: List[Dict[str, Any]]) -> str:
     h = sum(1 for g in goals if g["team"] == "home" and _minute_of(g["minute"]) <= 45)
     a = sum(1 for g in goals if g["team"] == "away" and _minute_of(g["minute"]) <= 45)
     return f"{h}-{a}"
+
+
+def goals_complete(card: Dict[str, Any]) -> bool:
+    """Vrai si la liste des buts correspond exactement au score officiel."""
+    goals = card.get("goals", [])
+    final = f"{card['home_team']['score']}-{card['away_team']['score']}"
+    return (goals[-1]["score_after"] == final) if goals else final == "0-0"
 
 
 def dominance_phases(momentum: List[Dict[str, Any]], names: Dict[str, str]) -> List[str]:
@@ -215,7 +222,7 @@ def build_match_dossier(comp_name: str, card: Dict[str, Any], match: Dict[str, A
         "stade": match.get("venue", ""),
         "affluence": match.get("attendance"),
         "score_final": f"{names['home']} {card['home_team']['score']} - {card['away_team']['score']} {names['away']}",
-        "score_mi_temps": halftime_score(goals),
+        "score_mi_temps": halftime_score(goals) if goals_complete(card) else None,
         "tirs_au_but": match.get("penalties") or None,
         "buts": [{"minute": g["minute"], "buteur": g["scorer"], "passeur": g.get("assist"),
                   "equipe": names[g["team"]], "type": {"pen": "penalty", "csc": "contre son camp"}.get(g.get("kind"), ""),
@@ -319,6 +326,7 @@ def build_deterministic_fallback_summary(card: Dict[str, Any], match: Dict[str, 
     else:
         s1 += "."
 
+    complete = goals_complete(card)  # sinon, on ne raconte pas la chronologie des buts
     ht = halftime_score(goals)
     first = [g for g in goals if _minute_of(g["minute"]) <= 45]
     second = [g for g in goals if _minute_of(g["minute"]) > 45]
@@ -332,14 +340,18 @@ def build_deterministic_fallback_summary(card: Dict[str, Any], match: Dict[str, 
             bits.append(who)
         return ", puis ".join(bits) if len(bits) <= 2 else ", ".join(bits[:-1]) + " et " + bits[-1]
 
-    if first:
+    if not complete:
+        s2 = ""
+    elif first:
         s2 = f"En première période, {goal_phrase(first)} {'fait' if len(first) == 1 else 'font'} évoluer le score, {ht} à la pause."
     else:
         dom1 = [p for p in phases[:3] if "temps fort" in p]
         s2 = "Aucun but n'est inscrit avant la pause" + (f" malgré un {dom1[0].split(' : ')[1]}" if dom1 else "") + "."
 
     reds = [e for e in match.get("events", []) if e["type"] == "red_card"]
-    if second:
+    if not complete:
+        s3 = "Le détail des buts n'est pas disponible"
+    elif second:
         s3 = f"Après le repos, {goal_phrase(second)} {'trouve' if len(second) == 1 else 'trouvent'} le chemin des filets"
     else:
         s3 = "La seconde période ne change rien au tableau d'affichage"
