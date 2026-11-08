@@ -96,5 +96,9 @@ FLAG_CODES = {
     # Asie / Océanie
     "JPN": "jp", "KOR": "kr", "CHN": "cn", "AUS": "au", "NZL": "nz", "IRN": "ir", "IRQ": "iq", "KSA": "sa",
     "QAT": "qa", "UAE": "ae", "UZB": "uz", "JOR": "jo", "SYR": "sy", "LBN": "lb", "PLE": "ps", "IND": "in",
-    "IDN": "id", "THA": "th", "VIE": "vn", "PHI": "ph", "KGZ": "kg", "TJK": "tj", "TKM": "tm",
+    "IDN": "id", "THA": "th", "VIE": "vn", "PHI": "ph", "KGZ": "kg", "TJK": "tj", "TKM": "tm", "PAK": "pk",
+    # Variantes de codes rencontrées
+    "TGO": "tg", "NCL": "nc", "REU": "re", "MYT": "yt", "MRI": "mu", "CHA": "td", "DJI": "dj", "ERI": "er",
+    "SSD": "ss", "SOM": "so", "LES": "ls", "SWZ": "sz", "SEY": "sc", "STP": "st", "GUY": "gy", "BRB": "bb",
+    "LCA": "lc", "SKN": "kn", "ATG": "ag", "BLZ": "bz", "NCA": "ni", "ARU": "aw", "BER": "bm", "PUR": "pr",
 }

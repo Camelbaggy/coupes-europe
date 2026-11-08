@@ -164,8 +164,13 @@ def collect_dates_data(target_dates: List[str], label_prefix: str = "Soirée",
         print(f"[INFO] {meta['name']} : {len(matches)} match(s), {len(standings)} équipes au classement, "
               f"{len(focus)} fiche(s) club français.")
 
-    all_matches = [m for c in output["competitions"].values() for m in c["matches"] if m.get("players")]
-    output["ratings"] = ratings.rate_matches(all_matches)
+    # Notes : standardisation et calibrage par compétition (niveaux différents entre LDC, EL et ECL)
+    output["ratings"] = {}
+    for comp_key, comp in output["competitions"].items():
+        rated = [m for m in comp["matches"] if m.get("players")]
+        if rated:
+            print(f"[NOTES] {comp['name']} :")
+            output["ratings"][comp_key] = ratings.rate_matches(rated)
     output["notification"]["match_night"] = finished_total > 0
     with open(output_path, "w", encoding="utf-8") as f:
         json.dump(output, f, ensure_ascii=False, indent=2)

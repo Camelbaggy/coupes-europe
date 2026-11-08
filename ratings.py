@@ -19,7 +19,9 @@ Méthode :
   2. Bonus explicites pour les contributions directes (buts, passes décisives), que [1] retire de son modèle.
   3. Gardiens (exclus de [1]) : formule dédiée (arrêts, buts encaissés, clean sheet, jeu au pied).
   4. Composante résultat de [2] pour tous ; bonus clean sheet pour les défenseurs.
-  5. Calibrage final pour retrouver la distribution de [1] (moyenne 6,85, écart-type 0,75), bornes 3-10.
+  5. Calibrage par compétition : la partie « statistiques » des joueurs de champ est ramenée à une moyenne de
+     6,8 et un écart-type de 0,55 ; buts, passes décisives et cartons s'ajoutent tels quels, ce qui redonne
+     une distribution proche de [1] (moyenne ~6,9, écart-type ~0,75). Gardiens sur échelle fixe. Bornes 3-10.
   6. Les entrées tardives sont ramenées vers la moyenne (peu de temps de jeu = peu d'information).
 """
 
@@ -27,7 +29,9 @@ from statistics import mean, pstdev
 from typing import Any, Dict, List, Tuple
 
 MIN_MINUTES = 10
-TARGET_MEAN, TARGET_SD = 6.85, 0.75
+TARGET_MEAN = 6.8          # moyenne des joueurs de champ hors contributions directes
+PERF_SD = 0.55             # dispersion de la partie « statistiques » ; buts/passes déc. ajoutent le reste
+GK_BASE = 6.6
 
 # (clé UEFA, poids, libellé du facteur) — poids d'après la colonne FotMob de la Table 2 de [1]
 OUTFIELD_WEIGHTS: List[Tuple[str, float, str]] = [
@@ -96,13 +100,14 @@ def _result_component(p: Dict[str, Any], match: Dict[str, Any]) -> Tuple[float, 
 
 
 def _goalkeeper_score(p: Dict[str, Any], conceded_on_pitch: int) -> List[Tuple[str, float]]:
+    """Échelle fixe (non calibrée) : base 6,6 ; un gardien moyen (3 arrêts, 1 à 2 buts) tourne autour de 6,8."""
     st = p["stats"]
     factors = [
-        ("arrêts", 0.35 * float(st.get("saves", 0) or 0)),
-        ("buts encaissés", -0.45 * float(st.get("goals_conceded", conceded_on_pitch) or 0)),
+        ("arrêts", 0.25 * float(st.get("saves", 0) or 0)),
+        ("buts encaissés", -0.4 * float(st.get("goals_conceded", conceded_on_pitch) or 0)),
     ]
     if conceded_on_pitch == 0 and (p.get("minutes") or 0) >= 60:
-        factors.append(("clean sheet", 0.55))
+        factors.append(("clean sheet", 0.35))
     acc = st.get("passes_accuracy")
     if acc is not None and (st.get("passes_attempted") or 0) >= 10:
         factors.append(("jeu au pied", 0.01 * (float(acc) - 75)))
@@ -151,20 +156,25 @@ def rate_matches(matches: List[Dict[str, Any]]) -> Dict[str, Any]:
             factors.append(("carton rouge", RED, True))
         raw[id(p)] = (sum(v for _, v, d in factors if not d), sum(v for _, v, d in factors if d), factors)
 
-    totals = [raw[id(p)][0] + raw[id(p)][1] for _, p in rated]
-    sd = pstdev(totals) or 1.0
-    scale = TARGET_SD / sd if len(totals) >= 20 else 1.0
-    mu_perf = mean(raw[id(p)][0] for _, p in rated)
-    mu_direct = mean(raw[id(p)][1] for _, p in rated)
+    out_ids = [id(p) for _, p in rated if p["pos"] != "GOALKEEPER"]
+    perfs = [raw[i][0] for i in out_ids] or [0.0]
+    mu_perf = mean(perfs)
+    sd_perf = pstdev(perfs) if len(perfs) >= 20 else 0.0
+    scale = PERF_SD / sd_perf if sd_perf > 1e-9 else 1.0
     for m, p in rated:
         perf, direct, factors = raw[id(p)]
         # Temps de jeu court : la partie « statistiques » est ramenée vers la moyenne (peu d'information),
         # les contributions directes (buts, passes décisives, cartons) comptent en entier.
         weight = min(1.0, 0.35 + 0.65 * (p["minutes"] / 60))
-        rating = TARGET_MEAN + scale * ((perf - mu_perf) * weight + (direct - mu_direct))
+        if p["pos"] == "GOALKEEPER":
+            k = 1.0  # échelle fixe
+            rating = GK_BASE + perf * weight + direct
+        else:
+            k = scale
+            rating = TARGET_MEAN + scale * (perf - mu_perf) * weight + direct
         p["rating"] = round(max(3.0, min(10.0, rating)), 1)
-        visible = [(lbl, v * scale * (1 if d else weight)) for lbl, v, d in factors
-                   if abs(v * scale * (1 if d else weight)) >= 0.05]
+        visible = [(lbl, v * (1 if d else k * weight)) for lbl, v, d in factors
+                   if abs(v * (1 if d else k * weight)) >= 0.05]
         visible.sort(key=lambda x: -abs(x[1]))
         p["factors"] = [{"label": lbl, "value": round(v, 2)} for lbl, v in visible[:6]]
 

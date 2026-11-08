@@ -60,9 +60,11 @@ UEFA :
 4. **Résultat pendant le temps de jeu**, d'après Wolf, Schmitt & Schuller (2020), *Journal of Sports Analytics* 6 :
    écart de buts de l'équipe quand le joueur était sur le terrain, comparé au résultat attendu. Les défenseurs
    reçoivent aussi un bonus de clean sheet.
-5. **Calibrage** sur la distribution observée dans l'étude (moyenne 6,85, écart-type 0,75, bornes 3-10). Pour les
-   entrées tardives, la partie « statistiques » est ramenée vers la moyenne, mais pas les buts ni les passes
-   décisives.
+5. **Calibrage par compétition** : la partie « statistiques » des joueurs de champ est ramenée à une moyenne de 6,8
+   et un écart-type de 0,55. Buts, passes décisives et cartons s'ajoutent tels quels, ce qui redonne une
+   distribution proche de celle de l'étude (moyenne ~6,9, écart-type ~0,75, bornes 3-10). Les gardiens ont une
+   échelle fixe. Pour les entrées tardives, la partie « statistiques » est ramenée vers la moyenne, mais pas les
+   buts ni les passes décisives.
 
 La fiche de chaque joueur (cliquable sur la compo, dans le déroulé et sur les buteurs) affiche sa note, les
 facteurs qui l'expliquent et ses statistiques. Contrôle : la collecte journalise à quelle fréquence le joueur le

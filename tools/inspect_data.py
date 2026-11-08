@@ -24,7 +24,7 @@ for k, c in d["competitions"].items():
         print(f"momentum: {len(mo)} points, actions créditées dom {sum(p['home'] for p in mo):.1f} / ext {sum(p['away'] for p in mo):.1f}")
         print("courbe:", "".join("▲" if p["value"] > 20 else "▼" if p["value"] < -20 else "·" for p in mo))
         lu = m["lineups"]
-        print("compo dom:", [(p["number"], p["name"], p["x"], p["y"], p.get("subbed_out"), p.get("stats")) for p in lu.get("home", [])][:11])
+        print("compo dom:", [(p["number"], p["name"], p["x"], p["y"], p.get("subbed_out"), p.get("rating")) for p in lu.get("home", [])][:11])
         print("entrés dom:", lu.get("home_subs"))
         ps = sorted((p for p in (m.get("players") or {}).values() if p.get("rating") is not None), key=lambda p: -p["rating"])
         print("top 5 notes:", [(p["name"], p["pos_fr"], p["minutes"], p["rating"], "⭐" if p["potm"] else "") for p in ps[:5]])
