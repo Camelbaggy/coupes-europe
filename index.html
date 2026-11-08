@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <meta name="theme-color" content="#0b0f17" />
-  <title>Coupes d'Europe — Dashboard Mobile</title>
+  <title>Coupes d'Europe</title>
   <style>
     :root {
       --bg-main: #0b0f17;
@@ -656,6 +656,17 @@
     .stat-bar-home { background: var(--home-color); }
     .stat-bar-away { background: var(--away-color); }
 
+    .goal-chip.mine {
+      border-color: rgba(96, 165, 250, 0.45);
+      color: #e0f2fe;
+    }
+    .momentum-note, .subs-list {
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      margin-top: 10px;
+      line-height: 1.5;
+    }
+
     .empty-state {
       background: var(--bg-card);
       border: 1px dashed var(--border);
@@ -674,7 +685,7 @@
       <div class="app-title">
         <span>⚽ Coupes d'Europe</span>
       </div>
-      <span class="badge-live" id="last-updated-badge">Mise à jour 23h30</span>
+      <span class="badge-live" id="last-updated-badge">Chargement…</span>
     </div>
     <nav class="tabs-bar">
       <button class="tab-btn active" data-comp="ucl" onclick="switchCompetition('ucl')">Ligue des Champions</button>
@@ -743,160 +754,153 @@
   </div>
 
   <script>
-    // Données embarquées par défaut (remplacées automatiquement par fetch('data.json') sur GitHub Pages)
-    const FALLBACK_DATA = {"last_updated": "2026-11-05T23:30:00Z", "notification": {"title": "Coupes d'Europe : Résultats et classements à jour", "summary": "Victoire de Monaco, nul du PSG, succès de Lyon en Ligue Europa. Classements des 36 équipes mis à jour.", "match_night": true}, "competitions": {"ucl": {"id": "ucl", "name": "Ligue des Champions", "short_name": "LDC", "stage_type": "league", "matchday_label": "Journée 4 sur 8", "french_clubs_focus": [{"match_id": "ucl_2026_j4_psg_atm", "club_name": "Paris Saint-Germain", "club_rank": 19, "club_zone": "playoff", "home_team": {"name": "Paris Saint-Germain", "short": "PSG", "is_french": true, "score": 1}, "away_team": {"name": "Atlético de Madrid", "short": "ATM", "is_french": false, "score": 1}, "status": "Terminé", "goals": [{"minute": "14'", "scorer": "W. Zaïre-Emery", "assist": "O. Dembélé", "team": "home", "score_after": "1-0"}, {"minute": "18'", "scorer": "N. Molina", "assist": "G. Simeone", "team": "away", "score_after": "1-1"}], "ai_summary": "Le Paris Saint-Germain concède le partage des points au Parc des Princes malgré une domination territoriale écrasante (71 % de possession et 22 tirs à 4). Après l'ouverture du score rapide de Warren Zaïre-Emery d'un piqué subtil (14'), les Parisiens ont été surpris quatre minutes plus tard par la réplique de Nahuel Molina (18'). Le tournant du match a résidé dans la performance XXL de Jan Oblak, auteur de 8 arrêts décisifs face à Barcola et Hakimi en seconde période. Avec ce match nul (5 points en 4 journées), le PSG stagne à la 19e place dans la zone des barrages et devra impérativement s'imposer lors de ses déplacements de l'hiver pour espérer viser le Top 8.", "ai_verified": true}, {"match_id": "ucl_2026_j4_bol_asm", "club_name": "AS Monaco", "club_rank": 3, "club_zone": "top8", "home_team": {"name": "Bologne FC", "short": "BOL", "is_french": false, "score": 0}, "away_team": {"name": "AS Monaco", "short": "ASM", "is_french": true, "score": 1}, "status": "Terminé", "goals": [{"minute": "86'", "scorer": "T. Kehrer", "assist": "B. Embolo", "team": "away", "score_after": "0-1"}], "ai_summary": "L'AS Monaco réalise une superbe opération en Italie en s'imposant sur le fil face à Bologne (0-1). Dans une rencontre longtemps fermée et hachée par les fautes (27 au total), les Monégasques ont fait preuve d'une grande solidité défensive avant d'accélérer dans le dernier quart d'heure. Le tournant est intervenu à la 86e minute sur un corner prolongé par Breel Embolo vers Thilo Kehrer, qui a poussé le ballon au fond des filets à bout portant. Grâce à ce troisième succès en quatre rencontres (10 points), Monaco grimpe sur le podium provisoire de la phase de ligue (3e) et prend une sérieuse option sur la qualification directe en huitièmes de finale.", "ai_verified": true}], "matches": [{"match_id": "ucl_2026_j4_psg_atm", "kickoff": "21:00", "status": "Terminé", "is_french_match": true, "home_team": {"name": "Paris Saint-Germain", "short": "PSG", "is_french": true, "score": 1, "formation": "4-3-3"}, "away_team": {"name": "Atlético de Madrid", "short": "ATM", "is_french": false, "score": 1, "formation": "5-3-2"}, "events": [{"minute": 14, "type": "goal", "team": "home", "player": "W. Zaïre-Emery", "detail": "Passe déc. : O. Dembélé"}, {"minute": 18, "type": "goal", "team": "away", "player": "N. Molina", "detail": "Tir du pied droit"}, {"minute": 62, "type": "yellow_card", "team": "away", "player": "Koke", "detail": "Faute d'antijeu"}, {"minute": 67, "type": "sub", "team": "home", "player": "F. Ruiz", "detail": "Remplace Vitinha"}, {"minute": 78, "type": "yellow_card", "team": "home", "player": "A. Hakimi", "detail": "Contestation"}], "momentum": [{"minute": 1, "value": 15}, {"minute": 5, "value": 32}, {"minute": 10, "value": 45}, {"minute": 14, "value": 68}, {"minute": 18, "value": -42}, {"minute": 25, "value": 28}, {"minute": 35, "value": 52}, {"minute": 45, "value": 38}, {"minute": 50, "value": 60}, {"minute": 60, "value": 74}, {"minute": 70, "value": 48}, {"minute": 80, "value": 82}, {"minute": 85, "value": -25}, {"minute": 90, "value": 88}], "lineups": {"home": [{"number": 1, "name": "G. Donnarumma", "pos": "GK", "x": 50, "y": 8, "rating": 6.7, "subbed_out": null}, {"number": 2, "name": "A. Hakimi", "pos": "RB", "x": 85, "y": 28, "rating": 7.8, "subbed_out": null}, {"number": 5, "name": "Marquinhos", "pos": "CB", "x": 62, "y": 24, "rating": 7.2, "subbed_out": null}, {"number": 51, "name": "W. Pacho", "pos": "CB", "x": 38, "y": 24, "rating": 7.1, "subbed_out": null}, {"number": 25, "name": "N. Mendes", "pos": "LB", "x": 15, "y": 28, "rating": 7.0, "subbed_out": null}, {"number": 33, "name": "W. Zaïre-Emery", "pos": "CM", "x": 70, "y": 52, "rating": 8.1, "subbed_out": null}, {"number": 17, "name": "Vitinha", "pos": "CM", "x": 50, "y": 46, "rating": 7.3, "subbed_out": 67}, {"number": 87, "name": "J. Neves", "pos": "CM", "x": 30, "y": 52, "rating": 7.4, "subbed_out": null}, {"number": 10, "name": "O. Dembélé", "pos": "RW", "x": 82, "y": 78, "rating": 7.6, "subbed_out": null}, {"number": 11, "name": "M. Asensio", "pos": "ST", "x": 50, "y": 82, "rating": 6.8, "subbed_out": 67}, {"number": 29, "name": "B. Barcola", "pos": "LW", "x": 18, "y": 78, "rating": 7.5, "subbed_out": null}], "away": [{"number": 13, "name": "J. Oblak", "pos": "GK", "x": 50, "y": 92, "rating": 8.9, "subbed_out": null}, {"number": 16, "name": "N. Molina", "pos": "RWB", "x": 86, "y": 72, "rating": 7.7, "subbed_out": null}, {"number": 20, "name": "A. Witsel", "pos": "CB", "x": 68, "y": 76, "rating": 7.1, "subbed_out": null}, {"number": 15, "name": "C. Lenglet", "pos": "CB", "x": 50, "y": 76, "rating": 6.9, "subbed_out": null}, {"number": 21, "name": "J. Galán", "pos": "LWB", "x": 14, "y": 72, "rating": 6.8, "subbed_out": null}, {"number": 5, "name": "R. De Paul", "pos": "CM", "x": 65, "y": 54, "rating": 6.9, "subbed_out": null}, {"number": 4, "name": "C. Gallagher", "pos": "CM", "x": 35, "y": 54, "rating": 7.0, "subbed_out": null}, {"number": 7, "name": "A. Griezmann", "pos": "ST", "x": 62, "y": 30, "rating": 7.1, "subbed_out": null}, {"number": 19, "name": "J. Álvarez", "pos": "ST", "x": 38, "y": 30, "rating": 6.8, "subbed_out": null}]}, "stats": {"all": [{"key": "ballPossession", "label": "Possession (%)", "home": 71, "away": 29}, {"key": "totalShotsOnGoal", "label": "Tirs totaux", "home": 22, "away": 4}, {"key": "shotsOnGoal", "label": "Tirs cadrés", "home": 9, "away": 2}, {"key": "bigChanceCreated", "label": "Grosses occasions", "home": 5, "away": 1}, {"key": "goalkeeperSaves", "label": "Arrêts du gardien", "home": 1, "away": 8}, {"key": "cornerKicks", "label": "Corners", "home": 7, "away": 1}, {"key": "fouls", "label": "Fautes", "home": 8, "away": 11}, {"key": "totalTackle", "label": "Tacles", "home": 14, "away": 21}, {"key": "accuratePasses", "label": "Passes réussies", "home": 684, "away": 241}, {"key": "yellowCards", "label": "Cartons jaunes", "home": 1, "away": 1}], "1st": [{"key": "ballPossession", "label": "Possession (%)", "home": 69, "away": 31}, {"key": "totalShotsOnGoal", "label": "Tirs totaux", "home": 9, "away": 2}, {"key": "shotsOnGoal", "label": "Tirs cadrés", "home": 4, "away": 1}], "2nd": [{"key": "ballPossession", "label": "Possession (%)", "home": 73, "away": 27}, {"key": "totalShotsOnGoal", "label": "Tirs totaux", "home": 13, "away": 2}, {"key": "shotsOnGoal", "label": "Tirs cadrés", "home": 5, "away": 1}]}}], "standings": [{"rank": 1, "team": "Liverpool FC", "is_french": false, "played": 4, "won": 4, "drawn": 0, "lost": 0, "gf": 10, "ga": 1, "gd": "+9", "points": 12, "zone": "top8"}, {"rank": 2, "team": "Sporting CP", "is_french": false, "played": 4, "won": 3, "drawn": 1, "lost": 0, "gf": 9, "ga": 2, "gd": "+7", "points": 10, "zone": "top8"}, {"rank": 3, "team": "AS Monaco", "is_french": true, "played": 4, "won": 3, "drawn": 1, "lost": 0, "gf": 10, "ga": 4, "gd": "+6", "points": 10, "zone": "top8"}, {"rank": 4, "team": "Stade Brestois 29", "is_french": true, "played": 4, "won": 3, "drawn": 1, "lost": 0, "gf": 9, "ga": 3, "gd": "+6", "points": 10, "zone": "top8"}, {"rank": 14, "team": "LOSC Lille", "is_french": true, "played": 4, "won": 2, "drawn": 1, "lost": 1, "gf": 5, "ga": 4, "gd": "+1", "points": 7, "zone": "playoff"}, {"rank": 19, "team": "Paris Saint-Germain", "is_french": true, "played": 4, "won": 1, "drawn": 2, "lost": 1, "gf": 3, "ga": 4, "gd": "-1", "points": 5, "zone": "playoff"}, {"rank": 25, "team": "VfB Stuttgart", "is_french": false, "played": 4, "won": 1, "drawn": 1, "lost": 2, "gf": 3, "ga": 6, "gd": "-3", "points": 4, "zone": "eliminated"}], "bracket": null}, "uel": {"id": "uel", "name": "Ligue Europa", "short_name": "EL", "stage_type": "league", "matchday_label": "Journée 4 sur 8", "french_clubs_focus": [{"match_id": "uel_2026_j4_tsg_ol", "club_name": "Olympique Lyonnais", "club_rank": 7, "club_zone": "top8", "home_team": {"name": "TSG Hoffenheim", "short": "TSG", "is_french": false, "score": 1}, "away_team": {"name": "Olympique Lyonnais", "short": "OL", "is_french": true, "score": 2}, "status": "Terminé", "goals": [{"minute": "47'", "scorer": "V. Gendrey", "assist": "A. Kramarić", "team": "home", "score_after": "1-0"}, {"minute": "66'", "scorer": "Abner", "assist": "S. Benrahma", "team": "away", "score_after": "1-1"}, {"minute": "90+3'", "scorer": "A. Lacazette", "assist": "R. Cherki", "team": "away", "score_after": "1-2"}], "ai_summary": "L'Olympique Lyonnais arrache une victoire précieuse en Allemagne face à Hoffenheim au bout du temps additionnel (1-2). Surpris dès le retour des vestiaires par Valentin Gendrey (47'), les Gones ont réagi grâce à l'égalisation d'Abner (66') avant que les changements offensifs ne fassent basculer la rencontre. Le tournant s'est joué à la 90+3e minute sur une inspiration de Rayan Cherki servant Alexandre Lacazette pour le but de la victoire. Avec 9 points en quatre journées, Lyon se hisse à la 7e place du classement général, directement dans le Top 8 qualificatif pour les huitièmes de finale.", "ai_verified": true}], "matches": [{"match_id": "uel_2026_j4_tsg_ol", "kickoff": "21:00", "status": "Terminé", "is_french_match": true, "home_team": {"name": "TSG Hoffenheim", "short": "TSG", "is_french": false, "score": 1, "formation": "3-5-2"}, "away_team": {"name": "Olympique Lyonnais", "short": "OL", "is_french": true, "score": 2, "formation": "4-3-3"}, "events": [{"minute": 47, "type": "goal", "team": "home", "player": "V. Gendrey", "detail": "Passe déc. : A. Kramarić"}, {"minute": 61, "type": "sub", "team": "away", "player": "R. Cherki", "detail": "Remplace M. Fofana"}, {"minute": 66, "type": "goal", "team": "away", "player": "Abner", "detail": "Passe déc. : S. Benrahma"}, {"minute": 93, "type": "goal", "team": "away", "player": "A. Lacazette", "detail": "Passe déc. : R. Cherki"}], "momentum": [{"minute": 5, "value": 20}, {"minute": 15, "value": -35}, {"minute": 30, "value": 25}, {"minute": 47, "value": 72}, {"minute": 60, "value": -48}, {"minute": 66, "value": -78}, {"minute": 80, "value": 30}, {"minute": 90, "value": -85}], "lineups": {"home": [{"number": 1, "name": "O. Baumann", "pos": "GK", "x": 50, "y": 8, "rating": 6.8}, {"number": 19, "name": "V. Gendrey", "pos": "RWB", "x": 82, "y": 45, "rating": 7.6}, {"number": 27, "name": "A. Kramarić", "pos": "ST", "x": 50, "y": 80, "rating": 7.3}], "away": [{"number": 23, "name": "L. Perri", "pos": "GK", "x": 50, "y": 92, "rating": 7.4}, {"number": 16, "name": "Abner", "pos": "LB", "x": 18, "y": 72, "rating": 7.8}, {"number": 18, "name": "R. Cherki", "pos": "CAM", "x": 65, "y": 48, "rating": 8.2}, {"number": 10, "name": "A. Lacazette", "pos": "ST", "x": 50, "y": 25, "rating": 8.0}]}, "stats": {"all": [{"key": "ballPossession", "label": "Possession (%)", "home": 46, "away": 54}, {"key": "totalShotsOnGoal", "label": "Tirs totaux", "home": 12, "away": 15}, {"key": "shotsOnGoal", "label": "Tirs cadrés", "home": 4, "away": 6}, {"key": "bigChanceCreated", "label": "Grosses occasions", "home": 2, "away": 3}, {"key": "goalkeeperSaves", "label": "Arrêts du gardien", "home": 4, "away": 3}, {"key": "cornerKicks", "label": "Corners", "home": 5, "away": 6}], "1st": [{"key": "ballPossession", "label": "Possession (%)", "home": 48, "away": 52}], "2nd": [{"key": "ballPossession", "label": "Possession (%)", "home": 44, "away": 56}]}}], "standings": [{"rank": 1, "team": "SS Lazio", "is_french": false, "played": 4, "won": 4, "drawn": 0, "lost": 0, "gf": 11, "ga": 2, "gd": "+9", "points": 12, "zone": "top8"}, {"rank": 7, "team": "Olympique Lyonnais", "is_french": true, "played": 4, "won": 3, "drawn": 0, "lost": 1, "gf": 8, "ga": 4, "gd": "+4", "points": 9, "zone": "top8"}, {"rank": 22, "team": "OGC Nice", "is_french": true, "played": 4, "won": 1, "drawn": 1, "lost": 2, "gf": 4, "ga": 6, "gd": "-2", "points": 4, "zone": "playoff"}, {"rank": 29, "team": "Dynamo Kiev", "is_french": false, "played": 4, "won": 0, "drawn": 0, "lost": 4, "gf": 0, "ga": 10, "gd": "-10", "points": 0, "zone": "eliminated"}], "bracket": null}, "uecl": {"id": "uecl", "name": "Ligue Conférence", "short_name": "ECL", "stage_type": "league", "matchday_label": "Journée 3 sur 6", "french_clubs_focus": [], "matches": [], "standings": [], "bracket": null}}};
-
-    let appData = FALLBACK_DATA;
+    let appData = null;
     let currentComp = 'ucl';
     let activeMatch = null;
     let currentModalView = 'events';
     let currentStatsPeriod = 'all';
 
+    const esc = (v) => String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
     async function initDashboard() {
       try {
         const response = await fetch('data.json?t=' + Date.now());
-        if (response.ok) {
-          appData = await response.json();
-        }
+        if (!response.ok) throw new Error('HTTP ' + response.status);
+        appData = await response.json();
       } catch (e) {
-        // Utilisation transparente de FALLBACK_DATA en local
+        document.querySelector('main').innerHTML =
+          `<div class="empty-state">Impossible de charger data.json (${esc(e.message)}).<br>Ouvre la page via GitHub Pages ou un serveur local (python -m http.server).</div>`;
+        return;
+      }
+      if (appData.last_updated) {
+        const d = new Date(appData.last_updated);
+        document.getElementById('last-updated-badge').textContent =
+          'MàJ ' + d.toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Paris' });
       }
       renderCompetition(currentComp);
     }
 
     function switchCompetition(compKey) {
       currentComp = compKey;
-      document.querySelectorAll('.tab-btn').forEach(btn => {
-        btn.classList.toggle('active', btn.dataset.comp === compKey);
-      });
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.comp === compKey));
       renderCompetition(compKey);
     }
 
     function getZoneLabel(zone, rank) {
-      if (!rank) return '';
-      if (zone === 'top8') return `${rank}e • Top 8 (8es)`;
-      if (zone === 'playoff') return `${rank}e • Barrages`;
-      return `${rank}e • Zone élim.`;
+      if (!rank) return 'Classement n.d.';
+      const r = rank === 1 ? '1er' : `${rank}e`;
+      if (zone === 'top8') return `${r} • Top 8 (8es)`;
+      if (zone === 'playoff') return `${r} • Barrages`;
+      return `${r} • Zone élim.`;
     }
 
     function renderCompetition(compKey) {
-      const comp = appData.competitions[compKey];
-      if (!comp) return;
+      const comp = (appData && appData.competitions && appData.competitions[compKey]) ||
+        { name: '', french_clubs_focus: [], matches: [], standings: [] };
 
       document.getElementById('matchday-indicator').textContent = comp.matchday_label || '';
 
-      // 1. Rendu Focus Clubs Français
+      // 1. Focus clubs français
       const frContainer = document.getElementById('french-focus-container');
       if (!comp.french_clubs_focus || comp.french_clubs_focus.length === 0) {
-        frContainer.innerHTML = `<div class="empty-state">Aucune rencontre de club français enregistrée sur cette journée en ${comp.name}.</div>`;
+        frContainer.innerHTML = `<div class="empty-state">Aucun club français n'a joué sur cette période${comp.name ? ' en ' + esc(comp.name) : ''}.</div>`;
       } else {
         frContainer.innerHTML = comp.french_clubs_focus.map(fc => {
-          const goalsHtml = (fc.goals || []).map(g =>
-            `<span class="goal-chip">⚽ ${g.scorer} (${g.minute})</span>`
-          ).join('');
-
+          const goalsHtml = (fc.goals || []).map(g => {
+            const tag = g.kind === 'csc' ? ' csc' : g.kind === 'pen' ? ' sp' : '';
+            const mine = (g.team === 'home' ? fc.home_team : fc.away_team).name === fc.club_name;
+            return `<span class="goal-chip ${mine ? 'mine' : ''}">⚽ ${esc(g.scorer)}${tag} (${esc(g.minute)})</span>`;
+          }).join('');
+          const source = fc.summary_source === 'gemini' ? '✓ Résumé IA contrôlé sur les données officielles' : '✓ Résumé généré depuis les données officielles';
           return `
-            <article class="fr-card" onclick="openMatchModal('${fc.match_id}')">
+            <article class="fr-card" onclick="openMatchModal('${esc(fc.match_id)}')">
               <div class="fr-card-top">
-                <span class="fr-club-tag">🇫🇷 ${fc.club_name}</span>
-                <span class="rank-pill ${fc.club_zone || 'playoff'}">${getZoneLabel(fc.club_zone, fc.club_rank)}</span>
+                <span class="fr-club-tag">🇫🇷 ${esc(fc.club_name)}</span>
+                <span class="rank-pill ${esc(fc.club_zone || 'playoff')}">${getZoneLabel(fc.club_zone, fc.club_rank)}</span>
               </div>
               <div class="fr-scoreline">
-                <div class="team-name home ${fc.home_team.is_french ? 'is-fr' : ''}">${fc.home_team.name}</div>
+                <div class="team-name home ${fc.home_team.is_french ? 'is-fr' : ''}">${esc(fc.home_team.name)}</div>
                 <div class="score-box">${fc.home_team.score} - ${fc.away_team.score}</div>
-                <div class="team-name away ${fc.away_team.is_french ? 'is-fr' : ''}">${fc.away_team.name}</div>
+                <div class="team-name away ${fc.away_team.is_french ? 'is-fr' : ''}">${esc(fc.away_team.name)}</div>
               </div>
               ${goalsHtml ? `<div class="goals-timeline">${goalsHtml}</div>` : ''}
-              <p class="ai-summary-text">${fc.ai_summary}</p>
+              ${fc.ai_summary ? `<p class="ai-summary-text">${esc(fc.ai_summary)}</p>` : ''}
               <div class="fr-card-footer">
-                <span>✓ Données officielles vérifiées</span>
-                <span>Ouvrir la fiche complète →</span>
+                <span>${source}</span>
+                <span>Fiche complète →</span>
               </div>
-            </article>
-          `;
+            </article>`;
         }).join('');
       }
 
-      // 2. Rendu Grille des Matchs
+      // 2. Grille des matchs
       const gridContainer = document.getElementById('matches-grid-container');
       if (!comp.matches || comp.matches.length === 0) {
-        gridContainer.innerHTML = `<div class="empty-state">Aucun match disputé ce soir dans cette compétition.</div>`;
+        gridContainer.innerHTML = `<div class="empty-state">Aucun match sur cette période dans cette compétition.</div>`;
       } else {
         gridContainer.innerHTML = comp.matches.map(m => `
-          <div class="match-tile" onclick="openMatchModal('${m.match_id}')">
+          <div class="match-tile" onclick="openMatchModal('${esc(m.match_id)}')">
             <div class="tile-teams">
               <div class="tile-team-row">
-                <span class="tile-team-name ${m.home_team.is_french ? 'is-fr' : ''}">${m.home_team.name}</span>
-                <span class="tile-team-score">${m.home_team.score}</span>
+                <span class="tile-team-name ${m.home_team.is_french ? 'is-fr' : ''}">${esc(m.home_team.name)}</span>
+                <span class="tile-team-score">${m.status === 'À venir' ? '' : m.home_team.score}</span>
               </div>
               <div class="tile-team-row">
-                <span class="tile-team-name ${m.away_team.is_french ? 'is-fr' : ''}">${m.away_team.name}</span>
-                <span class="tile-team-score">${m.away_team.score}</span>
+                <span class="tile-team-name ${m.away_team.is_french ? 'is-fr' : ''}">${esc(m.away_team.name)}</span>
+                <span class="tile-team-score">${m.status === 'À venir' ? '' : m.away_team.score}</span>
               </div>
             </div>
             <div class="tile-meta">
-              <div>${m.status}</div>
+              <div>${esc(m.kickoff || '')}</div>
+              <div>${esc(m.status)}</div>
               <div style="margin-top:4px;color:var(--accent-ucl)">Détails ›</div>
             </div>
-          </div>
-        `).join('');
+          </div>`).join('');
       }
 
-      // 4. Rendu Classement 36 équipes
+      // 4. Classement
       const stContainer = document.getElementById('standings-container');
       if (!comp.standings || comp.standings.length === 0) {
-        stContainer.innerHTML = `<div class="empty-state">Classement en attente d'actualisation.</div>`;
+        stContainer.innerHTML = `<div class="empty-state">Classement indisponible.</div>`;
       } else {
         const rowsHtml = comp.standings.map(r => {
           const isCutoff = (r.rank === 8 || r.rank === 24) ? 'zone-cutoff' : '';
           return `
-            <tr class="zone-${r.zone} ${r.is_french ? 'is-fr-row' : ''} ${isCutoff}">
+            <tr class="zone-${esc(r.zone)} ${r.is_french ? 'is-fr-row' : ''} ${isCutoff}">
               <td class="rank-cell">${r.rank}</td>
-              <td class="col-team">
-                ${r.team}
-                ${r.is_french ? '<span class="fr-badge-inline">FRA</span>' : ''}
-              </td>
+              <td class="col-team">${esc(r.team)}${r.is_french ? '<span class="fr-badge-inline">FRA</span>' : ''}</td>
               <td>${r.played}</td>
-              <td>${r.gd}</td>
+              <td>${esc(r.gd)}</td>
               <td style="font-weight:800">${r.points}</td>
-            </tr>
-          `;
+            </tr>`;
         }).join('');
-
         stContainer.innerHTML = `
           <table class="standings-table">
-            <thead>
-              <tr>
-                <th>#</th>
-                <th class="col-team">Club</th>
-                <th>MJ</th>
-                <th>Diff</th>
-                <th>Pts</th>
-              </tr>
-            </thead>
+            <thead><tr><th>#</th><th class="col-team">Club</th><th>MJ</th><th>Diff</th><th>Pts</th></tr></thead>
             <tbody>${rowsHtml}</tbody>
-          </table>
-        `;
+          </table>`;
       }
     }
 
-    // 3. LOGIQUE DU TIROIR MODAL (4 VUES)
+    // 3. Tiroir modal (4 vues)
     function openMatchModal(matchId) {
       const comp = appData.competitions[currentComp];
       activeMatch = (comp.matches || []).find(m => m.match_id === matchId);
       if (!activeMatch) return;
-
-      document.getElementById('modal-comp-label').textContent = `${comp.name} • ${activeMatch.status}`;
+      currentStatsPeriod = 'all';
+      const meta = [comp.name, activeMatch.kickoff, activeMatch.status].filter(Boolean).join(' • ');
+      document.getElementById('modal-comp-label').textContent = meta;
       document.getElementById('modal-home-name').textContent = activeMatch.home_team.name;
       document.getElementById('modal-away-name').textContent = activeMatch.away_team.name;
       document.getElementById('modal-score').textContent = `${activeMatch.home_team.score} - ${activeMatch.away_team.score}`;
-
       document.getElementById('match-modal').classList.add('open');
+      document.body.style.overflow = 'hidden';
       switchModalView('events');
     }
 
     function closeMatchModal() {
       document.getElementById('match-modal').classList.remove('open');
+      document.body.style.overflow = '';
     }
 
     function closeModalOnBackdrop(e) {
@@ -905,9 +909,7 @@
 
     function switchModalView(viewName) {
       currentModalView = viewName;
-      document.querySelectorAll('.subtab-btn').forEach(btn => {
-        btn.classList.toggle('active', btn.dataset.view === viewName);
-      });
+      document.querySelectorAll('.subtab-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.view === viewName));
       renderModalContent();
     }
 
@@ -919,73 +921,84 @@
     function renderModalContent() {
       const container = document.getElementById('modal-body-content');
       if (!activeMatch) return;
+      const m = activeMatch;
 
       if (currentModalView === 'events') {
-        const evs = activeMatch.events || [];
+        const evs = m.events || [];
         if (evs.length === 0) {
-          container.innerHTML = `<div class="empty-state">Aucun événement majeur enregistré.</div>`;
+          container.innerHTML = `<div class="empty-state">Aucun événement enregistré.</div>`;
           return;
         }
         const iconMap = { goal: '⚽', yellow_card: '🟨', red_card: '🟥', sub: '🔄' };
         container.innerHTML = evs.map(e => `
-          <div class="event-row ${e.team}">
-            <span class="ev-min">${e.minute}'</span>
+          <div class="event-row ${esc(e.team)}">
+            <span class="ev-min">${esc(e.minute_label || (e.minute + "'"))}</span>
             <span>${iconMap[e.type] || '•'}</span>
             <div>
-              <div style="font-weight:700">${e.player}</div>
-              <div style="font-size:0.74rem;color:var(--text-muted)">${e.detail || ''}</div>
+              <div style="font-weight:700">${esc(e.player)}</div>
+              <div style="font-size:0.74rem;color:var(--text-muted)">${esc(e.detail)}</div>
             </div>
-          </div>
-        `).join('');
+          </div>`).join('');
       }
 
       else if (currentModalView === 'momentum') {
-        const pts = activeMatch.momentum || [];
+        const pts = m.momentum || [];
         if (pts.length === 0) {
-          container.innerHTML = `<div class="empty-state">Graphique de pression indisponible pour cette rencontre.</div>`;
+          container.innerHTML = `<div class="empty-state">Fil du match indisponible : pas de graphique de pression pour cette rencontre.</div>`;
           return;
         }
-        const barsSvg = pts.map(pt => {
-          const x = (pt.minute / 90) * 300;
+        const maxMin = Math.max(90, ...pts.map(p => p.minute));
+        const W = 300, slot = W / pts.length;
+        const bars = pts.map((pt, i) => {
           const h = Math.min(Math.abs(pt.value) * 0.45, 45);
           const y = pt.value >= 0 ? 50 - h : 50;
           const color = pt.value >= 0 ? '#38bdf8' : '#f43f5e';
-          return `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="4.5" height="${h.toFixed(1)}" rx="1.5" fill="${color}" />`;
+          const title = `${pt.minute - 5}'-${pt.minute}' : ${m.home_team.short} ${pt.home ?? ''} / ${m.away_team.short} ${pt.away ?? ''}`;
+          return `<rect x="${(5 + i * slot + 1).toFixed(1)}" y="${y.toFixed(1)}" width="${Math.max(slot - 2, 2).toFixed(1)}" height="${Math.max(h, 0.5).toFixed(1)}" rx="1.5" fill="${color}"><title>${esc(title)}</title></rect>`;
         }).join('');
-
+        const goalMarks = (m.events || []).filter(e => e.type === 'goal').map(e => {
+          const idx = Math.min(Math.floor((Math.max(e.minute, 1) - 1) / 5), pts.length - 1);
+          const x = 5 + idx * slot + slot / 2;
+          const y = e.team === 'home' ? 3 : 97;
+          return `<text x="${x.toFixed(1)}" y="${y}" font-size="6" text-anchor="middle" dominant-baseline="middle">⚽</text>`;
+        }).join('');
+        const halfX = 5 + (45 / 5) * slot;
         container.innerHTML = `
           <div class="momentum-box">
             <div class="momentum-legend">
-              <span style="color:var(--home-color)">▲ Domination ${activeMatch.home_team.short}</span>
-              <span style="color:var(--away-color)">▼ Domination ${activeMatch.away_team.short}</span>
+              <span style="color:var(--home-color)">▲ ${esc(m.home_team.short)}</span>
+              <span style="color:var(--away-color)">▼ ${esc(m.away_team.short)}</span>
             </div>
-            <svg viewBox="0 0 310 100" style="width:100%;height:160px">
+            <svg viewBox="0 0 310 100" style="width:100%;height:170px">
               <line x1="0" y1="50" x2="310" y2="50" stroke="#334155" stroke-width="1" />
-              <line x1="155" y1="0" x2="155" y2="100" stroke="#334155" stroke-dasharray="3,3" stroke-width="1" />
-              ${barsSvg}
+              <line x1="${halfX.toFixed(1)}" y1="0" x2="${halfX.toFixed(1)}" y2="100" stroke="#334155" stroke-dasharray="3,3" stroke-width="1" />
+              ${bars}${goalMarks}
             </svg>
             <div style="display:flex;justify-content:space-between;font-size:0.7rem;color:var(--text-muted);margin-top:4px">
-              <span>1'</span><span>Mi-temps (45')</span><span>90'</span>
+              <span>1'</span><span>45'</span><span>${maxMin}'</span>
             </div>
-          </div>
-        `;
+            <p class="momentum-note">Pression offensive par tranche de 5 min, calculée depuis le fil du match : tirs, tirs cadrés, poteaux, corners et coups francs obtenus dans le camp adverse.</p>
+          </div>`;
       }
 
       else if (currentModalView === 'lineups') {
-        const homePlayers = (activeMatch.lineups && activeMatch.lineups.home) || [];
-        const awayPlayers = (activeMatch.lineups && activeMatch.lineups.away) || [];
+        const L = m.lineups || {};
+        const homePlayers = L.home || [], awayPlayers = L.away || [];
+        if (!homePlayers.length && !awayPlayers.length) {
+          container.innerHTML = `<div class="empty-state">Compositions indisponibles.</div>`;
+          return;
+        }
         const renderNodes = (list, side) => list.map(p => `
-          <div class="player-node" style="left:${p.x || 50}%;top:${p.y || 50}%">
-            <div class="player-dot ${side}">${p.number || ''}</div>
-            <span class="player-label">${p.name}</span>
-            ${p.rating ? `<span class="player-rating">${p.rating}</span>` : ''}
-          </div>
-        `).join('');
-
+          <div class="player-node" style="left:${p.x ?? 50}%;top:${p.y ?? 50}%">
+            <div class="player-dot ${side}">${esc(p.number)}</div>
+            <span class="player-label">${p.subbed_out ? '🔻 ' : ''}${esc(p.name)}</span>
+            ${p.rating ? `<span class="player-rating">${esc(p.rating)}</span>` : ''}
+          </div>`).join('');
+        const subs = (list) => list.length ? list.map(p => `${esc(p.number)} ${esc(p.name)}`).join(', ') : '—';
         container.innerHTML = `
           <div style="display:flex;justify-content:space-between;font-size:0.78rem;color:var(--text-muted);margin-bottom:8px">
-            <span>🔵 ${activeMatch.home_team.name} (${activeMatch.home_team.formation || 'Titulaires'})</span>
-            <span>🔴 ${activeMatch.away_team.name} (${activeMatch.away_team.formation || 'Titulaires'})</span>
+            <span>🔵 ${esc(m.home_team.short)} ${esc(m.home_team.formation || '')}</span>
+            <span>🔴 ${esc(m.away_team.short)} ${esc(m.away_team.formation || '')}</span>
           </div>
           <div class="pitch-container">
             <div class="pitch-midline"></div>
@@ -993,42 +1006,45 @@
             ${renderNodes(homePlayers, 'home')}
             ${renderNodes(awayPlayers, 'away')}
           </div>
-        `;
+          <div class="subs-list">
+            <div><b style="color:var(--home-color)">Entrés (${esc(m.home_team.short)})</b> : ${subs(L.home_subs || [])}</div>
+            <div><b style="color:var(--away-color)">Entrés (${esc(m.away_team.short)})</b> : ${subs(L.away_subs || [])}</div>
+            <div style="margin-top:4px">🔻 = remplacé en cours de match</div>
+          </div>`;
       }
 
       else if (currentModalView === 'stats') {
-        const statsObj = activeMatch.stats || {};
-        const items = statsObj[currentStatsPeriod] || statsObj.all || [];
+        const statsObj = m.stats || {};
+        const hasHalves = (statsObj['1st'] || []).length > 0 && (statsObj['2nd'] || []).length > 0;
+        const period = hasHalves ? currentStatsPeriod : 'all';
+        const items = statsObj[period] || [];
         const barsHtml = items.map(s => {
           const total = (Number(s.home) + Number(s.away)) || 1;
           const homePct = Math.round((Number(s.home) / total) * 100);
-          const awayPct = 100 - homePct;
           return `
             <div class="stat-item">
               <div class="stat-row-labels">
-                <span style="color:var(--home-color)">${s.home}</span>
-                <span style="color:var(--text-muted)">${s.label}</span>
-                <span style="color:var(--away-color)">${s.away}</span>
+                <span style="color:var(--home-color)">${esc(s.home)}</span>
+                <span style="color:var(--text-muted)">${esc(s.label)}</span>
+                <span style="color:var(--away-color)">${esc(s.away)}</span>
               </div>
               <div class="stat-bars">
                 <div class="stat-bar-home" style="width:${homePct}%"></div>
-                <div class="stat-bar-away" style="width:${awayPct}%"></div>
+                <div class="stat-bar-away" style="width:${100 - homePct}%"></div>
               </div>
-            </div>
-          `;
+            </div>`;
         }).join('');
-
-        container.innerHTML = `
+        const pills = hasHalves ? `
           <div class="period-pills">
-            <button class="period-btn ${currentStatsPeriod === 'all' ? 'active' : ''}" onclick="switchStatsPeriod('all')">Match complet</button>
-            <button class="period-btn ${currentStatsPeriod === '1st' ? 'active' : ''}" onclick="switchStatsPeriod('1st')">1re Mi-temps</button>
-            <button class="period-btn ${currentStatsPeriod === '2nd' ? 'active' : ''}" onclick="switchStatsPeriod('2nd')">2e Mi-temps</button>
-          </div>
-          ${barsHtml || '<div class="empty-state">Statistiques non disponibles pour cette période.</div>'}
-        `;
+            <button class="period-btn ${period === 'all' ? 'active' : ''}" onclick="switchStatsPeriod('all')">Match complet</button>
+            <button class="period-btn ${period === '1st' ? 'active' : ''}" onclick="switchStatsPeriod('1st')">1re mi-temps</button>
+            <button class="period-btn ${period === '2nd' ? 'active' : ''}" onclick="switchStatsPeriod('2nd')">2e mi-temps</button>
+          </div>` : '';
+        container.innerHTML = pills + (barsHtml || '<div class="empty-state">Statistiques indisponibles.</div>');
       }
     }
 
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') closeMatchModal(); });
     initDashboard();
   </script>
 </body>

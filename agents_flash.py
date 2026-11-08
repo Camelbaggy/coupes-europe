@@ -44,8 +44,8 @@ def get_ordered_flash_models() -> List[str]:
     discovered = []
     if GEMINI_API_KEY:
         try:
-            url = f"https://generativelanguage.googleapis.com/v1beta/models?key={GEMINI_API_KEY}"
-            req = urllib.request.Request(url, method="GET")
+            url = "https://generativelanguage.googleapis.com/v1beta/models?pageSize=200"
+            req = urllib.request.Request(url, headers={"x-goog-api-key": GEMINI_API_KEY}, method="GET")
             with urllib.request.urlopen(req, timeout=10) as resp:
                 data = json.loads(resp.read().decode("utf-8"))
                 for m in data.get("models", []):
@@ -89,7 +89,7 @@ def call_gemini_flash(
     last_err = None
 
     for model_name in models_to_try:
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={GEMINI_API_KEY}"
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent"
         payload = {
             "systemInstruction": {"parts": [{"text": system_instruction}]},
             "contents": [{"role": "user", "parts": [{"text": user_prompt}]}],
@@ -102,11 +102,11 @@ def call_gemini_flash(
         req = urllib.request.Request(
             url,
             data=json.dumps(payload).encode("utf-8"),
-            headers={"Content-Type": "application/json"},
+            headers={"Content-Type": "application/json", "x-goog-api-key": GEMINI_API_KEY},
             method="POST",
         )
         try:
-            with urllib.request.urlopen(req, timeout=25) as resp:
+            with urllib.request.urlopen(req, timeout=60) as resp:
                 body = json.loads(resp.read().decode("utf-8"))
                 text = body["candidates"][0]["content"]["parts"][0]["text"].strip()
                 print(f"[OK] Réponse générée par le modèle `{model_name}`.")
@@ -126,6 +126,18 @@ def call_gemini_flash(
             time.sleep(1)
 
     raise RuntimeError(f"Échec des modèles Flash : {last_err}")
+
+
+# Lignes de commentaire sans intérêt narratif (on les écarte pour alléger le prompt)
+_NOISE_PREFIXES = ("Foul by", "Offside,", "Delay", "Hand ball", "Lineups are announced", "Second Half begins",
+                   "First Half begins", "Drop of Ball", "Dangerous play")
+
+
+def select_key_comments(lines: List[str], limit: int = 150) -> List[str]:
+    """Garde les lignes du fil (chronologique) qui racontent le match : tirs, buts, arrêts, cartons, VAR..."""
+    kept = [l for l in lines if not l.split("] ", 1)[-1].startswith(_NOISE_PREFIXES)
+            and "wins a free kick" not in l]
+    return kept[-limit:] if len(kept) > limit else kept
 
 
 # ==============================================================================
@@ -167,7 +179,7 @@ def run_writer_agent(
         "evenements_cles": match_details.get("events", []),
         "statistiques_globales": match_details.get("stats", {}).get("all", []),
         "classement_actuel_sur_36": standings_row,
-        "extraits_commentaires_direct": focus_card.get("raw_comments_for_llm", [])[:45],
+        "extraits_commentaires_direct": select_key_comments(focus_card.get("raw_comments_for_llm", [])),
     }
 
     prompt = (
@@ -202,7 +214,7 @@ Règles d'audit :
 - Autorise les formulations journalistiques naturelles tant que les chiffres cités sont exacts.
 - Rejette (`is_valid: false`) UNIQUEMENT si :
   1. Le score ou le vainqueur mentionné est faux.
-  2. Un nom de buteur ou une minute de jeu citée n'existe pas dans `goals` ou `events`.
+  2. Un nom de buteur ou une minute de jeu citée n'existe ni dans `goals`, ni dans `events`, ni dans `commentaires`.
   3. Une statistique chiffrée citée contredit `stats_all`.
   4. Le classement ou le nombre de points contredit `standings_row`."""
 
@@ -221,6 +233,7 @@ def run_auditor_agent(
         "events": match_details.get("events", []),
         "stats_all": match_details.get("stats", {}).get("all", []),
         "standings_row": standings_row,
+        "commentaires": select_key_comments(focus_card.get("raw_comments_for_llm", [])),
     }
 
     user_prompt = (
@@ -236,7 +249,7 @@ def run_auditor_agent(
         temperature=0.0,
         response_mime_type="application/json",
     )
-    parsed = json.loads(raw_resp)
+    parsed = json.loads(raw_resp.strip().removeprefix("```json").removeprefix("```").removesuffix("```").strip())
     return bool(parsed.get("is_valid", False)), str(parsed.get("issues", ""))
 
 
@@ -253,34 +266,37 @@ def build_deterministic_fallback_summary(
     club_score = h["score"] if is_home else a["score"]
     opp_score = a["score"] if is_home else h["score"]
     opp_name = a["name"] if is_home else h["name"]
-    venue = "à domicile" if is_home else f"sur la pelouse de {opp_name}"
+    venue = f"à domicile face à {opp_name}" if is_home else f"sur la pelouse de {opp_name}"
+    venue_vs = f"à domicile contre {opp_name}" if is_home else f"sur la pelouse de {opp_name}"
 
     if club_score > opp_score:
-        s1 = f"{club} s'impose {venue} face à {opp_name} sur le score de {h['score']}-{a['score']}."
+        s1 = f"{club} s'impose {venue} ({h['score']}-{a['score']})."
     elif club_score < opp_score:
-        s1 = f"{club} s'incline {venue} contre {opp_name} ({h['score']}-{a['score']}) au terme d'une soirée disputée."
+        s1 = f"{club} s'incline {venue_vs} ({h['score']}-{a['score']})."
     else:
-        s1 = f"{club} partage les points {venue} face à {opp_name} ({h['score']}-{a['score']})."
+        s1 = f"{club} partage les points {venue} ({h['score']}-{a['score']})."
 
     goals = focus_card.get("goals", [])
     if goals:
         g_list = ", ".join(f"{g['scorer']} ({g['minute']})" for g in goals)
         s2 = f"La rencontre a été rythmée par les réalisations de {g_list}."
     else:
-        s2 = "Les deux défenses ont pris le pas sur les attaques sans qu'aucun but ne soit inscrit au cours des 90 minutes."
+        s2 = "Aucun but n'a été inscrit au cours de la rencontre."
 
     stats_map = {s["key"]: (s["home"], s["away"]) for s in match_details.get("stats", {}).get("all", [])}
     if "ballPossession" in stats_map and "totalShotsOnGoal" in stats_map:
-        poss = stats_map["ballPossession"][0 if is_home else 1]
+        poss = str(stats_map["ballPossession"][0 if is_home else 1]).replace(".", ",")
         shots = stats_map["totalShotsOnGoal"][0 if is_home else 1]
         opp_shots = stats_map["totalShotsOnGoal"][1 if is_home else 0]
-        s3 = f"Dans le jeu, la formation française a affiché {poss} % de possession de balle et tenté {shots} tirs contre {opp_shots} pour son adversaire."
+        s3 = f"Dans le jeu, {club} a affiché {poss} % de possession de balle et tenté {shots} tirs contre {opp_shots} pour son adversaire."
     else:
-        s3 = "Les deux équipes se sont livré une bataille tactique intense tout au long de la confrontation."
+        s3 = ""
 
-    rank = focus_card.get("club_rank") or standings_row.get("rank", "-")
-    pts = standings_row.get("points", "-")
-    zone = focus_card.get("club_zone", "")
+    rank = focus_card.get("club_rank") or standings_row.get("rank")
+    pts = standings_row.get("points")
+    zone = focus_card.get("club_zone") or standings_row.get("zone", "")
+    if not rank:
+        return f"{s1} {s2} {s3}"
     zone_txt = (
         "dans le Top 8 directement qualificatif pour les 8es de finale"
         if zone == "top8"
@@ -288,9 +304,10 @@ def build_deterministic_fallback_summary(
         if zone == "playoff"
         else "dans la zone d'élimination (au-delà de la 24e place)"
     )
-    s4 = f"Au classement général, {club} occupe désormais la {rank}e place avec {pts} points, {zone_txt}."
+    rank_txt = "1re" if rank == 1 else f"{rank}e"
+    s4 = f"Au classement général, {club} occupe la {rank_txt} place avec {pts} points, {zone_txt}."
 
-    return f"{s1} {s2} {s3} {s4}"
+    return " ".join(x for x in (s1, s2, s3, s4) if x)
 
 
 # ==============================================================================
@@ -345,7 +362,9 @@ def orchestrate_flash_agents(
 
             h = focus["home_team"]
             a = focus["away_team"]
-            french_evening_recap.append(f"{h['short']} {h['score']}-{a['score']} {a['short']}")
+            line = f"{h['short']} {h['score']}-{a['score']} {a['short']}"
+            if line not in french_evening_recap:
+                french_evening_recap.append(line)
 
             summary_validated = False
             feedback = ""
@@ -363,6 +382,7 @@ def orchestrate_flash_agents(
                         if is_ok:
                             focus["ai_summary"] = candidate
                             focus["ai_verified"] = True
+                            focus["summary_source"] = "gemini"
                             summary_validated = True
                             print(f"[CONTRÔLE QUALITÉ OK] Résumé validé pour {club_name}.")
                             break
@@ -380,6 +400,7 @@ def orchestrate_flash_agents(
                     focus, match_details, standings_row
                 )
                 focus["ai_verified"] = True
+                focus["summary_source"] = "deterministe"
 
             focus.pop("raw_comments_for_llm", None)
 
