@@ -53,7 +53,7 @@ run_pipeline.py ─┬─ collector.py ── uefa.py   (source principale, offi
 index.html  : page unique (CSS + JS inline), lit data.json ; aucune étape de build
 ```
 
-- `update_dashboard.yml` tourne mardi/mercredi/jeudi à 22h30 UTC et **commit `data.json` directement sur `main`**
+- `update_dashboard.yml` tourne mardi/mercredi/jeudi à 22h30 UTC (et le samedi en mai-juin pour la finale de LDC) et **commit `data.json` directement sur `main`**
   (commits « chore: mise à jour automatique… »). Une branche de travail se retrouve donc vite derrière `main` ;
   ne pas committer `data.json` à la main.
 - `data_raw.json` (sortie collecteur, avec `raw_comments_for_llm` et `matches[].actions`) n'est pas versionné ;
