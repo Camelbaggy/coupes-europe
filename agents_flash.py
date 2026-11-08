@@ -23,6 +23,8 @@ GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "").strip()
 API_ROOT = "https://generativelanguage.googleapis.com/v1beta"
 FALLBACK_MODELS = ["gemini-flash-latest", "gemini-2.5-flash"]
 _MODELS_CACHE: List[str] = []
+AI_BUDGET_SECONDS = int(os.environ.get("AI_BUDGET_SECONDS", "600"))  # budget global de la phase IA
+_DEADLINE: Optional[float] = None
 
 
 # ==============================================================================
@@ -64,8 +66,10 @@ def call_gemini_flash(system_instruction: str, user_prompt: str, temperature: fl
                       response_mime_type: str = "text/plain") -> str:
     if not GEMINI_API_KEY:
         raise RuntimeError("GEMINI_API_KEY absente.")
+    if _DEADLINE and time.monotonic() > _DEADLINE:
+        raise RuntimeError("budget de temps IA épuisé")
     last_err = "aucun modèle"
-    for model in get_flash_models()[:4]:
+    for model in get_flash_models()[:2]:
         payload = {
             "systemInstruction": {"parts": [{"text": system_instruction}]},
             "contents": [{"role": "user", "parts": [{"text": user_prompt}]}],
@@ -79,7 +83,7 @@ def call_gemini_flash(system_instruction: str, user_prompt: str, temperature: fl
         )
         for attempt in range(2):
             try:
-                with urllib.request.urlopen(req, timeout=90) as resp:
+                with urllib.request.urlopen(req, timeout=60) as resp:
                     body = json.loads(resp.read().decode("utf-8"))
                 cand = (body.get("candidates") or [{}])[0]
                 parts = cand.get("content", {}).get("parts", [])
@@ -389,9 +393,11 @@ def summarize_card(comp_name: str, card: Dict[str, Any], match: Dict[str, Any],
     dossier = build_match_dossier(comp_name, card, match, standings_row)
     feedback = ""
     for attempt in range(1, max_attempts + 1):
+        t0 = time.monotonic()
         print(f"[RÉDACTEUR] {card['club_name']} — tentative {attempt}")
         candidate = run_writer_agent(dossier, feedback)
         ok, issues = run_auditor_agent(candidate, dossier)
+        print(f"    ({time.monotonic() - t0:.0f} s)")
         if ok:
             print(f"[CONTRÔLEUR OK] {card['club_name']}")
             return candidate
@@ -409,6 +415,8 @@ def orchestrate_flash_agents(input_path: str = "data_raw.json", output_path: str
         return data
     if not GEMINI_API_KEY:
         print("[INFO] GEMINI_API_KEY absente : résumés déterministes.")
+    global _DEADLINE
+    _DEADLINE = time.monotonic() + AI_BUDGET_SECONDS
 
     recap: List[str] = []
     for comp in data.get("competitions", {}).values():
