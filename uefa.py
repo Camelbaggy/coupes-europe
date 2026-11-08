@@ -182,6 +182,27 @@ def fetch_standings(comp_key: str, season_year: int) -> List[Dict[str, Any]]:
 # ------------------------------------------------------------------------------
 # Transformation des événements
 # ------------------------------------------------------------------------------
+VAR_INCIDENT_FR = {"GOAL": "but", "NO_GOAL": "but", "PENALTY": "penalty", "NO_PENALTY": "penalty",
+                   "RED_CARD": "carton rouge", "NO_RED_CARD": "carton rouge", "MISTAKEN_IDENTITY": "identité du joueur"}
+VAR_REASON_FR = {"OFFSIDE": "hors-jeu", "HAND_BALL": "main", "FOUL": "faute", "BALL_OUT_OF_PLAY": "ballon sorti",
+                 "SERIOUS_FOUL_PLAY": "faute grossière", "VIOLENT_CONDUCT": "brutalité"}
+VAR_RESULT_FR = {"GOAL": "but accordé", "NO_GOAL": "but refusé", "PENALTY": "penalty accordé",
+                 "NO_PENALTY": "pas de penalty", "RED_CARD": "carton rouge", "NO_RED_CARD": "pas de carton rouge"}
+
+
+def var_decision(e: Dict[str, Any]) -> str:
+    """Texte d'une décision VAR réelle (révision confirmée ou changée) ; vide pour les vérifications silencieuses."""
+    v = e.get("varInfo") or {}
+    status = (v.get("status") or "").upper()
+    if v.get("isSilentCheck") or v.get("isTest") or status not in ("CHANGED", "CONFIRMED"):
+        return ""
+    result = VAR_RESULT_FR.get((v.get("result") or "").upper()) or \
+        VAR_RESULT_FR.get((v.get("incident") or "").upper(), "décision")
+    reason = VAR_REASON_FR.get((v.get("reason") or "").upper(), "")
+    verb = "décision modifiée après révision" if status == "CHANGED" else "décision confirmée"
+    return f"{result[0].upper()}{result[1:]}" + (f" ({reason})" if reason else "") + f" — {verb}"
+
+
 def build_events(events: List[Dict[str, Any]], match: Dict[str, Any], home_id: str, away_id: str
                  ) -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]], List[Dict[str, Any]]]:
     """Retourne (événements affichés, buts, actions détaillées pour l'IA)."""
@@ -189,14 +210,12 @@ def build_events(events: List[Dict[str, Any]], match: Dict[str, Any], home_id: s
         tid = str((team or {}).get("id", ""))
         return "home" if tid == home_id else "away" if tid == away_id else None
 
-    # Types de buts (penalty, csc) depuis playerEvents.scorers, consommés dans l'ordre
-    goal_types: Dict[str, List[str]] = {}
-    for s in (match.get("playerEvents") or {}).get("scorers", []) or []:
-        goal_types.setdefault(str((s.get("player") or {}).get("id")), []).append(s.get("goalType", ""))
+    # Type de chaque but (SCORED, PENALTY, OWN_GOAL...) : playerEvents.scorers partage l'id de l'événement GOAL
+    goal_types = {str(s.get("id")): (s.get("goalType") or "").upper()
+                  for s in (match.get("playerEvents") or {}).get("scorers", []) or []}
 
     assists = [e for e in events if e.get("type") == "ASSIST"]
     shown, goals, actions = [], [], []
-    prev_score = {"home": 0, "away": 0}
     for e in events:
         etype = e.get("type", "")
         label, minute, sk = time_of(e)
@@ -205,18 +224,11 @@ def build_events(events: List[Dict[str, Any]], match: Dict[str, Any], home_id: s
         side = side_of(pa.get("team"))
 
         if etype == "GOAL":
-            total = e.get("totalScore") or {}
-            new = {"home": to_number(total.get("home")), "away": to_number(total.get("away"))}
-            if new["home"] is not None and new["away"] is not None:
-                if new["home"] > prev_score["home"]:
-                    side = "home"
-                elif new["away"] > prev_score["away"]:
-                    side = "away"
-                prev_score = {"home": int(new["home"]), "away": int(new["away"])}
-            pending = goal_types.get(str((pa.get("person") or {}).get("id"))) or []
-            gtype = pending.pop(0) if pending else ""
-            kind = "csc" if "OWN" in gtype.upper() or (side and side_of(pa.get("team")) not in (None, side)) \
-                else "pen" if "PENALTY" in gtype.upper() else ""
+            # NB : totalScore porte le score FINAL sur chaque but, inutilisable pour la chronologie.
+            gtype = goal_types.get(str(e.get("id")), "")
+            kind = "csc" if "OWN" in gtype else "pen" if "PENALTY" in gtype else ""
+            if kind == "csc" and side:
+                side = "away" if side == "home" else "home"
             assist = None
             for a in assists:
                 if abs(time_of(a)[2] - sk) < 0.02 and side_of((a.get("primaryActor") or {}).get("team")) == side:
@@ -235,10 +247,17 @@ def build_events(events: List[Dict[str, Any]], match: Dict[str, Any], home_id: s
             shown.append({"minute": minute, "minute_label": label, "type": "sub", "team": side or "home",
                           "player": p2 or "Entrant", "detail": f"Remplace {p1}" if p1 else "Entrée en jeu"})
         elif etype == "VAR":
-            shown.append({"minute": minute, "minute_label": label, "type": "var", "team": side or "home",
-                          "player": p1 or "Arbitrage vidéo", "detail": "Intervention de la VAR"})
+            decision = var_decision(e)
+            if decision:
+                shown.append({"minute": minute, "minute_label": label, "type": "var", "team": "neutral",
+                              "player": "Arbitrage vidéo", "detail": decision})
 
-        if etype not in ("START_PHASE", "END_PHASE", "CHANGE_PHASE", "INJURY_TIME", "FULL_TIME", "ASSIST"):
+        if etype == "VAR":
+            if var_decision(e):
+                actions.append({"minute": label, "phase": e.get("phase", ""), "type": "VAR", "team": None,
+                                "player": var_decision(e), "other": "", "sort": sk})
+        elif etype not in ("START_PHASE", "END_PHASE", "CHANGE_PHASE", "INJURY_TIME", "FULL_TIME", "ASSIST",
+                           "ADDITIONAL_INFORMATION"):
             actions.append({"minute": label, "phase": e.get("phase", ""), "type": etype, "team": side,
                             "player": p1, "other": p2, "sort": sk})
 

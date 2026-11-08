@@ -3,7 +3,6 @@ name: Test du pipeline (branche, sans push ni commit)
 on:
   push:
     branches: ['ccr-*']
-    paths: ['*.py', 'tools/*.py', '.github/workflows/test_pipeline.yml']
   workflow_dispatch:
 
 permissions:
@@ -11,6 +10,8 @@ permissions:
 
 jobs:
   test:
+    # uniquement si le message de commit contient [test] (économise le quota Gemini)
+    if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[test]')
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:

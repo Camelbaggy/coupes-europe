@@ -63,13 +63,18 @@ def get_flash_models() -> List[str]:
 
 
 def call_gemini_flash(system_instruction: str, user_prompt: str, temperature: float = 0.4,
-                      response_mime_type: str = "text/plain") -> str:
+                      response_mime_type: str = "text/plain", prefer_lite: bool = False) -> str:
+    """prefer_lite : commence par un modèle Flash-Lite (quota distinct sur l'offre gratuite)."""
     if not GEMINI_API_KEY:
         raise RuntimeError("GEMINI_API_KEY absente.")
     if _DEADLINE and time.monotonic() > _DEADLINE:
         raise RuntimeError("budget de temps IA épuisé")
     last_err = "aucun modèle"
-    for model in get_flash_models()[:2]:
+    models = get_flash_models()
+    full = [m for m in models if "lite" not in m]
+    lite = [m for m in models if "lite" in m]
+    order = (lite[:1] + full[:1]) if prefer_lite else (full[:2] + lite[:1])
+    for model in order or models[:2]:
         payload = {
             "systemInstruction": {"parts": [{"text": system_instruction}]},
             "contents": [{"role": "user", "parts": [{"text": user_prompt}]}],
@@ -95,10 +100,10 @@ def call_gemini_flash(system_instruction: str, user_prompt: str, temperature: fl
             except urllib.error.HTTPError as e:
                 last_err = f"{model} HTTP {e.code} : {e.read().decode('utf-8', 'ignore')[:300]}"
                 print(f"[GEMINI] {last_err}")
-                if e.code in (429, 500, 503) and attempt == 0:
-                    time.sleep(8)
+                if e.code in (500, 503) and attempt == 0:
+                    time.sleep(5)
                     continue
-                break
+                break  # 429 (quota) : on passe directement au modèle suivant
             except Exception as e:
                 last_err = f"{model} : {e}"
                 print(f"[GEMINI] {last_err}")
@@ -150,9 +155,9 @@ def dominance_phases(momentum: List[Dict[str, Any]], names: Dict[str, str]) -> L
         if h + a < 2:
             verdict = "peu d'actions offensives"
         elif h >= 1.8 * max(a, 0.5):
-            verdict = f"temps fort de {names['home']}"
+            verdict = f"temps fort {_de(names['home'])}"
         elif a >= 1.8 * max(h, 0.5):
-            verdict = f"temps fort de {names['away']}"
+            verdict = f"temps fort {_de(names['away'])}"
         else:
             verdict = "équilibré"
         out.append(f"{label} : {verdict}")
@@ -288,7 +293,8 @@ N'objecte PAS au style, aux traductions des moments du fil, ni aux formulations 
 
 def run_auditor_agent(summary: str, dossier: Dict[str, Any]) -> Tuple[bool, str]:
     prompt = ("DOSSIER :\n" + json.dumps(dossier, ensure_ascii=False) + "\n\nRÉSUMÉ À CONTRÔLER :\n" + summary)
-    raw = call_gemini_flash(AUDITOR_SYSTEM_PROMPT, prompt, temperature=0.0, response_mime_type="application/json")
+    raw = call_gemini_flash(AUDITOR_SYSTEM_PROMPT, prompt, temperature=0.0, response_mime_type="application/json",
+                            prefer_lite=True)
     raw = raw.strip().removeprefix("```json").removeprefix("```").removesuffix("```").strip()
     parsed = json.loads(raw)
     return bool(parsed.get("is_valid", False)), str(parsed.get("issues", ""))
@@ -297,6 +303,11 @@ def run_auditor_agent(summary: str, dossier: Dict[str, Any]) -> Tuple[bool, str]
 # ==============================================================================
 # Résumé narratif déterministe (sans IA)
 # ==============================================================================
+def _de(name: str) -> str:
+    """« de Lens » / « d'Olympiacos »."""
+    return f"d'{name}" if name[:1].lower() in "aeiouyéèêàâîôûh" else f"de {name}"
+
+
 def _pl(n: Any, word: str) -> str:
     return f"{n} {word}{'s' if isinstance(n, (int, float)) and n > 1 else ''}"
 
@@ -310,7 +321,7 @@ def build_deterministic_fallback_summary(card: Dict[str, Any], match: Dict[str, 
     sc = {"home": card["home_team"]["score"], "away": card["away_team"]["score"]}
     goals = card.get("goals", [])
     score_txt = f"{sc['home']}-{sc['away']}"
-    where = f"face à {names[opp]}" if is_home else f"sur la pelouse de {names[opp]}"
+    where = f"face à {names[opp]}" if is_home else f"sur la pelouse {_de(names[opp])}"
     stats = {s["key"]: s for s in match.get("stats", {}).get("all", [])}
 
     if sc[me] > sc[opp]:
@@ -371,7 +382,8 @@ def build_deterministic_fallback_summary(card: Dict[str, Any], match: Dict[str, 
                     "playoff": "en zone de barrages (9e-24e)"}.get(zone, "en zone d'élimination (25e-36e)")
         rank_txt = "1er" if rank == 1 else f"{rank}e"
         pts = (standings_row or {}).get("points")
-        s4 = f"Au classement, {club} est {rank_txt}{f' avec {pts} points' if pts is not None else ''}, {zone_txt}."
+        pts_txt = f" avec {_pl(pts, 'point')}" if pts is not None else ""
+        s4 = f"Au classement, {club} est {rank_txt}{pts_txt}, {zone_txt}."
     return " ".join(x for x in (s1, s2, s3, s4) if x)
 
 
@@ -391,7 +403,8 @@ def run_notif_agent(lines: List[str]) -> str:
     if not GEMINI_API_KEY:
         return fallback
     try:
-        text = call_gemini_flash(NOTIF_SYSTEM_PROMPT, "Résultats :\n" + "\n".join(lines), temperature=0.2)
+        text = call_gemini_flash(NOTIF_SYSTEM_PROMPT, "Résultats :\n" + "\n".join(lines), temperature=0.2,
+                                 prefer_lite=True)
         return text.replace("\n", " ").strip()
     except Exception:
         return fallback
