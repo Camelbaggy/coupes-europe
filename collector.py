@@ -18,6 +18,7 @@ from datetime import date, datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional
 
 import espn
+import ratings
 import uefa
 from netutil import fr, set_raw_dir, to_number  # noqa: F401  (set_raw_dir réexporté pour run_pipeline)
 
@@ -68,7 +69,7 @@ def build_match(comp_key: str, m: Dict[str, Any], detailed: bool) -> Dict[str, A
         "home_team": home,
         "away_team": away,
         "events": [], "goals": [], "momentum": [], "actions": [],
-        "lineups": {}, "stats": {"all": [], "1st": [], "2nd": []},
+        "lineups": {}, "players": {}, "stats": {"all": [], "1st": [], "2nd": []},
     }
     match["is_french_match"] = home["is_french"] or away["is_french"]
     if raw_status in ("UPCOMING", ""):
@@ -76,8 +77,8 @@ def build_match(comp_key: str, m: Dict[str, Any], detailed: bool) -> Dict[str, A
 
     events = uefa.fetch_events(mid)
     shown, goals, actions = uefa.build_events(events, m, home["id"], away["id"])
-    pstats = uefa.fetch_player_stats(mid) if detailed else {}
-    lineups = uefa.build_lineups(uefa.fetch_lineups(mid), events, str(potm.get("id", "")), pstats)
+    pstats = uefa.fetch_player_stats(mid)  # tous les matchs : nécessaire aux notes et aux fiches joueurs
+    lineups, players = uefa.build_lineups(uefa.fetch_lineups(mid), events, str(potm.get("id", "")), pstats)
     home["formation"], away["formation"] = lineups.get("home_formation", ""), lineups.get("away_formation", "")
 
     match.update({
@@ -85,6 +86,7 @@ def build_match(comp_key: str, m: Dict[str, Any], detailed: bool) -> Dict[str, A
         "goals": goals,
         "momentum": uefa.compute_momentum(actions),
         "lineups": lineups,
+        "players": players,
         "stats": {"all": uefa.build_team_stats(uefa.fetch_team_stats(mid), home["id"], away["id"]),
                   "1st": uefa.half_stats(actions, "FIRST_HALF"),
                   "2nd": uefa.half_stats(actions, "SECOND_HALF")},
@@ -162,6 +164,8 @@ def collect_dates_data(target_dates: List[str], label_prefix: str = "Soirée",
         print(f"[INFO] {meta['name']} : {len(matches)} match(s), {len(standings)} équipes au classement, "
               f"{len(focus)} fiche(s) club français.")
 
+    all_matches = [m for c in output["competitions"].values() for m in c["matches"] if m.get("players")]
+    output["ratings"] = ratings.rate_matches(all_matches)
     output["notification"]["match_night"] = finished_total > 0
     with open(output_path, "w", encoding="utf-8") as f:
         json.dump(output, f, ensure_ascii=False, indent=2)

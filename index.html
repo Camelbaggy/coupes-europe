@@ -551,7 +551,7 @@
     .pitch-container {
       position: relative;
       width: 100%;
-      height: 460px;
+      height: 520px;
       background: linear-gradient(180deg, #14532d 0%, #166534 50%, #14532d 100%);
       border: 2px solid rgba(255, 255, 255, 0.35);
       border-radius: 12px;
@@ -669,6 +669,51 @@
       box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.15);
       flex-shrink: 0;
     }
+    /* Liens joueurs (compo, buteurs, déroulé) */
+    .plink {
+      background: none; border: none; padding: 0; margin: 0; font: inherit; color: inherit; cursor: pointer;
+      text-align: inherit; text-decoration: underline; text-decoration-color: rgba(148, 163, 184, 0.45);
+      text-underline-offset: 2px;
+    }
+    .plink:hover { color: #fff; text-decoration-color: currentColor; }
+    .player-node { cursor: pointer; }
+    .player-node .player-rating {
+      position: absolute; top: -7px; left: calc(50% + 8px); margin: 0; font-size: 0.6rem; line-height: 1.35;
+      padding: 0 3px; border-radius: 4px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+    }
+    .player-node:hover .player-dot { transform: scale(1.12); }
+    .player-dot { transition: transform 0.12s ease; }
+    .rating-badge { display: inline-block; font-weight: 800; border-radius: 4px; padding: 0 5px; color: #0b0f17; }
+    .r-top { background: #38bdf8; } .r-good { background: #22c55e; } .r-mid { background: #eab308; }
+    .r-low { background: #f97316; } .r-bad { background: #ef4444; color: #fff; }
+    /* Fiche joueur */
+    .player-backdrop {
+      position: fixed; inset: 0; z-index: 60; display: none; align-items: flex-end; justify-content: center;
+      background: rgba(0, 0, 0, 0.6);
+    }
+    .player-backdrop.open { display: flex; }
+    .player-sheet {
+      background: var(--bg-card); width: 100%; max-width: 520px; max-height: 88vh; overflow-y: auto;
+      border-radius: 18px 18px 0 0; border-top: 1px solid var(--border); padding: 16px; animation: slideUp 0.2s ease-out;
+    }
+    .ps-head { display: flex; gap: 12px; align-items: center; }
+    .ps-photo { width: 64px; height: 64px; border-radius: 50%; object-fit: cover; background: var(--bg-elevated);
+      border: 2px solid var(--border); flex-shrink: 0; }
+    .ps-name { font-size: 1.05rem; font-weight: 800; }
+    .ps-meta { font-size: 0.78rem; color: var(--text-muted); display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: center; }
+    .ps-rating { margin-left: auto; text-align: center; }
+    .ps-rating .rating-badge { font-size: 1.5rem; padding: 4px 10px; border-radius: 8px; }
+    .ps-rating small { display: block; font-size: 0.65rem; color: var(--text-muted); margin-top: 3px; }
+    .ps-tags { display: flex; flex-wrap: wrap; gap: 6px; margin: 12px 0 4px; }
+    .ps-tag { font-size: 0.72rem; background: var(--bg-elevated); border: 1px solid var(--border); border-radius: 99px; padding: 2px 9px; }
+    .ps-section { margin-top: 14px; }
+    .ps-section h4 { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); margin-bottom: 6px; }
+    .ps-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+    .ps-stat { background: rgba(255, 255, 255, 0.03); border-radius: 8px; padding: 7px 9px; display: flex; justify-content: space-between;
+      font-size: 0.8rem; gap: 6px; }
+    .ps-stat b { white-space: nowrap; }
+    .ps-factor { display: flex; justify-content: space-between; font-size: 0.8rem; padding: 4px 0; border-bottom: 1px solid rgba(255,255,255,0.04); }
+    .ps-factor .pos { color: #22c55e; font-weight: 700; } .ps-factor .neg { color: #f87171; font-weight: 700; }
     .goal-chip.mine {
       border-color: rgba(96, 165, 250, 0.45);
       color: #e0f2fe;
@@ -766,6 +811,11 @@
     </div>
   </div>
 
+  <!-- FICHE JOUEUR (au-dessus de la fiche de match) -->
+  <div class="player-backdrop" id="player-modal" onclick="if (event.target.id === 'player-modal') closePlayer()">
+    <div class="player-sheet" id="player-sheet"></div>
+  </div>
+
   <script>
     let appData = null;
     let currentComp = 'ucl';
@@ -826,7 +876,8 @@
           const goalsHtml = (fc.goals || []).map(g => {
             const tag = g.kind === 'csc' ? ' csc' : g.kind === 'pen' ? ' sp' : '';
             const mine = (g.team === 'home' ? fc.home_team : fc.away_team).name === fc.club_name;
-            return `<span class="goal-chip ${mine ? 'mine' : ''}">⚽ ${esc(g.scorer)}${tag} (${esc(g.minute)})</span>`;
+            const who = g.scorer_id ? `<button class="plink" onclick="event.stopPropagation(); openPlayerFrom('${esc(fc.match_id)}', '${esc(g.scorer_id)}')">${esc(g.scorer)}</button>` : esc(g.scorer);
+            return `<span class="goal-chip ${mine ? 'mine' : ''}">⚽ ${who}${tag} (${esc(g.minute)})</span>`;
           }).join('');
           const source = fc.summary_source === 'gemini' ? '✓ Résumé IA contrôlé sur les données officielles' : '✓ Résumé généré depuis les données officielles';
           return `
@@ -955,8 +1006,8 @@
             <span class="ev-min">${esc(e.minute_label || (e.minute + "'"))}</span>
             <span>${iconMap[e.type] || '•'}</span>
             <div>
-              <div style="font-weight:700">${esc(e.player)}</div>
-              <div style="font-size:0.74rem;color:var(--text-muted)">${esc(e.detail)}</div>
+              <div style="font-weight:700">${plink(e.player_id, e.player)}</div>
+              <div style="font-size:0.74rem;color:var(--text-muted)">${detailWithLink(e)}</div>
             </div>
           </div>`).join('');
       }
@@ -1038,14 +1089,14 @@
           container.innerHTML = `<div class="empty-state">Compositions indisponibles.</div>`;
           return;
         }
+        const hasPlayers = m.players && Object.keys(m.players).length > 0;
         const renderNodes = (list, side) => list.map(p => `
-          <div class="player-node" style="left:${p.x ?? 50}%;top:${p.y ?? 50}%" title="${esc(pStats(p))}">
+          <div class="player-node" style="left:${p.x ?? 50}%;top:${p.y ?? 50}%" ${hasPlayers && p.id ? `onclick="openPlayer('${esc(p.id)}')" role="button" title="Voir la fiche de ${esc(p.name)}"` : ''}>
             <div class="player-dot ${side}">${esc(p.number)}</div>
             <span class="player-label">${p.captain ? '© ' : ''}${p.potm ? '⭐ ' : ''}${esc(p.name)}${p.subbed_out ? ' 🔻' + esc(p.subbed_out) : ''}</span>
-            ${p.rating ? `<span class="player-rating">${esc(p.rating)}</span>` : ''}
+            ${p.rating ? `<span class="player-rating rating-badge ${ratingClass(p.rating)}">${esc(Number(p.rating).toFixed(1))}</span>` : ''}
           </div>`).join('');
-        const subs = (list) => list.length ? list.map(p => `${esc(p.number)} ${p.potm ? '⭐ ' : ''}${esc(p.name)}${p.minute ? ' (' + esc(p.minute) + ')' : ''}`).join(', ') : '—';
-        const pStats = (p) => { const s = p.stats || {}; return [s.buts ? `${s.buts} but(s)` : '', s.passes_dec ? `${s.passes_dec} passe(s) déc.` : '', s.tirs ? `${s.tirs} tir(s)` : '', s.arrets ? `${s.arrets} arrêt(s)` : '', s.distance_km ? `${s.distance_km} km` : ''].filter(Boolean).join(' · '); };
+        const subs = (list) => list.length ? list.map(p => `${esc(p.number)} ${p.potm ? '⭐ ' : ''}${plink(p.id, p.name)}${p.minute ? ' (' + esc(p.minute) + ')' : ''}${p.rating ? ` <span class="rating-badge ${ratingClass(p.rating)}" style="font-size:0.68rem">${esc(Number(p.rating).toFixed(1))}</span>` : ''}`).join(', ') : '—';
         container.innerHTML = `
           <div style="display:flex;justify-content:space-between;font-size:0.78rem;color:var(--text-muted);margin-bottom:8px">
             <span>🔵 ${esc(m.home_team.short)} ${esc(m.home_team.formation || '')}</span>
@@ -1061,7 +1112,8 @@
             <div><b style="color:var(--home-color)">Entrés (${esc(m.home_team.short)})</b> : ${subs(L.home_subs || [])}</div>
             <div><b style="color:var(--away-color)">Entrés (${esc(m.away_team.short)})</b> : ${subs(L.away_subs || [])}</div>
             ${(L.home_coach || L.away_coach) ? `<div>Entraîneurs : ${esc(L.home_coach || '—')} / ${esc(L.away_coach || '—')}</div>` : ''}
-            <div style="margin-top:4px">© capitaine · ⭐ homme du match · 🔻 minute de sortie</div>
+            <div style="margin-top:4px">© capitaine · ⭐ homme du match UEFA · 🔻 minute de sortie${hasPlayers ? ' · touchez un joueur pour sa fiche' : ''}</div>
+            ${hasPlayers ? `<div style="margin-top:4px">Notes sur 10 calculées à partir des statistiques officielles UEFA (méthode : voir la fiche d'un joueur).</div>` : ''}
           </div>`;
       }
 
@@ -1097,7 +1149,113 @@
       }
     }
 
-    document.addEventListener('keydown', e => { if (e.key === 'Escape') closeMatchModal(); });
+    // ---------- Joueurs : liens, notes, fiche individuelle ----------
+    function ratingClass(r) {
+      const v = Number(r);
+      return v >= 8 ? 'r-top' : v >= 7 ? 'r-good' : v >= 6 ? 'r-mid' : v >= 5 ? 'r-low' : 'r-bad';
+    }
+
+    function plink(id, text) {
+      if (id && activeMatch && activeMatch.players && activeMatch.players[id]) {
+        return `<button class="plink" onclick="event.stopPropagation(); openPlayer('${esc(id)}')">${esc(text)}</button>`;
+      }
+      return esc(text);
+    }
+
+    // Lien sur le second joueur d'un événement (passeur décisif, joueur remplacé)
+    function detailWithLink(e) {
+      const d = e.detail || '';
+      const other = e.other_id && activeMatch && activeMatch.players && activeMatch.players[e.other_id];
+      if (!other) return esc(d);
+      const name = other.name;
+      const i = d.indexOf(name);
+      if (i < 0) return esc(d);
+      return esc(d.slice(0, i)) + plink(e.other_id, name) + esc(d.slice(i + name.length));
+    }
+
+    function openPlayerFrom(matchId, playerId) {
+      openMatchModal(matchId);
+      openPlayer(playerId);
+    }
+
+    const PLAYER_STAT_GROUPS = [
+      ['Attaque', [
+        { k: 'goals', l: 'Buts' }, { k: 'assists', l: 'Passes décisives' }, { k: 'attempts', l: 'Tirs' },
+        { k: 'attempts_on_target', l: 'Tirs cadrés' }, { k: 'key_passes', l: 'Passes clés' },
+        { k: 'dribbling_successful', l: 'Dribbles réussis', of: 'dribbling' }, { k: 'cross_completed', l: 'Centres réussis', of: 'cross_attempted' },
+        { k: 'offsides', l: 'Hors-jeu' }]],
+      ['Passes', [
+        { k: 'passes_completed', l: 'Passes réussies', of: 'passes_attempted' }, { k: 'passes_accuracy', l: 'Précision', unit: '%' },
+        { k: 'passes_completed_forward', l: "Passes vers l'avant" }, { k: 'delivery_into_penalty_area', l: 'Passes dans la surface' }]],
+      ['Défense', [
+        { k: 'recovered_ball', l: 'Ballons récupérés' }, { k: 'tackles_won', l: 'Duels gagnés', of: 'tackles' },
+        { k: 'clearance_completed', l: 'Dégagements', of: 'clearance_attempted' }, { k: 'saves_and_blocks', l: 'Arrêts et contres' },
+        { k: 'lost_balls', l: 'Pertes de balle' }]],
+      ['Gardien', [
+        { k: 'saves', l: 'Arrêts', always: true }, { k: 'goals_conceded', l: 'Buts encaissés', always: true },
+        { k: 'shots_on_target_suffered', l: 'Tirs cadrés subis' }, { k: 'saves_over_shot_on_target_ratio', l: 'Arrêts / tirs cadrés', unit: '%' }]],
+      ['Physique', [
+        { k: 'distance_covered', l: 'Distance', unit: ' km' }, { k: 'top_speed', l: 'Vitesse max.', unit: ' km/h' }, { k: 'sprints', l: 'Sprints' }]],
+      ['Discipline', [
+        { k: 'fouls_committed', l: 'Fautes commises' }, { k: 'fouls_suffered', l: 'Fautes obtenues' },
+        { k: 'yellow_cards', l: 'Cartons jaunes' }, { k: 'red_cards', l: 'Cartons rouges' }]],
+    ];
+
+    function openPlayer(pid) {
+      const m = activeMatch;
+      const p = m && m.players && m.players[pid];
+      if (!p) return;
+      const team = p.team === 'home' ? m.home_team : m.away_team;
+      const st = p.stats || {};
+      const fmt = (v) => (typeof v === 'number' && !Number.isInteger(v)) ? v.toLocaleString('fr-FR', { maximumFractionDigits: 1 }) : v;
+      const groups = PLAYER_STAT_GROUPS
+        .filter(([title]) => title !== 'Gardien' || p.pos === 'GOALKEEPER')
+        .map(([title, items]) => {
+          const cells = items.filter(it => st[it.k] || (it.always && p.pos === 'GOALKEEPER')).map(it => {
+            let val = fmt(st[it.k] || 0) + (it.unit || '');
+            if (it.of && st[it.of]) val = `${fmt(st[it.k] || 0)} / ${fmt(st[it.of])}`;
+            return `<div class="ps-stat"><span>${esc(it.l)}</span><b>${esc(val)}</b></div>`;
+          }).join('');
+          return cells ? `<div class="ps-section"><h4>${esc(title)}</h4><div class="ps-grid">${cells}</div></div>` : '';
+        }).join('');
+      const factors = (p.factors || []).map(f => `
+        <div class="ps-factor"><span>${esc(f.label)}</span><span class="${f.value >= 0 ? 'pos' : 'neg'}">${f.value >= 0 ? '+' : '−'}${Math.abs(f.value).toFixed(2)}</span></div>`).join('');
+      const tags = [
+        p.pos_fr, p.starter ? 'Titulaire' : (p.subbed_in ? `Entré à la ${p.subbed_in}` : 'Remplaçant'),
+        p.subbed_out ? `Remplacé à la ${p.subbed_out}` : '', `${p.minutes || 0} min jouées`,
+        p.captain ? 'Capitaine' : '', p.potm ? '⭐ Homme du match UEFA' : '',
+      ].filter(Boolean).map(t => `<span class="ps-tag">${esc(t)}</span>`).join('');
+      const photo = p.photo ? `<img class="ps-photo" src="${esc(p.photo)}" alt="" onerror="this.style.visibility='hidden'">` : `<div class="ps-photo"></div>`;
+      document.getElementById('player-sheet').innerHTML = `
+        <div class="modal-close-row">
+          <span class="section-sub">${flag(team)} ${esc(team.name)}</span>
+          <button class="btn-close" onclick="closePlayer()">✕</button>
+        </div>
+        <div class="ps-head">
+          ${photo}
+          <div>
+            <div class="ps-name">${p.number ? `<span style="color:var(--text-muted)">${esc(p.number)}</span> ` : ''}${esc(p.name)}</div>
+            <div class="ps-meta">${flag({ flag: p.flag, country_name: p.nationality })} ${esc(p.nationality || '')}${p.age ? ` · ${esc(p.age)} ans` : ''}</div>
+          </div>
+          <div class="ps-rating">
+            ${p.rating != null ? `<span class="rating-badge ${ratingClass(p.rating)}">${esc(Number(p.rating).toFixed(1))}</span><small>note /10</small>` : `<small>non noté<br>(moins de 10 min)</small>`}
+          </div>
+        </div>
+        <div class="ps-tags">${tags}</div>
+        ${factors ? `<div class="ps-section"><h4>Ce qui fait la note</h4>${factors}</div>` : ''}
+        ${groups || '<div class="empty-state" style="margin-top:12px">Statistiques individuelles indisponibles.</div>'}
+        <p class="momentum-note">Note sur 10 (échelle de 3 à 10, moyenne autour de 6,9) calculée à partir des statistiques officielles UEFA : pondérations issues de l'étude de Ball, Huynh & Varley (2025) sur les notes FotMob, Sofascore et WhoScored, bonus pour les buts et passes décisives, composante « résultat pendant le temps de jeu » (Wolf et al., 2020).</p>`;
+      document.getElementById('player-modal').classList.add('open');
+    }
+
+    function closePlayer() {
+      document.getElementById('player-modal').classList.remove('open');
+    }
+
+    document.addEventListener('keydown', e => {
+      if (e.key !== 'Escape') return;
+      if (document.getElementById('player-modal').classList.contains('open')) closePlayer(); else closeMatchModal();
+    });
     initDashboard();
   </script>
 </body>

@@ -69,3 +69,32 @@ def to_number(val: Any) -> Any:
     except (TypeError, ValueError):
         return None
     return int(f) if f.is_integer() else round(f, 1)
+
+
+# Code pays FIFA/UEFA -> code drapeau flagcdn.com (ISO 3166-1 ; sous-divisions pour le Royaume-Uni).
+# Les 55 fédérations UEFA + les nationalités les plus fréquentes hors d'Europe.
+FLAG_CODES = {
+    "ALB": "al", "AND": "ad", "ARM": "am", "AUT": "at", "AZE": "az", "BLR": "by", "BEL": "be", "BIH": "ba",
+    "BUL": "bg", "CRO": "hr", "CYP": "cy", "CZE": "cz", "DEN": "dk", "ENG": "gb-eng", "EST": "ee", "FRO": "fo",
+    "FIN": "fi", "FRA": "fr", "GEO": "ge", "GER": "de", "GIB": "gi", "GRE": "gr", "HUN": "hu", "ISL": "is",
+    "IRL": "ie", "ISR": "il", "ITA": "it", "KAZ": "kz", "KOS": "xk", "LVA": "lv", "LIE": "li", "LTU": "lt",
+    "LUX": "lu", "MLT": "mt", "MDA": "md", "MNE": "me", "NED": "nl", "MKD": "mk", "NIR": "gb-nir", "NOR": "no",
+    "POL": "pl", "POR": "pt", "ROU": "ro", "RUS": "ru", "SMR": "sm", "SCO": "gb-sct", "SRB": "rs", "SVK": "sk",
+    "SVN": "si", "ESP": "es", "SWE": "se", "SUI": "ch", "TUR": "tr", "UKR": "ua", "WAL": "gb-wls", "MON": "mc",
+    # Amériques
+    "ARG": "ar", "BRA": "br", "URU": "uy", "PAR": "py", "CHI": "cl", "COL": "co", "ECU": "ec", "PER": "pe",
+    "VEN": "ve", "BOL": "bo", "MEX": "mx", "USA": "us", "CAN": "ca", "JAM": "jm", "CRC": "cr", "HON": "hn",
+    "PAN": "pa", "HAI": "ht", "SUR": "sr", "CUW": "cw", "GUA": "gt", "SLV": "sv", "TRI": "tt", "DOM": "do",
+    "CUB": "cu", "GRN": "gd", "MTQ": "mq", "GLP": "gp", "GUF": "gf",
+    # Afrique
+    "MAR": "ma", "ALG": "dz", "TUN": "tn", "EGY": "eg", "LBY": "ly", "SEN": "sn", "CIV": "ci", "CMR": "cm",
+    "NGA": "ng", "GHA": "gh", "MLI": "ml", "BFA": "bf", "GUI": "gn", "COD": "cd", "CGO": "cg", "GAB": "ga",
+    "GAM": "gm", "CPV": "cv", "ZAM": "zm", "ZIM": "zw", "RSA": "za", "ANG": "ao", "MOZ": "mz", "KEN": "ke",
+    "TOG": "tg", "BEN": "bj", "NIG": "ne", "GNB": "gw", "SLE": "sl", "LBR": "lr", "MTN": "mr", "MAD": "mg",
+    "COM": "km", "CTA": "cf", "EQG": "gq", "BDI": "bi", "RWA": "rw", "TAN": "tz", "UGA": "ug", "ETH": "et",
+    "SUD": "sd", "MWI": "mw", "NAM": "na", "BOT": "bw",
+    # Asie / Océanie
+    "JPN": "jp", "KOR": "kr", "CHN": "cn", "AUS": "au", "NZL": "nz", "IRN": "ir", "IRQ": "iq", "KSA": "sa",
+    "QAT": "qa", "UAE": "ae", "UZB": "uz", "JOR": "jo", "SYR": "sy", "LBN": "lb", "PLE": "ps", "IND": "in",
+    "IDN": "id", "THA": "th", "VIE": "vn", "PHI": "ph", "KGZ": "kg", "TJK": "tj", "TKM": "tm",
+}

@@ -44,6 +44,30 @@ match UEFA par date, score et nom d'équipe. Il sert uniquement de matière prem
 FotMob et SofaScore ont été écartés : leurs protections anti-robots (en-tête signé, Cloudflare) bloquent les
 serveurs de GitHub Actions, et les contourner irait contre leurs conditions d'utilisation.
 
+## Notes des joueurs (`ratings.py`)
+
+Chaque joueur ayant joué au moins 10 minutes reçoit une note sur 10, calculée à partir des statistiques officielles
+UEFA :
+
+1. **Joueurs de champ** : chaque statistique est standardisée sur l'ensemble des joueurs de champ de la collecte,
+   puis pondérée par les coefficients qui expliquent les notes FotMob dans Ball, Huynh & Varley (2025),
+   *Journal of Sports Sciences* 43:7 (Table 2) : tirs cadrés, passes clés, ballons récupérés, dribbles réussis,
+   dégagements, duels, passes courtes, fautes obtenues, pertes de balle… Les variables absentes chez l'UEFA
+   (xG, touches, interceptions) sont exclues ou remplacées par une variable proche.
+2. **Contributions directes**, que l'étude retire de son modèle : bonus pour les buts et les passes décisives,
+   malus pour les cartons.
+3. **Gardiens** (exclus de l'étude) : arrêts, buts encaissés, clean sheet, jeu au pied.
+4. **Résultat pendant le temps de jeu**, d'après Wolf, Schmitt & Schuller (2020), *Journal of Sports Analytics* 6 :
+   écart de buts de l'équipe quand le joueur était sur le terrain, comparé au résultat attendu. Les défenseurs
+   reçoivent aussi un bonus de clean sheet.
+5. **Calibrage** sur la distribution observée dans l'étude (moyenne 6,85, écart-type 0,75, bornes 3-10). Pour les
+   entrées tardives, la partie « statistiques » est ramenée vers la moyenne, mais pas les buts ni les passes
+   décisives.
+
+La fiche de chaque joueur (cliquable sur la compo, dans le déroulé et sur les buteurs) affiche sa note, les
+facteurs qui l'expliquent et ses statistiques. Contrôle : la collecte journalise à quelle fréquence le joueur le
+mieux noté est l'homme du match désigné par l'UEFA.
+
 ## Résumés
 
 `agents_flash.py` construit un dossier factuel par match : date, score à la pause, buts et passeurs, actions
