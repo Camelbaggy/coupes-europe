@@ -1,61 +1,48 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Chef d'Orchestre Principal : run_pipeline.py
---------------------------------------------
-Enchaîne automatiquement :
-1. La collecte déterministe (soirée du jour à 23h30 OU semaine entière avec `--week`).
-2. L'orchestration des 3 Agents Gemini Flash (Rédacteur, Contrôleur, Notification).
-3. L'envoi du push mobile `ntfy` si des matchs ont eu lieu.
+Chef d'orchestre : run_pipeline.py
+1. Collecte déterministe ESPN (soirée du jour, date précise, ou semaine avec --week).
+2. Rédaction/contrôle des résumés par les agents Gemini Flash (repli déterministe sinon).
+3. Push ntfy si au moins un match est terminé.
 """
 
 import argparse
 import sys
-import importlib.util
-
-# Chargement dynamique de collector-v2.py
-spec = importlib.util.spec_from_file_location("collector_v2", "collector-v2.py")
-collector_v2 = importlib.util.module_from_spec(spec)
-spec.loader.exec_module(collector_v2)
 
 import agents_flash
+import collector
 import notify
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Pipeline Complet Coupes d'Europe")
-    parser.add_argument(
-        "--week",
-        action="store_true",
-        help="Test grandeur nature : récupère tous les matchs européens de la semaine (Mardi-Jeudi)",
-    )
-    parser.add_argument("--date", type=str, help="Tester une date spécifique (YYYY-MM-DD)")
+    parser = argparse.ArgumentParser(description="Pipeline complet Coupes d'Europe")
+    parser.add_argument("--week", action="store_true", help="Tous les matchs européens de la semaine (mardi-jeudi)")
+    parser.add_argument("--date", help="Date précise (YYYY-MM-DD)")
+    parser.add_argument("--save-raw", help="Dossier où sauvegarder les réponses ESPN brutes (debug)")
+    parser.add_argument("--no-notify", action="store_true", help="Ne pas envoyer de push ntfy")
     args = parser.parse_args()
 
+    collector.set_raw_dir(args.save_raw)
+
     if args.week:
-        dates = collector_v2.get_current_week_european_dates()
-        print(f"=== LANCEMENT DU TEST GRANDEUR NATURE SUR LA SEMAINE : {dates} ===")
-        raw_data = collector_v2.collect_dates_data(
-            dates, label_prefix=f"Semaine du {dates[0]} au {dates[-1]}"
-        )
-    elif args.date:
-        print(f"=== LANCEMENT SUR LA DATE CIBLÉE : {args.date} ===")
-        raw_data = collector_v2.collect_dates_data([args.date], label_prefix=f"Soirée du {args.date}")
+        dates = collector.get_current_week_european_dates()
+        label = f"Semaine du {dates[0]} au {dates[-1]}"
     else:
-        today_str = collector_v2.date.today().isoformat()
-        print(f"=== EXÉCUTION AUTOMATIQUE 23H30 ({today_str}) ===")
-        raw_data = collector_v2.collect_dates_data([today_str], label_prefix=f"Soirée du {today_str}")
+        d = args.date or collector.date.today().isoformat()
+        dates, label = [d], f"Soirée du {d}"
+    print(f"=== COLLECTE : {dates} ===")
+    raw_data = collector.collect_dates_data(dates, label_prefix=label, output_path="data_raw.json")
 
     if not raw_data.get("notification", {}).get("match_night", False):
-        print("[FIN] Aucun match européen sur le créneau. Arrêt immédiat.")
+        print("[FIN] Aucun match européen terminé sur le créneau. data.json inchangé.")
         sys.exit(0)
 
-    # Étape 3 : Passage des Agents Gemini Flash
     agents_flash.orchestrate_flash_agents(input_path="data_raw.json", output_path="data.json")
 
-    # Étape 5 : Notification push ntfy
-    notify.send_ntfy_notification(data_path="data.json", force_test=args.week)
-    print("=== PIPELINE TERMINÉ AVEC SUCCÈS ===")
+    if not args.no_notify:
+        notify.send_ntfy_notification(data_path="data.json", force_test=args.week)
+    print("=== PIPELINE TERMINÉ ===")
 
 
 if __name__ == "__main__":

@@ -1,66 +1,57 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Étape 5 : Module de Notification Push Légère (ntfy.sh)
-------------------------------------------------------
-Envoie une alerte push à 23h30 uniquement si `notification.match_night` vaut True.
-Inclut le titre, le résumé des clubs français et le bouton d'ouverture directe du Dashboard.
+Notification push légère via ntfy.sh.
+Utilise la publication JSON de ntfy (POST sur la racine du serveur) : les accents et
+apostrophes du titre passent sans souci, contrairement aux en-têtes HTTP.
 """
 
 import json
 import os
-import urllib.request
 import urllib.error
+import urllib.request
 
-NTFY_TOPIC = os.environ.get("NTFY_TOPIC", "")
+NTFY_TOPIC = os.environ.get("NTFY_TOPIC", "").strip()
 NTFY_SERVER = os.environ.get("NTFY_SERVER", "https://ntfy.sh").rstrip("/")
-DASHBOARD_URL = os.environ.get("DASHBOARD_URL", "https://TON-PSEUDO.github.io/coupes-europe/")
+DASHBOARD_URL = os.environ.get("DASHBOARD_URL", "").strip()
 
 
 def send_ntfy_notification(data_path: str = "data.json", force_test: bool = False) -> bool:
-    """Lit `data.json` et pousse l'alerte sur le canal ntfy configuré."""
     if not os.path.exists(data_path):
-        print(f"[WARN] Fichier {data_path} introuvable. Aucune notification envoyée.")
+        print(f"[WARN] {data_path} introuvable. Aucune notification envoyée.")
         return False
 
     with open(data_path, "r", encoding="utf-8") as f:
-        data = json.load(f)
+        notif = json.load(f).get("notification", {})
 
-    notif = data.get("notification", {})
     if not notif.get("match_night", False) and not force_test:
-        print("[INFO] Aucun match ce soir (match_night=False). Pas de push ntfy.")
+        print("[INFO] Aucun match ce soir. Pas de push ntfy.")
         return False
+
+    payload = {
+        "topic": NTFY_TOPIC,
+        "title": notif.get("title") or "Coupes d'Europe : Résultats et classements à jour",
+        "message": notif.get("summary") or "Résultats et classements mis à jour.",
+        "tags": ["soccer", "trophy"],
+    }
+    if DASHBOARD_URL:
+        payload["click"] = DASHBOARD_URL
+        payload["actions"] = [{"action": "view", "label": "Ouvrir le dashboard", "url": DASHBOARD_URL, "clear": True}]
 
     if not NTFY_TOPIC:
-        print("[INFO] Variable NTFY_TOPIC non définie. Simulation de l'envoi push :")
-        print(f"  -> Titre   : {notif.get('title')}")
-        print(f"  -> Message : {notif.get('summary')}")
-        print(f"  -> Lien    : {DASHBOARD_URL}")
+        print("[INFO] NTFY_TOPIC non défini. Simulation du push :")
+        print(json.dumps(payload, ensure_ascii=False, indent=2))
         return False
 
-    url = f"{NTFY_SERVER}/{NTFY_TOPIC}"
-    title = notif.get("title", "Coupes d'Europe : Résultats et classements à jour")
-    summary = notif.get(
-        "summary", "Résultats et classements des 36 équipes mis à jour."
-    )
-
-    headers = {
-        "Title": title.encode("utf-8"),
-        "Priority": "default",
-        "Tags": "soccer,trophy,fr",
-        "Click": DASHBOARD_URL,
-        "Actions": f"view, Ouvrir le Dashboard, {DASHBOARD_URL}, clear=true".encode("utf-8"),
-    }
-
     req = urllib.request.Request(
-        url,
-        data=summary.encode("utf-8"),
-        headers=headers,
+        NTFY_SERVER,
+        data=json.dumps(payload).encode("utf-8"),
+        headers={"Content-Type": "application/json"},
         method="POST",
     )
     try:
-        with urllib.request.urlopen(req, timeout=10) as resp:
-            print(f"[OK] Notification push ntfy envoyée (HTTP {resp.status}).")
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            print(f"[OK] Push ntfy envoyé (HTTP {resp.status}).")
             return True
     except urllib.error.URLError as e:
         print(f"[ERREUR] Échec de l'envoi ntfy : {e}")

@@ -1,0 +1,40 @@
+name: Test du pipeline (branche, sans push ni commit)
+
+on:
+  push:
+    branches: ['ccr-*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    # uniquement si le message de commit contient [test] (économise le quota Gemini)
+    if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[test]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Pipeline complet sur la semaine du 3 au 5 novembre (sans notification)
+        env:
+          PYTHONUNBUFFERED: "1"
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          python - <<'PY'
+          import sys, collector, agents_flash
+          dates = ["2026-11-03", "2026-11-04", "2026-11-05"]
+          collector.collect_dates_data(dates, label_prefix="test", output_path="data_raw.json")
+          agents_flash.orchestrate_flash_agents("data_raw.json", "data_test.json")
+          PY
+          python tools/inspect_data.py data_test.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: data-test
+          path: data_test.json
+          retention-days: 7
+          if-no-files-found: ignore

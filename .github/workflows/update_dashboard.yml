@@ -22,6 +22,7 @@ permissions:
 jobs:
   update-and-notify:
     runs-on: ubuntu-latest
+    timeout-minutes: 25
     steps:
       - name: Récupération du dépôt
         uses: actions/checkout@v4
@@ -31,27 +32,37 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Installation du contournement anti-bot (curl_cffi)
-        run: pip install curl_cffi
-
-      - name: Exécution du Pipeline (Collecte FotMob + Agents Flash + Push ntfy)
+      - name: Exécution du pipeline (collecte ESPN + agents Gemini Flash + push ntfy)
         env:
           PYTHONUNBUFFERED: "1"
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
           DASHBOARD_URL: ${{ secrets.DASHBOARD_URL }}
+          DATE_SPECIFIQUE: ${{ inputs.date_specifique }}
+          MODE_SEMAINE: ${{ inputs.mode_test_semaine }}
         run: |
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            if [ -n "${{ inputs.date_specifique }}" ]; then
-              python run_pipeline.py --date "${{ inputs.date_specifique }}"
-            elif [ "${{ inputs.mode_test_semaine }}" = "true" ]; then
-              python run_pipeline.py --week
+            if [ -n "$DATE_SPECIFIQUE" ]; then
+              python run_pipeline.py --save-raw raw_espn --date "$DATE_SPECIFIQUE"
+            elif [ "$MODE_SEMAINE" = "true" ]; then
+              python run_pipeline.py --save-raw raw_espn --week
             else
               python run_pipeline.py
             fi
           else
             python run_pipeline.py
           fi
+
+      - name: Archivage des réponses ESPN brutes (debug, 7 jours)
+        if: always() && github.event_name == 'workflow_dispatch'
+        uses: actions/upload-artifact@v4
+        with:
+          name: raw-espn
+          path: |
+            raw_espn/
+            data_raw.json
+          retention-days: 7
+          if-no-files-found: ignore
 
       - name: Publication de data.json sur GitHub Pages (si modifié)
         run: |
@@ -61,6 +72,6 @@ jobs:
           if git diff --staged --quiet; then
             echo "Aucune modification de data.json à publier."
           else
-            git commit -m "chore: mise à jour automatique des résultats (FotMob)"
+            git commit -m "chore: mise à jour automatique des résultats (ESPN)"
             git push
           fi
