@@ -31,6 +31,9 @@ jobs:
         with:
           python-version: '3.11'
 
+      - name: Installation du contournement anti-bot (curl_cffi)
+        run: pip install curl_cffi
+
       - name: Exécution du Pipeline (Collecte FotMob + Agents Flash + Push ntfy)
         env:
           PYTHONUNBUFFERED: "1"
