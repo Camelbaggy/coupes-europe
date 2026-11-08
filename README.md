@@ -36,7 +36,9 @@ flagcdn.com. Angleterre, Écosse, pays de Galles et Irlande du Nord ont leur pro
 match UEFA par date, score et nom d'équipe. Il sert uniquement de matière première au récit de l'IA.
 
 **Valeurs calculées (jamais inventées)** :
-- *momentum* : actions offensives officielles (buts, tirs, corners) pondérées, par tranche de 5 minutes ;
+- *momentum* : indice de pression minute par minute. Les actions officielles (buts, tirs, attaques dangereuses,
+  corners, arrêts adverses, hors-jeu, coups francs obtenus) sont pondérées et créditées à l'équipe qui attaque,
+  puis lissées sur environ 5 minutes ;
 - *statistiques par mi-temps* : comptage des actions officielles de chaque période.
 
 FotMob et SofaScore ont été écartés : leurs protections anti-robots (en-tête signé, Cloudflare) bloquent les
@@ -64,8 +66,8 @@ Aucune dépendance externe (bibliothèque standard Python 3.9+).
 ## Tests sur une branche
 
 Le workflow `test_pipeline.yml` exécute tout le pipeline sur la semaine du 3 au 5 novembre 2026, sans push ntfy
-ni commit, lorsqu'un commit de la branche contient `[test]` dans son message. C'est fait ainsi pour économiser le
-quota Gemini.
+ni commit, lorsqu'un commit de la branche contient `[test]` dans son message (ou `[sans-ia]` pour un test sans appel à
+Gemini). C'est fait ainsi pour économiser le quota Gemini.
 
 ## Secrets GitHub Actions
 

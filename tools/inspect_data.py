@@ -19,7 +19,9 @@ for k, c in d["competitions"].items():
         print("events:", [(e["minute_label"], e["type"], e["team"], e["player"], e["detail"]) for e in m["events"]])
         print("stats all:", [(s["label"], s["home"], s["away"]) for s in m["stats"]["all"]])
         print("stats 1st:", [(s["label"], s["home"], s["away"]) for s in m["stats"]["1st"]])
-        print("momentum:", [(p["minute"], p["home"], p["away"]) for p in m["momentum"]])
+        mo = m["momentum"]
+        print(f"momentum: {len(mo)} points, actions créditées dom {sum(p['home'] for p in mo):.1f} / ext {sum(p['away'] for p in mo):.1f}")
+        print("courbe:", "".join("▲" if p["value"] > 20 else "▼" if p["value"] < -20 else "·" for p in mo))
         lu = m["lineups"]
         print("compo dom:", [(p["number"], p["name"], p["x"], p["y"], p.get("subbed_out"), p.get("stats")) for p in lu.get("home", [])][:11])
         print("entrés dom:", lu.get("home_subs"))

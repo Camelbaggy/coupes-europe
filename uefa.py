@@ -17,6 +17,8 @@ Pièges connus :
   - GOAL : secondaryActor = gardien battu (le passeur est dans un événement ASSIST).
 """
 
+import math
+import re
 from datetime import date, timedelta
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -62,7 +64,12 @@ PLAYER_STATS = {
 }
 
 SHOT_TYPES = {"GOAL", "SHOT_ON_GOAL", "SHOT_WIDE", "SHOT_BLOCKED"}
-MOMENTUM_WEIGHTS = {"GOAL": 5.0, "SHOT_ON_GOAL": 3.0, "SHOT_WIDE": 2.0, "SHOT_BLOCKED": 1.5, "CORNER": 1.0}
+# Poids des actions dans le momentum, attribuées à l'équipe qui ATTAQUE.
+# (Vérifié sur les données : SAVE a pour acteur principal le défenseur ou le gardien -> crédit à l'adversaire ;
+#  CORNER, OFFSIDE, FREE_KICK, DANGEROUS_ATTACK ont pour acteur l'équipe en possession.)
+MOMENTUM_WEIGHTS = {"GOAL": 6.0, "SHOT_ON_GOAL": 4.0, "SHOT_WIDE": 3.0, "SHOT_BLOCKED": 2.5,
+                    "DANGEROUS_ATTACK": 2.0, "CORNER": 2.0, "SAVE": 1.5, "OFFSIDE": 1.0, "FREE_KICK": 0.5}
+MOMENTUM_FOR_OPPONENT = {"SAVE"}
 
 
 # ------------------------------------------------------------------------------
@@ -287,24 +294,54 @@ def build_events(events: List[Dict[str, Any]], match: Dict[str, Any], home_id: s
     return shown, goals, actions
 
 
-def compute_momentum(actions: List[Dict[str, Any]], bucket: int = 5) -> List[Dict[str, Any]]:
-    buckets: Dict[int, List[float]] = {}
+def compute_momentum(actions: List[Dict[str, Any]], sigma: float = 2.0) -> List[Dict[str, Any]]:
+    """
+    Indice de pression minute par minute (-100 = domination extérieur, +100 = domination domicile).
+    1. chaque action officielle est créditée à l'équipe qui attaque (poids MOMENTUM_WEIGHTS) ;
+    2. on calcule la différence domicile - extérieur pour chaque minute (temps additionnel inclus) ;
+    3. on lisse avec un noyau gaussien (sigma = 2 min), séparément pour chaque période ;
+    4. on normalise par la valeur maximale du match.
+    """
+    periods: Dict[str, Dict[Tuple[int, int], List[float]]] = {}
     for act in actions:
         w = MOMENTUM_WEIGHTS.get(act["type"])
-        if not w or act["team"] not in ("home", "away"):
+        side = act.get("team")
+        if not w or side not in ("home", "away") or not act.get("minute"):
             continue
-        base = int(str(act["minute"]).split("'")[0] or 0) if act["minute"] else 0
-        idx = min(max((max(base, 1) - 1) // bucket, 0), 23)
-        b = buckets.setdefault(idx, [0.0, 0.0])
-        b[0 if act["team"] == "home" else 1] += w
-    if not buckets:
+        if act["type"] in MOMENTUM_FOR_OPPONENT:
+            side = "away" if side == "home" else "home"
+        nums = [int(n) for n in re.findall(r"\d+", act["minute"])]
+        key = (nums[0], nums[1] if len(nums) > 1 else 0)
+        bucket = periods.setdefault(act.get("phase") or "", {}).setdefault(key, [0.0, 0.0])
+        bucket[0 if side == "home" else 1] += w
+    if not periods:
         return []
-    last = max(max(buckets), 17)
-    peak = max(abs(x - y) for x, y in buckets.values()) or 1.0
-    return [{"minute": (i + 1) * bucket, "home": round(buckets.get(i, [0, 0])[0], 1),
-             "away": round(buckets.get(i, [0, 0])[1], 1),
-             "value": round(100 * (buckets.get(i, [0, 0])[0] - buckets.get(i, [0, 0])[1]) / peak)}
-            for i in range(last + 1)]
+
+    points: List[Dict[str, Any]] = []
+    for phase, start_min, end_min in (("FIRST_HALF", 1, 45), ("SECOND_HALF", 46, 90),
+                                      ("FIRST_EXTRA_TIME", 91, 105), ("SECOND_EXTRA_TIME", 106, 120)):
+        data = periods.get(phase)
+        if data is None:
+            continue
+        extra = max([k[1] for k in data if k[0] == end_min] + [0])
+        keys = [(m, 0) for m in range(start_min, end_min + 1)] + [(end_min, i) for i in range(1, extra + 1)]
+        raw = [data.get(k, [0.0, 0.0]) for k in keys]
+        diff = [h - a for h, a in raw]
+        span = int(3 * sigma)
+        kernel = [math.exp(-(d * d) / (2 * sigma * sigma)) for d in range(-span, span + 1)]
+        for i, (m, x) in enumerate(keys):
+            acc = norm = 0.0
+            for j, kv in enumerate(kernel):
+                idx = i + j - span
+                if 0 <= idx < len(diff):
+                    acc += diff[idx] * kv
+                    norm += kv
+            points.append({"minute": m, "label": f"{m}'+{x}" if x else f"{m}'", "phase": phase,
+                           "home": round(raw[i][0], 1), "away": round(raw[i][1], 1), "smooth": acc / norm})
+    peak = max(abs(p["smooth"]) for p in points) or 1.0
+    for p in points:
+        p["value"] = round(100 * p.pop("smooth") / peak)
+    return points
 
 
 def half_stats(actions: List[Dict[str, Any]], phase: str) -> List[Dict[str, Any]]:

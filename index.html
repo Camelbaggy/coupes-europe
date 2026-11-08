@@ -964,41 +964,71 @@
       else if (currentModalView === 'momentum') {
         const pts = m.momentum || [];
         if (pts.length === 0) {
-          container.innerHTML = `<div class="empty-state">Fil du match indisponible : pas de graphique de pression pour cette rencontre.</div>`;
+          container.innerHTML = `<div class="empty-state">Actions du match indisponibles : pas de graphique de pression pour cette rencontre.</div>`;
           return;
         }
-        const maxMin = Math.max(90, ...pts.map(p => p.minute));
-        const W = 300, slot = W / pts.length;
-        const bars = pts.map((pt, i) => {
-          const h = Math.min(Math.abs(pt.value) * 0.45, 45);
-          const y = pt.value >= 0 ? 50 - h : 50;
-          const color = pt.value >= 0 ? '#38bdf8' : '#f43f5e';
-          const title = `${pt.minute - 5}'-${pt.minute}' : ${m.home_team.short} ${pt.home ?? ''} / ${m.away_team.short} ${pt.away ?? ''}`;
-          return `<rect x="${(5 + i * slot + 1).toFixed(1)}" y="${y.toFixed(1)}" width="${Math.max(slot - 2, 2).toFixed(1)}" height="${Math.max(h, 0.5).toFixed(1)}" rx="1.5" fill="${color}"><title>${esc(title)}</title></rect>`;
+        const W = 300, X0 = 5, MID = 66, AMP = 60, BOTTOM = 132;
+        const n = pts.length;
+        const xOf = (i) => X0 + (n > 1 ? i * W / (n - 1) : W / 2);
+        const yOf = (v) => MID - Math.max(-100, Math.min(100, Number(v) || 0)) / 100 * AMP;
+        const labelOf = (p) => p.label || `${p.minute}'`;
+        const idxOfLabel = (lbl, minute) => {
+          let i = pts.findIndex(p => labelOf(p) === lbl);
+          if (i < 0) i = pts.reduce((best, p, j) => Math.abs(p.minute - minute) < Math.abs(pts[best].minute - minute) ? j : best, 0);
+          return i;
+        };
+        const line = pts.map((p, i) => `${xOf(i).toFixed(2)},${yOf(p.value).toFixed(2)}`).join(' L ');
+        const area = `M ${xOf(0).toFixed(2)},${MID} L ${line} L ${xOf(n - 1).toFixed(2)},${MID} Z`;
+        const htIdx = pts.findIndex(p => p.phase === 'SECOND_HALF');
+        const htX = htIdx > 0 ? (xOf(htIdx - 1) + xOf(htIdx)) / 2 : null;
+        const ticks = [15, 30, 45, 60, 75, 90].filter(mn => !(mn === 45 && htIdx > 0)).map(mn => {
+          const i = pts.findIndex(p => p.minute === mn && !String(labelOf(p)).includes('+'));
+          return i < 0 ? '' : `<text x="${xOf(i).toFixed(1)}" y="${BOTTOM + 8}" font-size="6.5" fill="#64748b" text-anchor="middle">${mn}'</text>`;
         }).join('');
-        const goalMarks = (m.events || []).filter(e => e.type === 'goal').map(e => {
-          const idx = Math.min(Math.floor((Math.max(e.minute, 1) - 1) / 5), pts.length - 1);
-          const x = 5 + idx * slot + slot / 2;
-          const y = e.team === 'home' ? 3 : 97;
-          return `<text x="${x.toFixed(1)}" y="${y}" font-size="6" text-anchor="middle" dominant-baseline="middle">⚽</text>`;
+        const goals = (m.events || []).filter(e => e.type === 'goal').map(e => {
+          const x = xOf(idxOfLabel(e.minute_label, e.minute));
+          const home = e.team === 'home';
+          const y = home ? 4 : BOTTOM - 2;
+          return `<line x1="${x.toFixed(1)}" y1="${home ? 8 : MID}" x2="${x.toFixed(1)}" y2="${home ? MID : BOTTOM - 6}" stroke="${home ? '#38bdf8' : '#f43f5e'}" stroke-opacity="0.35" stroke-width="0.6" stroke-dasharray="1.5,1.5" />
+                  <text x="${x.toFixed(1)}" y="${y}" font-size="6.5" text-anchor="middle" dominant-baseline="middle">⚽</text>`;
         }).join('');
-        const halfX = 5 + (45 / 5) * slot;
         container.innerHTML = `
           <div class="momentum-box">
             <div class="momentum-legend">
               <span style="color:var(--home-color)">▲ ${esc(m.home_team.short)}</span>
+              <span id="momentum-readout" style="color:var(--text-muted);font-weight:500">Touchez le graphique</span>
               <span style="color:var(--away-color)">▼ ${esc(m.away_team.short)}</span>
             </div>
-            <svg viewBox="0 0 310 100" style="width:100%;height:170px">
-              <line x1="0" y1="50" x2="310" y2="50" stroke="#334155" stroke-width="1" />
-              <line x1="${halfX.toFixed(1)}" y1="0" x2="${halfX.toFixed(1)}" y2="100" stroke="#334155" stroke-dasharray="3,3" stroke-width="1" />
-              ${bars}${goalMarks}
+            <svg id="momentum-svg" viewBox="0 0 310 ${BOTTOM + 12}" style="width:100%;height:auto;touch-action:pan-y">
+              <defs>
+                <clipPath id="clip-home"><rect x="0" y="0" width="310" height="${MID}" /></clipPath>
+                <clipPath id="clip-away"><rect x="0" y="${MID}" width="310" height="${BOTTOM - MID}" /></clipPath>
+                <linearGradient id="grad-home" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#38bdf8" stop-opacity="0.95"/><stop offset="1" stop-color="#38bdf8" stop-opacity="0.25"/></linearGradient>
+                <linearGradient id="grad-away" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f43f5e" stop-opacity="0.25"/><stop offset="1" stop-color="#f43f5e" stop-opacity="0.95"/></linearGradient>
+              </defs>
+              ${htX !== null ? `<line x1="${htX.toFixed(1)}" y1="2" x2="${htX.toFixed(1)}" y2="${BOTTOM}" stroke="#475569" stroke-dasharray="2,2" stroke-width="0.6" /><text x="${htX.toFixed(1)}" y="${BOTTOM + 8}" font-size="6.5" fill="#94a3b8" text-anchor="middle">MT</text>` : ''}
+              <path d="${area}" fill="url(#grad-home)" clip-path="url(#clip-home)" />
+              <path d="${area}" fill="url(#grad-away)" clip-path="url(#clip-away)" />
+              <line x1="0" y1="${MID}" x2="310" y2="${MID}" stroke="#475569" stroke-width="0.6" />
+              ${goals}${ticks}
+              <line id="momentum-cursor" x1="0" y1="2" x2="0" y2="${BOTTOM}" stroke="#e2e8f0" stroke-width="0.5" visibility="hidden" />
             </svg>
-            <div style="display:flex;justify-content:space-between;font-size:0.7rem;color:var(--text-muted);margin-top:4px">
-              <span>1'</span><span>45'</span><span>${maxMin}'</span>
-            </div>
-            <p class="momentum-note">Pression offensive par tranche de 5 min, calculée à partir des actions officielles UEFA : buts, tirs cadrés, non cadrés et contrés, corners.</p>
+            <p class="momentum-note">Indice de pression minute par minute (lissé sur environ 5 min), calculé à partir des actions officielles UEFA : buts, tirs, attaques dangereuses, corners, arrêts adverses, hors-jeu et coups francs obtenus.</p>
           </div>`;
+        const svg = document.getElementById('momentum-svg');
+        const readout = document.getElementById('momentum-readout');
+        const cursor = document.getElementById('momentum-cursor');
+        const show = (evt) => {
+          const r = svg.getBoundingClientRect();
+          const x = (evt.clientX - r.left) / r.width * 310;
+          const i = Math.max(0, Math.min(n - 1, Math.round((x - X0) / (n > 1 ? W / (n - 1) : 1))));
+          const p = pts[i];
+          const who = p.value > 15 ? `pression ${m.home_team.short}` : p.value < -15 ? `pression ${m.away_team.short}` : 'équilibré';
+          readout.textContent = `${labelOf(p)} · ${who}`;
+          cursor.setAttribute('x1', xOf(i)); cursor.setAttribute('x2', xOf(i)); cursor.setAttribute('visibility', 'visible');
+        };
+        svg.addEventListener('pointermove', show);
+        svg.addEventListener('pointerdown', show);
       }
 
       else if (currentModalView === 'lineups') {

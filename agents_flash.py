@@ -68,7 +68,7 @@ def call_gemini_flash(system_instruction: str, user_prompt: str, temperature: fl
     """prefer_lite : commence par un modèle Flash-Lite (quota distinct sur l'offre gratuite)."""
     if not GEMINI_API_KEY:
         raise RuntimeError("GEMINI_API_KEY absente.")
-    if _DEADLINE and time.monotonic() > _DEADLINE:
+    if AI_BUDGET_SECONDS <= 0 or (_DEADLINE and time.monotonic() > _DEADLINE):
         raise RuntimeError("budget de temps IA épuisé")
     last_err = "aucun modèle"
     models = get_flash_models()
@@ -179,7 +179,7 @@ ACTION_FR = {
     "SAVE": "Arrêt", "VAR": "Intervention VAR", "RED_CARD": "Carton rouge", "YELLOW_CARD": "Carton jaune",
     "SUBSTITUTION": "Remplacement", "PENALTY_MISSED": "Penalty manqué", "OFFSIDE": "Hors-jeu",
 }
-NOISE_ACTIONS = {"FOUL", "FREE_KICK", "CORNER", "OFFSIDE", "THROW_IN", "GOAL_KICK"}
+NOISE_ACTIONS = {"FOUL", "FREE_KICK", "CORNER", "OFFSIDE", "THROW_IN", "GOAL_KICK", "DANGEROUS_ATTACK"}
 
 
 def official_actions(match: Dict[str, Any], names: Dict[str, str], limit: int = 150) -> List[str]:
