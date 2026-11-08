@@ -72,6 +72,6 @@ jobs:
           if git diff --staged --quiet; then
             echo "Aucune modification de data.json à publier."
           else
-            git commit -m "chore: mise à jour automatique des résultats (ESPN)"
+            git commit -m "chore: mise à jour automatique des résultats (UEFA)"
             git push
           fi
