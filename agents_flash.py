@@ -1,418 +1,398 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Étape 3 : Orchestrateur des Sous-Agents Gemini Flash — v3 (Support Gemini 3.8 Flash)
-------------------------------------------------------------------------------------
-Priorise le modèle `gemini-3.8-flash` avec découverte dynamique des identifiants
-techniques disponibles sur la clé API Google AI Studio (`ListModels`), afin d'utiliser
-automatiquement la version Flash la plus récente autorisée par la clé.
+Agents Gemini Flash : rédaction et contrôle des résumés des matchs des clubs français.
+
+1. On prépare un « dossier de match » factuel : score à la mi-temps, phases de domination
+   (calculées depuis le momentum), moments clés tirés du fil de commentaires, statistiques
+   nommées par équipe, classement.
+2. L'agent rédacteur raconte le match en 4-5 phrases à partir de ce dossier uniquement.
+3. L'agent contrôleur vérifie chaque fait cité ; en cas de rejet, le rédacteur corrige (3 essais).
+4. Sans clé ou en cas d'échec, un résumé narratif déterministe est construit à partir des mêmes faits.
 """
 
 import json
 import os
+import re
 import time
-import urllib.request
 import urllib.error
-from typing import Dict, Any, List, Tuple
+import urllib.request
+from typing import Any, Dict, List, Optional, Tuple
 
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "").strip()
-
-# Ordre de priorité strict : 3.8 Flash en tête
-PREFERRED_FLASH_MODELS = [
-    "gemini-3.8-flash",
-    "gemini-3.8-flash-preview",
-    "gemini-3.8-flash-latest",
-    "gemini-3.5-flash",
-    "gemini-3.5-flash-lite",
-    "gemini-3.0-flash",
-    "gemini-2.5-flash",
-]
-
-_RESOLVED_MODELS_CACHE: List[str] = []
+API_ROOT = "https://generativelanguage.googleapis.com/v1beta"
+FALLBACK_MODELS = ["gemini-flash-latest", "gemini-2.5-flash"]
+_MODELS_CACHE: List[str] = []
 
 
-def get_ordered_flash_models() -> List[str]:
-    """
-    Interroge une seule fois l'endpoint officiel `/v1beta/models` avec la clé API
-    pour détecter le nom technique exact de Gemini 3.8 Flash sur l'API REST,
-    tout en conservant la liste de priorité en tête.
-    """
-    global _RESOLVED_MODELS_CACHE
-    if _RESOLVED_MODELS_CACHE:
-        return _RESOLVED_MODELS_CACHE
-
-    discovered = []
-    if GEMINI_API_KEY:
-        try:
-            url = "https://generativelanguage.googleapis.com/v1beta/models?pageSize=200"
-            req = urllib.request.Request(url, headers={"x-goog-api-key": GEMINI_API_KEY}, method="GET")
-            with urllib.request.urlopen(req, timeout=10) as resp:
-                data = json.loads(resp.read().decode("utf-8"))
-                for m in data.get("models", []):
-                    name = m.get("name", "").replace("models/", "")
-                    methods = m.get("supportedGenerationMethods", [])
-                    if "generateContent" in methods and "flash" in name.lower():
-                        discovered.append(name)
-        except Exception as e:
-            print(f"[INFO] Découverte ListModels ignorée ({e}), utilisation de la liste par défaut.")
-
-    ordered = []
-    # 1. Placer en premier tout modèle 3.8 Flash trouvé ou déclaré
-    for pref in PREFERRED_FLASH_MODELS:
-        if pref in discovered and pref not in ordered:
-            ordered.append(pref)
-    # 2. Ajouter les autres modèles Flash découverts sur la clé (triés du plus récent au plus ancien)
-    for d in sorted(discovered, reverse=True):
-        if d not in ordered and "tts" not in d and "image" not in d:
-            ordered.append(d)
-    # 3. S'assurer que nos identifiants cibles sont toujours présents
-    for pref in PREFERRED_FLASH_MODELS:
-        if pref not in ordered:
-            ordered.append(pref)
-
-    _RESOLVED_MODELS_CACHE = ordered
-    print(f"[INFO] Modèles Flash détectés par ordre de priorité : {_RESOLVED_MODELS_CACHE[:4]}")
-    return _RESOLVED_MODELS_CACHE
+# ==============================================================================
+# Appel Gemini
+# ==============================================================================
+def _model_rank(name: str) -> Tuple[float, int, int]:
+    """Tri : version la plus haute d'abord, stable avant preview, Flash avant Flash-Lite."""
+    m = re.search(r"(\d+(?:\.\d+)?)", name)
+    version = float(m.group(1)) if m else 0.0
+    return (-version, 1 if ("preview" in name or "exp" in name) else 0, 1 if "lite" in name else 0)
 
 
-def call_gemini_flash(
-    system_instruction: str,
-    user_prompt: str,
-    temperature: float = 0.25,
-    response_mime_type: str = "text/plain",
-) -> str:
-    """Appelle Gemini 3.8 Flash (ou le meilleur modèle Flash actif sur l'API REST v1beta)."""
+def get_flash_models() -> List[str]:
+    """Liste les modèles Flash réellement accessibles avec la clé (ListModels)."""
+    global _MODELS_CACHE
+    if _MODELS_CACHE:
+        return _MODELS_CACHE
+    found: List[str] = []
+    try:
+        req = urllib.request.Request(f"{API_ROOT}/models?pageSize=200", headers={"x-goog-api-key": GEMINI_API_KEY})
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            for m in json.loads(resp.read().decode("utf-8")).get("models", []):
+                name = m.get("name", "").replace("models/", "")
+                if ("generateContent" in m.get("supportedGenerationMethods", []) and "flash" in name
+                        and not any(x in name for x in ("tts", "image", "live", "audio", "embedding", "thinking"))):
+                    found.append(name)
+    except urllib.error.HTTPError as e:
+        print(f"[GEMINI] ListModels HTTP {e.code} : {e.read().decode('utf-8', 'ignore')[:300]}")
+    except Exception as e:
+        print(f"[GEMINI] ListModels impossible : {e}")
+    aliases = [n for n in found if n.endswith("-latest")]
+    versioned = sorted((n for n in found if not n.endswith("-latest")), key=_model_rank)
+    _MODELS_CACHE = (versioned + aliases) or FALLBACK_MODELS
+    print(f"[GEMINI] Modèles Flash disponibles (ordre d'essai) : {_MODELS_CACHE[:5]}")
+    return _MODELS_CACHE
+
+
+def call_gemini_flash(system_instruction: str, user_prompt: str, temperature: float = 0.4,
+                      response_mime_type: str = "text/plain") -> str:
     if not GEMINI_API_KEY:
-        raise RuntimeError("Clé GEMINI_API_KEY absente de l'environnement.")
-
-    models_to_try = get_ordered_flash_models()
-    last_err = None
-
-    for model_name in models_to_try:
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent"
+        raise RuntimeError("GEMINI_API_KEY absente.")
+    last_err = "aucun modèle"
+    for model in get_flash_models()[:4]:
         payload = {
             "systemInstruction": {"parts": [{"text": system_instruction}]},
             "contents": [{"role": "user", "parts": [{"text": user_prompt}]}],
-            "generationConfig": {
-                "temperature": temperature,
-                "responseMimeType": response_mime_type,
-            },
+            "generationConfig": {"temperature": temperature, "responseMimeType": response_mime_type},
         }
-
         req = urllib.request.Request(
-            url,
+            f"{API_ROOT}/models/{model}:generateContent",
             data=json.dumps(payload).encode("utf-8"),
             headers={"Content-Type": "application/json", "x-goog-api-key": GEMINI_API_KEY},
             method="POST",
         )
-        try:
-            with urllib.request.urlopen(req, timeout=60) as resp:
-                body = json.loads(resp.read().decode("utf-8"))
-                text = body["candidates"][0]["content"]["parts"][0]["text"].strip()
-                print(f"[OK] Réponse générée par le modèle `{model_name}`.")
+        for attempt in range(2):
+            try:
+                with urllib.request.urlopen(req, timeout=90) as resp:
+                    body = json.loads(resp.read().decode("utf-8"))
+                cand = (body.get("candidates") or [{}])[0]
+                parts = cand.get("content", {}).get("parts", [])
+                text = "".join(p.get("text", "") for p in parts if not p.get("thought")).strip()
+                if not text:
+                    raise RuntimeError(f"réponse vide (finishReason={cand.get('finishReason')}, "
+                                       f"promptFeedback={body.get('promptFeedback')})")
                 return text
-        except urllib.error.HTTPError as e:
-            if e.code == 404:
-                # L'identifiant exact diffère sur l'API publique, on passe au suivant sans délai
-                last_err = e
-                continue
-            err_body = e.read().decode("utf-8", errors="ignore")
-            print(f"[WARN] HTTP {e.code} sur {model_name} : {err_body[:200]}")
-            last_err = e
-            time.sleep(1)
-        except Exception as e:
-            print(f"[WARN] Erreur d'appel {model_name} : {e}")
-            last_err = e
-            time.sleep(1)
-
-    raise RuntimeError(f"Échec des modèles Flash : {last_err}")
-
-
-# Lignes de commentaire sans intérêt narratif (on les écarte pour alléger le prompt)
-_NOISE_PREFIXES = ("Foul by", "Offside,", "Delay", "Hand ball", "Lineups are announced", "Second Half begins",
-                   "First Half begins", "Drop of Ball", "Dangerous play")
-
-
-def select_key_comments(lines: List[str], limit: int = 150) -> List[str]:
-    """Garde les lignes du fil (chronologique) qui racontent le match : tirs, buts, arrêts, cartons, VAR..."""
-    kept = [l for l in lines if not l.split("] ", 1)[-1].startswith(_NOISE_PREFIXES)
-            and "wins a free kick" not in l]
-    return kept[-limit:] if len(kept) > limit else kept
+            except urllib.error.HTTPError as e:
+                last_err = f"{model} HTTP {e.code} : {e.read().decode('utf-8', 'ignore')[:300]}"
+                print(f"[GEMINI] {last_err}")
+                if e.code in (429, 500, 503) and attempt == 0:
+                    time.sleep(8)
+                    continue
+                break
+            except Exception as e:
+                last_err = f"{model} : {e}"
+                print(f"[GEMINI] {last_err}")
+                break
+    raise RuntimeError(f"Échec Gemini ({last_err})")
 
 
 # ==============================================================================
-# AGENT 1 : RÉDACTEUR SPORTIF (Modèle Flash)
+# Dossier de match factuel
 # ==============================================================================
-WRITER_SYSTEM_PROMPT = """Tu es un journaliste sportif français spécialisé en football européen.
-Ta mission est de rédiger un véritable résumé journalistique de 4 à 5 phrases sur le match d'un club français.
-
-RÈGLES STRICTES (ZÉRO HALLUCINATION CHIFFRÉE) :
-1. Utilise EXCLUSIVEMENT les chiffres, scores, buteurs, minutes, statistiques et positions au classement fournis dans le dossier JSON.
-2. Appuie-toi sur :
-   - le fil de commentaires (`extraits_commentaires_direct`),
-   - la chronologie des buts (`buts_chronologiques`) et des cartons (`evenements_cles`),
-   - les statistiques du match (`statistiques_globales` : possession, tirs totaux, tirs cadrés, grosses occasions, arrêts du gardien, corners, fautes),
-   - le bilan comptable au classement (`classement_actuel_sur_36`)
-   pour raconter la physionomie réelle de la rencontre avec un style journalistique vivant, fluide et précis.
-3. Structure obligatoire en 4 à 5 phrases complètes :
-   - Phrase 1 : L'affiche, le résultat final et l'allure générale du match (domination au ballon, volume de tirs).
-   - Phrases 2 et 3 : Le scénario de la rencontre et le tournant du match (chronologie des buts avec buteurs et minutes exactes, ou duel défensif/arrêts décisifs s'il y a eu 0-0).
-   - Phrase 4 (et 5) : L'opération comptable au classement général des 36 équipes (rang exact, total de points, différence de buts et situation dans le Top 8 qualificatif, les barrages 9e-24e ou la zone d'élimination 25e-36e).
-4. Interdiction d'écrire une simple liste télégraphique du type 'Score final vérifié : X.' Rédige un vrai paragraphe d'analyse sportive."""
+KEY_MOMENT_RE = re.compile(
+    r"^(Goal!|Own Goal|Attempt saved|Attempt missed|Attempt blocked|Penalty|VAR|Second yellow|"
+    r"Dismissal|Red card)|hits the (bar|left post|right post|post)|misses the|saves", re.I)
 
 
-def run_writer_agent(
-    comp_name: str,
-    focus_card: Dict[str, Any],
-    match_details: Dict[str, Any],
-    standings_row: Dict[str, Any],
-    correction_feedback: str = "",
-) -> str:
-    """Exécute l'Agent Rédacteur Flash sur un club français."""
-    facts_bundle = {
+def _side_names(card: Dict[str, Any]) -> Dict[str, str]:
+    return {"home": card["home_team"]["name"], "away": card["away_team"]["name"]}
+
+
+def _minute_of(label: str) -> int:
+    nums = re.findall(r"\d+", label or "")
+    return int(nums[0]) if nums else 0
+
+
+def halftime_score(goals: List[Dict[str, Any]]) -> str:
+    h = sum(1 for g in goals if g["team"] == "home" and _minute_of(g["minute"]) <= 45)
+    a = sum(1 for g in goals if g["team"] == "away" and _minute_of(g["minute"]) <= 45)
+    return f"{h}-{a}"
+
+
+def dominance_phases(momentum: List[Dict[str, Any]], names: Dict[str, str]) -> List[str]:
+    """Résumé par quart d'heure : qui a eu le plus d'actions offensives (tirs, corners...)."""
+    if not momentum or "home" not in momentum[0]:
+        return []
+    out = []
+    windows = [(0, 15), (15, 30), (30, 45), (45, 60), (60, 75), (75, 200)]
+    for lo, hi in windows:
+        pts = [p for p in momentum if lo < p["minute"] <= hi]
+        h = sum(p["home"] for p in pts)
+        a = sum(p["away"] for p in pts)
+        label = f"{lo + 1}'-{hi if hi < 200 else 'fin'}'"
+        if h + a < 2:
+            verdict = "peu d'actions offensives"
+        elif h >= 1.8 * max(a, 0.5):
+            verdict = f"temps fort de {names['home']}"
+        elif a >= 1.8 * max(h, 0.5):
+            verdict = f"temps fort de {names['away']}"
+        else:
+            verdict = "équilibré"
+        out.append(f"{label} : {verdict}")
+    return out
+
+
+def key_moments(comments: List[str], limit: int = 60) -> List[str]:
+    kept = [c for c in comments if KEY_MOMENT_RE.search(c.split("] ", 1)[-1])]
+    return kept[:limit]
+
+
+def named_stats(stats: List[Dict[str, Any]], names: Dict[str, str]) -> Dict[str, Dict[str, Any]]:
+    return {s["label"]: {names["home"]: s["home"], names["away"]: s["away"]} for s in stats}
+
+
+def build_match_dossier(comp_name: str, card: Dict[str, Any], match: Dict[str, Any],
+                        standings_row: Dict[str, Any]) -> Dict[str, Any]:
+    names = _side_names(card)
+    goals = card.get("goals", [])
+    comments = card.get("raw_comments_for_llm", [])
+    return {
         "competition": comp_name,
-        "club_francais": focus_card["club_name"],
-        "equipe_domicile": focus_card["home_team"],
-        "equipe_exterieur": focus_card["away_team"],
-        "score_final": f"{focus_card['home_team']['name']} {focus_card['home_team']['score']} - {focus_card['away_team']['score']} {focus_card['away_team']['name']}",
-        "buts_chronologiques": focus_card.get("goals", []),
-        "evenements_cles": match_details.get("events", []),
-        "statistiques_globales": match_details.get("stats", {}).get("all", []),
-        "classement_actuel_sur_36": standings_row,
-        "extraits_commentaires_direct": select_key_comments(focus_card.get("raw_comments_for_llm", [])),
+        "club_suivi": card["club_name"],
+        "domicile": names["home"],
+        "exterieur": names["away"],
+        "score_final": f"{names['home']} {card['home_team']['score']} - {card['away_team']['score']} {names['away']}",
+        "score_mi_temps": halftime_score(goals),
+        "buts": [{"minute": g["minute"], "buteur": g["scorer"], "passeur": g.get("assist"),
+                  "equipe": names[g["team"]], "type": {"pen": "penalty", "csc": "contre son camp"}.get(g.get("kind"), ""),
+                  "score_apres": g["score_after"]} for g in goals],
+        "cartons_et_remplacements": [{"minute": e.get("minute_label", e.get("minute")), "type": e["type"],
+                                      "equipe": names[e["team"]], "joueur": e["player"], "detail": e.get("detail", "")}
+                                     for e in match.get("events", []) if e["type"] != "goal"],
+        "phases_de_domination": dominance_phases(match.get("momentum", []), names),
+        "moments_cles_du_fil": key_moments(comments),
+        "statistiques": named_stats(match.get("stats", {}).get("all", []), names),
+        "classement_apres_match": {k: standings_row.get(k) for k in ("rank", "points", "played", "won", "drawn", "lost", "gd", "zone")}
+        if standings_row else None,
     }
-
-    prompt = (
-        "Voici les données officielles vérifiées de la rencontre :\n"
-        + json.dumps(facts_bundle, ensure_ascii=False, indent=2)
-        + "\n\n"
-    )
-    if correction_feedback:
-        prompt += (
-            "CORRECTION DEMANDÉE SUR LA VERSION PRÉCÉDENTE :\n"
-            + correction_feedback
-            + "\n\n"
-        )
-    prompt += "Rédige maintenant le résumé journalistique complet en 4 à 5 phrases."
-
-    return call_gemini_flash(WRITER_SYSTEM_PROMPT, prompt, temperature=0.3)
 
 
 # ==============================================================================
-# AGENT 2 : CONTRÔLEUR ANTI-HALLUCINATION (Modèle Flash en mode JSON strict)
+# Agent 1 : rédacteur
 # ==============================================================================
-AUDITOR_SYSTEM_PROMPT = """Tu es le contrôleur qualité d'une rédaction sportive.
-Vérifie que le résumé candidat ne contredit AUCUN chiffre de la source de vérité JSON.
+WRITER_SYSTEM_PROMPT = """Tu es journaliste sportif pour un quotidien français. Tu écris le compte rendu d'un match européen d'un club français, en 4 à 5 phrases, dans un français vivant et précis.
 
-Réponds UNIQUEMENT avec un objet JSON :
-{
-  "is_valid": true,
-  "issues": ""
-}
+CE QUE TU DOIS RACONTER : le DÉROULÉ du match, pas une fiche technique.
+- Phrase 1 : le résultat et ce qui a caractérisé la rencontre (qui a dominé, comment).
+- Phrases 2-3 : le récit chronologique — l'entame et la première période, le score à la pause, ce qui change en seconde période, le tournant (but, occasion manquée, arrêt décisif, expulsion, temps fort). Appuie-toi sur `phases_de_domination` et `moments_cles_du_fil`.
+- Phrase 4 (et éventuellement 5) : la conséquence au classement, en UNE phrase courte.
 
-Règles d'audit :
-- Autorise les formulations journalistiques naturelles tant que les chiffres cités sont exacts.
-- Rejette (`is_valid: false`) UNIQUEMENT si :
-  1. Le score ou le vainqueur mentionné est faux.
-  2. Un nom de buteur ou une minute de jeu citée n'existe ni dans `goals`, ni dans `events`, ni dans `commentaires`.
-  3. Une statistique chiffrée citée contredit `stats_all`.
-  4. Le classement ou le nombre de points contredit `standings_row`."""
+INTERDIT :
+- énumérer les buts sous forme de liste (« buts de X (9'), Y (12'), Z (50') ») ; intègre-les au récit, au besoin en n'en citant que les plus importants ;
+- toute phrase commençant par « Score final vérifié » ou « Chronologie des buts » ;
+- tout chiffre, nom ou minute absent du dossier ; n'invente ni ambiance, ni blessure, ni déclaration.
+
+Les moments du fil sont en anglais (format Opta) : traduis-les naturellement.
+Réponds uniquement avec le texte du résumé."""
 
 
-def run_auditor_agent(
-    candidate_summary: str,
-    focus_card: Dict[str, Any],
-    match_details: Dict[str, Any],
-    standings_row: Dict[str, Any],
-) -> Tuple[bool, str]:
-    """Vérifie que le résumé généré ne contient aucune hallucination chiffrée."""
-    ground_truth = {
-        "home_team": focus_card["home_team"],
-        "away_team": focus_card["away_team"],
-        "goals": focus_card.get("goals", []),
-        "events": match_details.get("events", []),
-        "stats_all": match_details.get("stats", {}).get("all", []),
-        "standings_row": standings_row,
-        "commentaires": select_key_comments(focus_card.get("raw_comments_for_llm", [])),
-    }
+def run_writer_agent(dossier: Dict[str, Any], correction: str = "") -> str:
+    prompt = "DOSSIER DU MATCH (seule source autorisée) :\n" + json.dumps(dossier, ensure_ascii=False, indent=1)
+    if correction:
+        prompt += "\n\nTA VERSION PRÉCÉDENTE A ÉTÉ REJETÉE PAR LE CONTRÔLEUR POUR CES RAISONS :\n" + correction
+        prompt += "\nRéécris le résumé en corrigeant ces points."
+    return call_gemini_flash(WRITER_SYSTEM_PROMPT, prompt, temperature=0.5)
 
-    user_prompt = (
-        "SOURCE DE VÉRITÉ OFFICIELLE :\n"
-        + json.dumps(ground_truth, ensure_ascii=False)
-        + "\n\nTEXTE CANDIDAT À VÉRIFIER :\n"
-        + candidate_summary
-    )
 
-    raw_resp = call_gemini_flash(
-        AUDITOR_SYSTEM_PROMPT,
-        user_prompt,
-        temperature=0.0,
-        response_mime_type="application/json",
-    )
-    parsed = json.loads(raw_resp.strip().removeprefix("```json").removeprefix("```").removesuffix("```").strip())
+# ==============================================================================
+# Agent 2 : contrôleur
+# ==============================================================================
+AUDITOR_SYSTEM_PROMPT = """Tu es le contrôleur qualité d'une rédaction sportive. Tu compares un résumé de match à son dossier factuel.
+
+Réponds UNIQUEMENT avec un objet JSON : {"is_valid": true|false, "issues": "explication courte et précise de chaque erreur"}
+
+Rejette (is_valid=false) si :
+1. un score, un vainqueur, une minute, un buteur, un passeur ou un joueur cité est absent du dossier ou contredit le dossier ;
+2. une statistique chiffrée contredit `statistiques` ;
+3. le rang, les points ou la zone contredisent `classement_apres_match` ;
+4. le texte affirme un fait précis introuvable dans le dossier (blessure, déclaration, record...) ;
+5. le texte n'est qu'une liste de buts et de classement, sans récit du déroulé.
+
+N'objecte PAS au style, aux traductions des moments du fil, ni aux formulations interprétatives raisonnables (« a dominé », « a souffert », « temps fort ») cohérentes avec `phases_de_domination`, les statistiques ou le fil."""
+
+
+def run_auditor_agent(summary: str, dossier: Dict[str, Any]) -> Tuple[bool, str]:
+    prompt = ("DOSSIER :\n" + json.dumps(dossier, ensure_ascii=False) + "\n\nRÉSUMÉ À CONTRÔLER :\n" + summary)
+    raw = call_gemini_flash(AUDITOR_SYSTEM_PROMPT, prompt, temperature=0.0, response_mime_type="application/json")
+    raw = raw.strip().removeprefix("```json").removeprefix("```").removesuffix("```").strip()
+    parsed = json.loads(raw)
     return bool(parsed.get("is_valid", False)), str(parsed.get("issues", ""))
 
 
-def build_deterministic_fallback_summary(
-    focus_card: Dict[str, Any],
-    match_details: Dict[str, Any],
-    standings_row: Dict[str, Any],
-) -> str:
-    """Rédige un résumé structuré de 4 phrases si l'API Gemini est indisponible."""
-    h = focus_card["home_team"]
-    a = focus_card["away_team"]
-    club = focus_card["club_name"]
-    is_home = h["name"] == club
-    club_score = h["score"] if is_home else a["score"]
-    opp_score = a["score"] if is_home else h["score"]
-    opp_name = a["name"] if is_home else h["name"]
-    venue = f"à domicile face à {opp_name}" if is_home else f"sur la pelouse de {opp_name}"
-    venue_vs = f"à domicile contre {opp_name}" if is_home else f"sur la pelouse de {opp_name}"
+# ==============================================================================
+# Résumé narratif déterministe (sans IA)
+# ==============================================================================
+def _pl(n: Any, word: str) -> str:
+    return f"{n} {word}{'s' if isinstance(n, (int, float)) and n > 1 else ''}"
 
-    if club_score > opp_score:
-        s1 = f"{club} s'impose {venue} ({h['score']}-{a['score']})."
-    elif club_score < opp_score:
-        s1 = f"{club} s'incline {venue_vs} ({h['score']}-{a['score']})."
+
+def build_deterministic_fallback_summary(card: Dict[str, Any], match: Dict[str, Any],
+                                         standings_row: Dict[str, Any]) -> str:
+    names = _side_names(card)
+    club = card["club_name"]
+    is_home = names["home"] == club
+    me, opp = ("home", "away") if is_home else ("away", "home")
+    sc = {"home": card["home_team"]["score"], "away": card["away_team"]["score"]}
+    goals = card.get("goals", [])
+    score_txt = f"{sc['home']}-{sc['away']}"
+    where = f"face à {names[opp]}" if is_home else f"sur la pelouse de {names[opp]}"
+    stats = {s["key"]: s for s in match.get("stats", {}).get("all", [])}
+
+    if sc[me] > sc[opp]:
+        s1 = f"{club} s'impose {where} ({score_txt})"
+    elif sc[me] < sc[opp]:
+        s1 = f"{club} s'incline {where} ({score_txt})"
     else:
-        s1 = f"{club} partage les points {venue} ({h['score']}-{a['score']})."
-
-    goals = focus_card.get("goals", [])
-    if goals:
-        g_list = ", ".join(f"{g['scorer']} ({g['minute']})" for g in goals)
-        s2 = f"La rencontre a été rythmée par les réalisations de {g_list}."
+        s1 = f"{club} fait match nul {where} ({score_txt})"
+    if "ballPossession" in stats and "totalShotsOnGoal" in stats:
+        poss = str(stats["ballPossession"][me]).replace(".", ",")
+        shots_me, shots_opp = stats["totalShotsOnGoal"][me], stats["totalShotsOnGoal"][opp]
+        s1 += f", avec {poss} % de possession et {_pl(shots_me, 'tir')} contre {shots_opp}."
     else:
-        s2 = "Aucun but n'a été inscrit au cours de la rencontre."
+        s1 += "."
 
-    stats_map = {s["key"]: (s["home"], s["away"]) for s in match_details.get("stats", {}).get("all", [])}
-    if "ballPossession" in stats_map and "totalShotsOnGoal" in stats_map:
-        poss = str(stats_map["ballPossession"][0 if is_home else 1]).replace(".", ",")
-        shots = stats_map["totalShotsOnGoal"][0 if is_home else 1]
-        opp_shots = stats_map["totalShotsOnGoal"][1 if is_home else 0]
-        s3 = f"Dans le jeu, {club} a affiché {poss} % de possession de balle et tenté {shots} tirs contre {opp_shots} pour son adversaire."
+    ht = halftime_score(goals)
+    first = [g for g in goals if _minute_of(g["minute"]) <= 45]
+    second = [g for g in goals if _minute_of(g["minute"]) > 45]
+    phases = dominance_phases(match.get("momentum", []), names)
+
+    def goal_phrase(gs: List[Dict[str, Any]]) -> str:
+        bits = []
+        for g in gs:
+            who = f"{g['scorer']} ({g['minute']}{', sur penalty' if g.get('kind') == 'pen' else ''}"
+            who += ", contre son camp)" if g.get("kind") == "csc" else ")"
+            bits.append(who)
+        return ", puis ".join(bits) if len(bits) <= 2 else ", ".join(bits[:-1]) + " et " + bits[-1]
+
+    if first:
+        s2 = f"En première période, {goal_phrase(first)} {'fait' if len(first) == 1 else 'font'} évoluer le score, {ht} à la pause."
     else:
-        s3 = ""
+        dom1 = [p for p in phases[:3] if "temps fort" in p]
+        s2 = "Aucun but n'est inscrit avant la pause" + (f" malgré un {dom1[0].split(' : ')[1]}" if dom1 else "") + "."
 
-    rank = focus_card.get("club_rank") or standings_row.get("rank")
-    pts = standings_row.get("points")
-    zone = focus_card.get("club_zone") or standings_row.get("zone", "")
-    if not rank:
-        return f"{s1} {s2} {s3}"
-    zone_txt = (
-        "dans le Top 8 directement qualificatif pour les 8es de finale"
-        if zone == "top8"
-        else "dans la zone des barrages (places 9 à 24)"
-        if zone == "playoff"
-        else "dans la zone d'élimination (au-delà de la 24e place)"
-    )
-    rank_txt = "1re" if rank == 1 else f"{rank}e"
-    s4 = f"Au classement général, {club} occupe la {rank_txt} place avec {pts} points, {zone_txt}."
+    reds = [e for e in match.get("events", []) if e["type"] == "red_card"]
+    if second:
+        s3 = f"Après le repos, {goal_phrase(second)} {'trouve' if len(second) == 1 else 'trouvent'} le chemin des filets"
+    else:
+        s3 = "La seconde période ne change rien au tableau d'affichage"
+    if reds:
+        r = reds[0]
+        s3 += f", marquée par l'expulsion de {r['player']} ({names[r['team']]}, {r.get('minute_label', r['minute'])})"
+    s3 += "."
 
+    s4 = ""
+    rank = card.get("club_rank") or (standings_row or {}).get("rank")
+    if rank:
+        zone = card.get("club_zone") or standings_row.get("zone")
+        zone_txt = {"top8": "dans le top 8 qualificatif pour les 8es de finale",
+                    "playoff": "en zone de barrages (9e-24e)"}.get(zone, "en zone d'élimination (25e-36e)")
+        rank_txt = "1er" if rank == 1 else f"{rank}e"
+        pts = (standings_row or {}).get("points")
+        s4 = f"Au classement, {club} est {rank_txt}{f' avec {pts} points' if pts is not None else ''}, {zone_txt}."
     return " ".join(x for x in (s1, s2, s3, s4) if x)
 
 
 # ==============================================================================
-# AGENT 3 : RÉDACTEUR DE NOTIFICATION NTFY (Modèle Flash)
+# Agent 3 : texte de la notification
 # ==============================================================================
-NOTIF_SYSTEM_PROMPT = """Tu rédiges le texte court d'une notification push mobile envoyée à 23h30 après les matchs de Coupes d'Europe.
-Consignes :
-- 1 seule phrase compacte (maximum 140 caractères).
-- Mentionne l'issue exacte (Victoire, Nul ou Défaite + score) pour chaque club français ayant joué.
-- Termine par 'classements à jour'."""
+NOTIF_SYSTEM_PROMPT = """Tu rédiges le texte d'une notification push envoyée après une soirée de Coupes d'Europe.
+- Une seule phrase, 140 caractères maximum.
+- Pour chaque club français : Victoire, Nul ou Défaite et le score exact fourni.
+- Termine par « classements à jour »."""
 
 
-def run_notif_agent(french_results_summary: List[str]) -> str:
-    """Génère le texte d'accroche du push ntfy à partir des scores vérifiés."""
-    if not french_results_summary:
-        return "Résultats de la soirée européenne et classements des 36 équipes mis à jour."
-
-    prompt = "Résultats officiels des clubs français :\n" + "\n".join(french_results_summary)
+def run_notif_agent(lines: List[str]) -> str:
+    if not lines:
+        return "Résultats de la soirée européenne et classements mis à jour."
+    fallback = " | ".join(lines) + " — classements à jour."
+    if not GEMINI_API_KEY:
+        return fallback
     try:
-        text = call_gemini_flash(NOTIF_SYSTEM_PROMPT, prompt, temperature=0.2)
+        text = call_gemini_flash(NOTIF_SYSTEM_PROMPT, "Résultats :\n" + "\n".join(lines), temperature=0.2)
         return text.replace("\n", " ").strip()
     except Exception:
-        return " | ".join(french_results_summary) + " — Classements à jour."
+        return fallback
 
 
 # ==============================================================================
-# PIPELINE D'ORCHESTRATION PRINCIPAL
+# Orchestration
 # ==============================================================================
-def orchestrate_flash_agents(
-    input_path: str = "data_raw.json", output_path: str = "data.json"
-) -> Dict[str, Any]:
-    """Lit `data_raw.json`, exécute les Agents Flash et écrit `data.json`."""
+def summarize_card(comp_name: str, card: Dict[str, Any], match: Dict[str, Any],
+                   standings_row: Dict[str, Any], max_attempts: int = 3) -> Optional[str]:
+    dossier = build_match_dossier(comp_name, card, match, standings_row)
+    feedback = ""
+    for attempt in range(1, max_attempts + 1):
+        print(f"[RÉDACTEUR] {card['club_name']} — tentative {attempt}")
+        candidate = run_writer_agent(dossier, feedback)
+        ok, issues = run_auditor_agent(candidate, dossier)
+        if ok:
+            print(f"[CONTRÔLEUR OK] {card['club_name']}")
+            return candidate
+        print(f"[CONTRÔLEUR REJET] {card['club_name']} : {issues}\n    Texte rejeté : {candidate}")
+        feedback = issues
+    return None
+
+
+def orchestrate_flash_agents(input_path: str = "data_raw.json", output_path: str = "data.json") -> Dict[str, Any]:
     with open(input_path, "r", encoding="utf-8") as f:
         data = json.load(f)
 
     if not data.get("notification", {}).get("match_night", False):
-        print("[INFO] Pas de soirée européenne à traiter par les agents Flash.")
+        print("[INFO] Pas de soirée européenne à traiter.")
         return data
+    if not GEMINI_API_KEY:
+        print("[INFO] GEMINI_API_KEY absente : résumés déterministes.")
 
-    french_evening_recap = []
-
-    for comp_key, comp in data.get("competitions", {}).items():
-        comp_name = comp.get("name", "")
-        matches_by_id = {m["match_id"]: m for m in comp.get("matches", [])}
-        standings_by_team = {s["team"].lower(): s for s in comp.get("standings", [])}
-
-        for focus in comp.get("french_clubs_focus", []):
-            m_id = focus["match_id"]
-            club_name = focus["club_name"]
-            match_details = matches_by_id.get(m_id, {})
-            standings_row = standings_by_team.get(club_name.lower(), {})
-
-            h = focus["home_team"]
-            a = focus["away_team"]
+    recap: List[str] = []
+    for comp in data.get("competitions", {}).values():
+        matches = {m["match_id"]: m for m in comp.get("matches", [])}
+        standings = {s["team"].lower(): s for s in comp.get("standings", [])}
+        for card in comp.get("french_clubs_focus", []):
+            match = matches.get(card["match_id"], {})
+            row = standings.get(card["club_name"].lower(), {})
+            h, a = card["home_team"], card["away_team"]
             line = f"{h['short']} {h['score']}-{a['score']} {a['short']}"
-            if line not in french_evening_recap:
-                french_evening_recap.append(line)
+            if line not in recap:
+                recap.append(line)
 
-            summary_validated = False
-            feedback = ""
-
+            text = None
             if GEMINI_API_KEY:
-                for attempt in range(1, 3):
-                    try:
-                        print(f"[AGENT FLASH] Rédaction pour {club_name} (tentative {attempt})...")
-                        candidate = run_writer_agent(
-                            comp_name, focus, match_details, standings_row, feedback
-                        )
-                        is_ok, issues = run_auditor_agent(
-                            candidate, focus, match_details, standings_row
-                        )
-                        if is_ok:
-                            focus["ai_summary"] = candidate
-                            focus["ai_verified"] = True
-                            focus["summary_source"] = "gemini"
-                            summary_validated = True
-                            print(f"[CONTRÔLE QUALITÉ OK] Résumé validé pour {club_name}.")
-                            break
-                        else:
-                            print(f"[REJET CONTRÔLEUR] {club_name} : {issues}")
-                            feedback = issues
-                            time.sleep(1)
-                    except Exception as e:
-                        print(f"[WARN] Erreur API Gemini Flash sur {club_name} : {e}")
-                        break
+                try:
+                    text = summarize_card(comp.get("name", ""), card, match, row)
+                except Exception as e:
+                    print(f"[WARN] Agents Gemini indisponibles pour {card['club_name']} : {e}")
+            if text:
+                card["summary_source"] = "gemini"
+            else:
+                print(f"[REPLI] Résumé déterministe pour {card['club_name']}.")
+                text = build_deterministic_fallback_summary(card, match, row)
+                card["summary_source"] = "deterministe"
+            card["ai_summary"] = text
+            card["ai_verified"] = True
+            card.pop("raw_comments_for_llm", None)
 
-            if not summary_validated:
-                print(f"[FALLBACK] Utilisation du résumé structuré de secours pour {club_name}.")
-                focus["ai_summary"] = build_deterministic_fallback_summary(
-                    focus, match_details, standings_row
-                )
-                focus["ai_verified"] = True
-                focus["summary_source"] = "deterministe"
-
-            focus.pop("raw_comments_for_llm", None)
-
-    data["notification"]["summary"] = run_notif_agent(french_evening_recap)
-
+    data["notification"]["summary"] = run_notif_agent(recap)
     with open(output_path, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
-
-    print(f"[OK] Orchestration des agents Flash terminée -> {output_path} prêt.")
+    print(f"[OK] Résumés terminés -> {output_path}")
     return data
 
 
 if __name__ == "__main__":
-    source = "data_raw.json" if os.path.exists("data_raw.json") else "data_schema_sample.json"
-    orchestrate_flash_agents(input_path=source, output_path="data.json")
+    orchestrate_flash_agents()

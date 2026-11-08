@@ -43,23 +43,9 @@ TOURNAMENTS = {
     "uecl": {"slug": "uefa.europa.conf", "name": "Ligue Conférence", "short_name": "ECL"},
 }
 
-# Correspondance EXACTE (après normalisation) des noms de clubs français.
-# Pas de recherche par sous-chaîne : « Lillestrom » ou « Dinamo Brest » ne doivent pas matcher.
-FRENCH_CLUBS = {
-    "paris saint-germain", "psg", "paris sg", "paris fc",
-    "as monaco", "monaco",
-    "lille", "losc lille", "losc",
-    "marseille", "olympique marseille", "olympique de marseille",
-    "lyon", "olympique lyonnais",
-    "lens", "rc lens",
-    "nice", "ogc nice",
-    "stade rennais", "rennes",
-    "strasbourg", "rc strasbourg", "rc strasbourg alsace",
-    "brest", "stade brestois", "stade brestois 29",
-    "toulouse", "nantes", "reims", "stade de reims", "montpellier",
-    "auxerre", "aj auxerre", "le havre", "le havre ac", "angers", "lorient",
-    "metz", "saint-etienne", "as saint-etienne",
-}
+# Championnats français dont on récupère la liste des clubs à chaque exécution
+# (identification par identifiant ESPN, sans liste de noms codée en dur).
+FRENCH_LEAGUES = ("fra.1", "fra.2")
 
 HEADERS = {
     "User-Agent": "coupes-europe-dashboard/1.0 (+https://github.com/Camelbaggy/coupes-europe)",
@@ -69,6 +55,8 @@ HEADERS = {
 STATUS_FR = {"pre": "À venir", "in": "En cours", "post": "Terminé"}
 
 _RAW_DIR: Optional[str] = None
+_FRENCH_IDS: set = set()
+_FRENCH_NAMES: set = set()
 
 
 # ------------------------------------------------------------------------------
@@ -99,8 +87,32 @@ def normalize(name: str) -> str:
     return " ".join(txt.lower().replace(".", " ").split())
 
 
-def is_french_team(name: str) -> bool:
-    return normalize(name) in FRENCH_CLUBS
+def load_french_clubs() -> int:
+    """Charge les clubs des championnats français (Ligue 1, Ligue 2) depuis ESPN."""
+    _FRENCH_IDS.clear()
+    _FRENCH_NAMES.clear()
+    for league in FRENCH_LEAGUES:
+        data = fetch_json(f"{ESPN_SITE}/{league}/teams", raw_name=f"teams_{league}.json") or {}
+        for sport in data.get("sports", []) or []:
+            for lg in sport.get("leagues", []) or []:
+                for item in lg.get("teams", []) or []:
+                    t = item.get("team", item)
+                    if t.get("id"):
+                        _FRENCH_IDS.add(str(t["id"]))
+                    for k in ("displayName", "shortDisplayName", "name"):
+                        if t.get(k):
+                            _FRENCH_NAMES.add(normalize(t[k]))
+    if not _FRENCH_IDS:
+        print("[WARN] Impossible de charger les clubs français (Ligue 1/Ligue 2) depuis ESPN.")
+    else:
+        print(f"[INFO] {len(_FRENCH_IDS)} clubs français chargés (Ligue 1 + Ligue 2).")
+    return len(_FRENCH_IDS)
+
+
+def is_french_team(team_id: Any, name: str = "") -> bool:
+    if team_id and str(team_id) in _FRENCH_IDS:
+        return True
+    return bool(name) and normalize(name) in _FRENCH_NAMES
 
 
 def parse_clock(display: str) -> Tuple[int, int]:
@@ -166,7 +178,7 @@ def fetch_standings(slug: str) -> List[Dict[str, Any]]:
             "team_id": str(team.get("id", "")),
             "team": name,
             "short_name": team.get("abbreviation", ""),
-            "is_french": is_french_team(name),
+            "is_french": is_french_team(team.get("id"), name),
             "played": int(st.get("gamesPlayed") or 0),
             "won": int(st.get("wins") or 0),
             "drawn": int(st.get("ties") or 0),
@@ -491,6 +503,7 @@ def collect_dates_data(target_dates: List[str], label_prefix: str = "Soirée",
         "competitions": {},
     }
     total_finished = 0
+    load_french_clubs()
 
     for comp_key, meta in TOURNAMENTS.items():
         slug = meta["slug"]
@@ -544,7 +557,7 @@ def collect_dates_data(target_dates: List[str], label_prefix: str = "Soirée",
                 def team_obj(t: Dict[str, Any], score: int, form: str) -> Dict[str, Any]:
                     name = t.get("displayName", "")
                     return {"id": str(t.get("id", "")), "name": name, "short": t.get("abbreviation", name[:3].upper()),
-                            "logo": t.get("logo", ""), "is_french": is_french_team(name), "score": score,
+                            "logo": t.get("logo", ""), "is_french": is_french_team(t.get("id"), name), "score": score,
                             "formation": form}
 
                 match_obj = {

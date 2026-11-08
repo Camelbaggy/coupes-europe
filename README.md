@@ -28,6 +28,18 @@ Ce que ESPN ne fournit pas : les notes des joueurs et les statistiques par mi-te
 se masquent). Le **momentum** est calculé à partir du fil de commentaires (tirs, tirs cadrés, poteaux, corners,
 coups francs obtenus dans le camp adverse, par tranche de 5 min). Si le fil est absent, le graphique n'est pas affiché.
 
+### Clubs français
+
+Pas de liste codée en dur : à chaque exécution, le collecteur récupère les effectifs de la Ligue 1 et de la
+Ligue 2 sur ESPN (`fra.1`, `fra.2`) et reconnaît les clubs français par identifiant d'équipe.
+
+### Résumés
+
+`agents_flash.py` construit un dossier factuel par match (score à la pause, phases de domination, moments clés
+du fil, statistiques, classement). Gemini rédige un récit de 4-5 phrases, un second appel vérifie chaque fait,
+avec jusqu'à 3 essais. Les rejets et erreurs API sont écrits en clair dans les logs du workflow. Sans clé ou après
+3 rejets, un résumé narratif est généré sans IA à partir du même dossier.
+
 ## Lancer en local
 
 ```bash
