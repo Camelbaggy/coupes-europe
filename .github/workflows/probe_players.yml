@@ -1,0 +1,14 @@
+name: Sonde joueurs UEFA (diagnostic)
+on:
+  push:
+    branches: ['ccr-*']
+    paths: ['tools/probe_players.py', '.github/workflows/probe_players.yml']
+permissions:
+  contents: read
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 tools/probe_players.py
