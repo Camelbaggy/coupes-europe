@@ -1,0 +1,17 @@
+name: Sonde temporaire sources cyclisme
+on:
+  push:
+    branches: ['ccr-*']
+    paths: ['tools/sonde_velo.py', '.github/workflows/sonde_velo.yml']
+permissions:
+  contents: read
+jobs:
+  sonde:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python tools/sonde_velo.py
