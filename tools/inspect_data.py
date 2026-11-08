@@ -7,6 +7,7 @@ print("notification:", d["notification"])
 for k, c in d["competitions"].items():
     print(f"\n===== {k} — {c['matchday_label']} — {len(c['matches'])} matchs — {len(c['standings'])} au classement — {c['stage_type']}")
     print("Français au classement:", [(r["rank"], r["team"], r["points"]) for r in c["standings"] if r["is_french"]])
+    print("Drapeaux manquants:", [(r["team"], r.get("country")) for r in c["standings"] if not r.get("flag")])
     for f in c["french_clubs_focus"]:
         print(f"\n--- {f['club_name']} ({f['club_rank']}e, {f['club_zone']}) {f['home_team']['name']} {f['home_team']['score']}-{f['away_team']['score']} {f['away_team']['name']} [{f.get('summary_source')}]")
         print("buts:", [(g["minute"], g["scorer"], g["assist"], g["kind"], g["score_after"]) for g in f["goals"]])

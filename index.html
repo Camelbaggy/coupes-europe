@@ -214,8 +214,8 @@
       font-weight: 600;
       font-size: 0.95rem;
     }
-    .team-name.home { text-align: right; }
-    .team-name.away { text-align: left; }
+    .team-name.home { text-align: right; display: flex; justify-content: flex-end; align-items: center; gap: 6px; }
+    .team-name.away { text-align: left; display: flex; justify-content: flex-start; align-items: center; gap: 6px; }
     .team-name.is-fr { color: #ffffff; font-weight: 700; }
 
     .score-box {
@@ -660,6 +660,15 @@
     .stat-bar-home { background: var(--home-color); }
     .stat-bar-away { background: var(--away-color); }
 
+    img.flag {
+      width: 18px;
+      height: 13px;
+      object-fit: cover;
+      border-radius: 2px;
+      vertical-align: -1px;
+      box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.15);
+      flex-shrink: 0;
+    }
     .goal-chip.mine {
       border-color: rgba(96, 165, 250, 0.45);
       color: #e0f2fe;
@@ -764,6 +773,10 @@
     let currentModalView = 'events';
     let currentStatsPeriod = 'all';
 
+    // Drapeau de la nationalité d'un club (code fourni par le collecteur à partir du pays UEFA)
+    const flag = (t) => t && t.flag
+      ? `<img class="flag" src="https://flagcdn.com/w40/${esc(t.flag)}.png" alt="${esc(t.country || '')}" title="${esc(t.country_name || t.country || '')}" loading="lazy" width="18" height="13">`
+      : '';
     const esc = (v) => String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
     async function initDashboard() {
@@ -819,13 +832,13 @@
           return `
             <article class="fr-card" onclick="openMatchModal('${esc(fc.match_id)}')">
               <div class="fr-card-top">
-                <span class="fr-club-tag">🇫🇷 ${esc(fc.club_name)}</span>
+                <span class="fr-club-tag">${flag(fc.home_team.name === fc.club_name ? fc.home_team : fc.away_team) || '🇫🇷'} ${esc(fc.club_name)}</span>
                 <span class="rank-pill ${esc(fc.club_zone || 'playoff')}">${getZoneLabel(fc.club_zone, fc.club_rank)}</span>
               </div>
               <div class="fr-scoreline">
-                <div class="team-name home ${fc.home_team.is_french ? 'is-fr' : ''}">${esc(fc.home_team.name)}</div>
+                <div class="team-name home ${fc.home_team.is_french ? 'is-fr' : ''}">${esc(fc.home_team.name)} ${flag(fc.home_team)}</div>
                 <div class="score-box">${fc.home_team.score} - ${fc.away_team.score}</div>
-                <div class="team-name away ${fc.away_team.is_french ? 'is-fr' : ''}">${esc(fc.away_team.name)}</div>
+                <div class="team-name away ${fc.away_team.is_french ? 'is-fr' : ''}">${flag(fc.away_team)} ${esc(fc.away_team.name)}</div>
               </div>
               ${goalsHtml ? `<div class="goals-timeline">${goalsHtml}</div>` : ''}
               ${fc.ai_summary ? `<p class="ai-summary-text">${esc(fc.ai_summary)}</p>` : ''}
@@ -846,11 +859,11 @@
           <div class="match-tile" onclick="openMatchModal('${esc(m.match_id)}')">
             <div class="tile-teams">
               <div class="tile-team-row">
-                <span class="tile-team-name ${m.home_team.is_french ? 'is-fr' : ''}">${esc(m.home_team.name)}</span>
+                <span class="tile-team-name ${m.home_team.is_french ? 'is-fr' : ''}">${flag(m.home_team)} ${esc(m.home_team.name)}</span>
                 <span class="tile-team-score">${m.status === 'À venir' ? '' : m.home_team.score}</span>
               </div>
               <div class="tile-team-row">
-                <span class="tile-team-name ${m.away_team.is_french ? 'is-fr' : ''}">${esc(m.away_team.name)}</span>
+                <span class="tile-team-name ${m.away_team.is_french ? 'is-fr' : ''}">${flag(m.away_team)} ${esc(m.away_team.name)}</span>
                 <span class="tile-team-score">${m.status === 'À venir' ? '' : m.away_team.score}</span>
               </div>
             </div>
@@ -872,7 +885,7 @@
           return `
             <tr class="zone-${esc(r.zone)} ${r.is_french ? 'is-fr-row' : ''} ${isCutoff}">
               <td class="rank-cell">${r.rank}</td>
-              <td class="col-team">${esc(r.team)}${r.is_french ? '<span class="fr-badge-inline">FRA</span>' : ''}</td>
+              <td class="col-team">${flag(r)} ${esc(r.team)}${r.is_french ? '<span class="fr-badge-inline">FRA</span>' : ''}</td>
               <td>${r.played}</td>
               <td>${esc(r.gd)}</td>
               <td style="font-weight:800">${r.points}</td>
@@ -894,8 +907,8 @@
       currentStatsPeriod = 'all';
       const meta = [comp.name, activeMatch.matchday, activeMatch.kickoff, activeMatch.status].filter(Boolean).join(' • ');
       document.getElementById('modal-comp-label').textContent = meta;
-      document.getElementById('modal-home-name').textContent = activeMatch.home_team.name;
-      document.getElementById('modal-away-name').textContent = activeMatch.away_team.name;
+      document.getElementById('modal-home-name').innerHTML = `${esc(activeMatch.home_team.name)} ${flag(activeMatch.home_team)}`;
+      document.getElementById('modal-away-name').innerHTML = `${flag(activeMatch.away_team)} ${esc(activeMatch.away_team.name)}`;
       document.getElementById('modal-score').textContent = `${activeMatch.home_team.score} - ${activeMatch.away_team.score}`;
       document.getElementById('match-modal').classList.add('open');
       document.body.style.overflow = 'hidden';

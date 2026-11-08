@@ -29,6 +29,8 @@ clé depuis GitHub Actions :
 - classement des 36 équipes.
 
 Les **clubs français** sont reconnus par leur code pays UEFA (`FRA`) : aucune liste à maintenir.
+Ce même code pays affiche le **drapeau de chaque club** (résultats, fiches, classements), via les images de
+flagcdn.com. Angleterre, Écosse, pays de Galles et Irlande du Nord ont leur propre drapeau.
 
 **ESPN (complément)** : fil de commentaires texte (Opta, en anglais) des matchs des clubs français, rapproché du
 match UEFA par date, score et nom d'équipe. Il sert uniquement de matière première au récit de l'IA.

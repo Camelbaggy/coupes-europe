@@ -90,9 +90,24 @@ def season_year_for(d: date) -> int:
     return d.year + 1 if d.month >= 7 else d.year
 
 
+# Code de fédération UEFA -> code de drapeau (ISO 3166-1, sous-divisions pour le Royaume-Uni), pour flagcdn.com
+FLAG_CODES = {
+    "ALB": "al", "AND": "ad", "ARM": "am", "AUT": "at", "AZE": "az", "BLR": "by", "BEL": "be", "BIH": "ba",
+    "BUL": "bg", "CRO": "hr", "CYP": "cy", "CZE": "cz", "DEN": "dk", "ENG": "gb-eng", "EST": "ee", "FRO": "fo",
+    "FIN": "fi", "FRA": "fr", "GEO": "ge", "GER": "de", "GIB": "gi", "GRE": "gr", "HUN": "hu", "ISL": "is",
+    "IRL": "ie", "ISR": "il", "ITA": "it", "KAZ": "kz", "KOS": "xk", "LVA": "lv", "LIE": "li", "LTU": "lt",
+    "LUX": "lu", "MLT": "mt", "MDA": "md", "MNE": "me", "NED": "nl", "MKD": "mk", "NIR": "gb-nir", "NOR": "no",
+    "POL": "pl", "POR": "pt", "ROU": "ro", "RUS": "ru", "SMR": "sm", "SCO": "gb-sct", "SRB": "rs", "SVK": "sk",
+    "SVN": "si", "ESP": "es", "SWE": "se", "SUI": "ch", "TUR": "tr", "UKR": "ua", "WAL": "gb-wls", "MON": "mc",
+}
+
+
 def team_info(t: Dict[str, Any]) -> Dict[str, Any]:
     tr = t.get("translations")
+    country = (t.get("countryCode") or "").upper()
     return {
+        "flag": FLAG_CODES.get(country, ""),
+        "country_name": fr(tr, "countryName", country),
         "id": str(t.get("id", "")),
         "name": fr(tr, "displayName", t.get("internationalName", "")),
         "official_name": fr(tr, "displayOfficialName", t.get("internationalName", "")),
@@ -167,6 +182,7 @@ def fetch_standings(comp_key: str, season_year: int) -> List[Dict[str, Any]]:
         gd = int(to_number(it.get("goalDifference")) or 0)
         rows.append({
             "rank": rank, "team_id": t["id"], "team": t["name"], "short_name": t["short"],
+            "country": t["country"], "country_name": t["country_name"], "flag": t["flag"],
             "logo": t["logo"], "is_french": t["is_french"],
             "played": int(to_number(it.get("played")) or 0), "won": int(to_number(it.get("won")) or 0),
             "drawn": int(to_number(it.get("drawn")) or 0), "lost": int(to_number(it.get("lost")) or 0),
