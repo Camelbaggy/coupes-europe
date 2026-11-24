@@ -4,8 +4,9 @@
 Chef d'orchestre : run_pipeline.py
 1. Collecte déterministe ESPN (soirée du jour, date précise, ou semaine avec --week).
 2. Rédaction/contrôle des résumés par les agents Gemini Flash (repli déterministe sinon).
-3. État par soirée (etat_soirees.json) et UN SEUL push ntfy par soirée, une fois tous les matchs terminés
-   (ou, si elle reste partielle, après 12 h UTC le lendemain). Voir soirees.py.
+3. État par soirée (etat_soirees.json). Ce script NE NOTIFIE PLUS (sauf --week) : le push ntfy est envoyé par
+   `--notifier` (publication.py), appelé par le workflow après un push réussi, une fois la page publique vérifiée
+   à jour (un seul push par soirée, règles de soirees.py).
 """
 
 import argparse
@@ -16,6 +17,7 @@ import sys
 import agents_flash
 import collector
 import notify
+import publication
 import soirees
 
 
@@ -49,8 +51,21 @@ def main():
     parser.add_argument("--no-notify", action="store_true", help="Ne pas envoyer de push ntfy (ni toucher à l'état)")
     parser.add_argument("--forcer", action="store_true",
                         help="Retraiter une soirée déjà complète et notifiée (sinon arrêt anticipé)")
-    parser.add_argument("--renotifier", action="store_true", help="Envoyer le push même si la soirée a déjà été notifiée")
+    parser.add_argument("--renotifier", action="store_true",
+                        help="Notifier même si la soirée l'a déjà été (avec --notifier ; passe par la vérification de publication)")
+    parser.add_argument("--notifier", nargs="?", const="auto", metavar="SOIREE",
+                        help="Pas de collecte : vérifie que la page publiée est à jour puis envoie le push ntfy de la "
+                             "soirée (AAAA-MM-JJ, défaut : soirée par défaut) et la marque notifiée")
+    parser.add_argument("--alerte", metavar="SOIREE",
+                        help="Pas de collecte : envoie l'alerte ntfy d'échec de publication de la soirée (avec --cause)")
+    parser.add_argument("--cause", default="inconnue", help="Cause de l'alerte : collecte, push, page_non_a_jour")
     args = parser.parse_args()
+
+    if args.alerte:
+        sys.exit(publication.alerter(args.alerte, args.cause, publication.url_run_actions()))
+    if args.notifier:
+        jour = date_soiree_par_defaut() if args.notifier == "auto" else args.notifier
+        sys.exit(publication.notifier(jour, renotifier=args.renotifier))
 
     collector.set_raw_dir(args.save_raw)
     maintenant = dt.datetime.now(dt.timezone.utc)
@@ -69,6 +84,12 @@ def main():
     if suivre_etat and not args.forcer and not args.renotifier and soirees.deja_traitee(etat, jour, dates_data_json()):
         print(f"[FIN] Soirée du {jour} déjà complète et notifiée, présente dans data.json : rien à faire "
               "(--forcer pour retraiter).")
+        sys.exit(0)
+
+    if suivre_etat and not args.forcer and not args.renotifier and soirees.a_notifier_sans_collecte(
+            etat, jour, dates_data_json()):
+        print(f"[FIN] Soirée du {jour} complète et déjà dans data.json mais non notifiée : collecte sautée, "
+              "la vérification de publication + la notification suivent (--notifier).")
         sys.exit(0)
 
     print(f"=== COLLECTE : {dates} ===")
@@ -90,16 +111,10 @@ def main():
         if not args.no_notify:
             notify.send_ntfy_notification(data_path="data.json", force_test=True)
     elif suivre_etat:
-        # état écrit APRÈS la réussite de data.json : un plantage de l'IA ne marque jamais la soirée comme faite
-        etat = soirees.enregistrer(etat, jour, statut, matchs, termines, maintenant)
-        if soirees.doit_notifier(statut, etat[jour]["notifie"], jour, maintenant, args.renotifier):
-            envoye = notify.send_ntfy_notification(data_path="data.json")
-            # sans NTFY_TOPIC (simulation), on marque quand même : sinon le battement relancerait à vide
-            if envoye or not notify.NTFY_TOPIC:
-                soirees.enregistrer(etat, jour, statut, matchs, termines, maintenant, notifie=True)
-        else:
-            print(f"[INFO] Pas de push ntfy pour la soirée {jour} ({statut}, "
-                  f"{'déjà notifiée' if etat[jour]['notifie'] else 'en attente'}).")
+        # état écrit APRÈS la réussite de data.json : un plantage de l'IA ne marque jamais la soirée comme faite.
+        # `notifie` reste inchangé (faux pour une nouvelle soirée) : le push part de `--notifier`, après publication.
+        soirees.enregistrer(etat, jour, statut, matchs, termines, maintenant)
+        print(f"[INFO] Soirée {jour} ({statut}) : push ntfy différé, envoyé par --notifier une fois la page publiée à jour.")
     print("=== PIPELINE TERMINÉ ===")
 
 

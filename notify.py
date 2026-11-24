@@ -43,6 +43,10 @@ def send_ntfy_notification(data_path: str = "data.json", force_test: bool = Fals
         print(json.dumps(payload, ensure_ascii=False, indent=2))
         return False
 
+    return _poster(payload)
+
+
+def _poster(payload) -> bool:
     req = urllib.request.Request(
         NTFY_SERVER,
         data=json.dumps(payload).encode("utf-8"),
@@ -56,6 +60,20 @@ def send_ntfy_notification(data_path: str = "data.json", force_test: bool = Fals
     except urllib.error.URLError as e:
         print(f"[ERREUR] Échec de l'envoi ntfy : {e}")
         return False
+
+
+def send_ntfy_alert(titre: str, message: str, click: str = "") -> bool:
+    """Alerte d'échec de publication : priorité haute, tag d'alerte, lien vers le run Actions. Sans NTFY_TOPIC : simulation."""
+    payload = {"topic": NTFY_TOPIC, "title": titre, "message": message, "priority": 4,
+               "tags": ["rotating_light", "warning"]}
+    if click:
+        payload["click"] = click
+        payload["actions"] = [{"action": "view", "label": "Ouvrir le run", "url": click, "clear": True}]
+    if not NTFY_TOPIC:
+        print("[INFO] NTFY_TOPIC non défini. Simulation de l'alerte :")
+        print(json.dumps(payload, ensure_ascii=False, indent=2))
+        return False
+    return _poster(payload)
 
 
 if __name__ == "__main__":
