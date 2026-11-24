@@ -15,7 +15,20 @@ import collector
 import notify
 
 
-def main():
+def date_soiree_par_defaut(maintenant=None):
+    """Date de la soirée de matchs à collecter quand --date n'est pas donné.
+
+    GitHub retarde souvent le cron de 22 h 30 UTC de plusieurs heures (passages réels entre 2 h et 4 h UTC le
+    lendemain) : avant 12 h UTC, la soirée visée est donc celle de la VEILLE (sinon on cherche les matchs d'un
+    mercredi ou d'un vendredi matin, on n'en trouve aucun et data.json n'est jamais mis à jour)."""
+    import datetime as _dt
+    maintenant = maintenant or _dt.datetime.now(_dt.timezone.utc)
+    jour = maintenant.date()
+    if maintenant.hour < 12:
+        jour -= _dt.timedelta(days=1)
+    return jour.isoformat()
+
+
     parser = argparse.ArgumentParser(description="Pipeline complet Coupes d'Europe")
     parser.add_argument("--week", action="store_true", help="Tous les matchs européens de la semaine (mardi-jeudi)")
     parser.add_argument("--date", help="Date précise (YYYY-MM-DD)")
@@ -29,7 +42,7 @@ def main():
         dates = collector.get_current_week_european_dates()
         label = f"Semaine du {dates[0]} au {dates[-1]}"
     else:
-        d = args.date or collector.date.today().isoformat()
+        d = args.date or date_soiree_par_defaut()
         dates, label = [d], f"Soirée du {d}"
     print(f"=== COLLECTE : {dates} ===")
     raw_data = collector.collect_dates_data(dates, label_prefix=label, output_path="data_raw.json")
