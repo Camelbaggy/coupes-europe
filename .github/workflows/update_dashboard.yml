@@ -39,7 +39,7 @@ concurrency:
 jobs:
   update-and-notify:
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 35
     steps:
       - name: Récupération du dépôt
         uses: actions/checkout@v4
@@ -49,32 +49,41 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Exécution du pipeline (collecte ESPN + agents Gemini Flash + push ntfy)
+      - name: Soirée visée (calculée une seule fois pour tout le passage)
+        id: cible
+        env:
+          DATE_SPECIFIQUE: ${{ inputs.date_specifique }}
+          MODE_SEMAINE: ${{ inputs.mode_test_semaine }}
+        run: |
+          # vide = essai --week (ni état, ni vérification de publication, ni alerte)
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            if [ -n "$DATE_SPECIFIQUE" ]; then SOIREE="$DATE_SPECIFIQUE"
+            elif [ "$MODE_SEMAINE" = "true" ]; then SOIREE=""
+            else SOIREE=$(python -c "import run_pipeline; print(run_pipeline.date_soiree_par_defaut())"); fi
+          else
+            SOIREE=$(python -c "import run_pipeline; print(run_pipeline.date_soiree_par_defaut())")
+          fi
+          echo "Soirée visée : ${SOIREE:-(semaine d'essai)}"
+          echo "soiree=$SOIREE" >> "$GITHUB_OUTPUT"
+
+      - name: Collecte UEFA + résumés Gemini Flash (sans push ntfy)
+        id: collecte
         env:
           PYTHONUNBUFFERED: "1"
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
-          DASHBOARD_URL: ${{ secrets.DASHBOARD_URL }}
-          DATE_SPECIFIQUE: ${{ inputs.date_specifique }}
-          MODE_SEMAINE: ${{ inputs.mode_test_semaine }}
+          SOIREE: ${{ steps.cible.outputs.soiree }}
           FORCER: ${{ inputs.forcer }}
           RENOTIFIER: ${{ inputs.renotifier }}
         run: |
-          # Une soirée (cron, battement ou date précise) suit les règles d'état / notification unique de soirees.py ;
-          # seul --week (essai) les contourne.
-          OPTS=""
-          [ "$FORCER" = "true" ] && OPTS="$OPTS --forcer"
-          [ "$RENOTIFIER" = "true" ] && OPTS="$OPTS --renotifier"
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            if [ -n "$DATE_SPECIFIQUE" ]; then
-              python run_pipeline.py --save-raw raw_espn --date "$DATE_SPECIFIQUE" $OPTS
-            elif [ "$MODE_SEMAINE" = "true" ]; then
-              python run_pipeline.py --save-raw raw_espn --week
-            else
-              python run_pipeline.py $OPTS
-            fi
+          # Une soirée suit les règles d'état de soirees.py ; seul --week (essai) les contourne.
+          # La notification part plus loin (--notifier), seulement une fois la page publiée vérifiée à jour.
+          if [ -z "$SOIREE" ]; then
+            python run_pipeline.py --save-raw raw_espn --week
           else
-            python run_pipeline.py
+            OPTS=""
+            [ "$FORCER" = "true" ] && OPTS="$OPTS --forcer"
+            [ "$RENOTIFIER" = "true" ] && OPTS="$OPTS --renotifier"
+            python run_pipeline.py --save-raw raw_espn --date "$SOIREE" $OPTS
           fi
 
       - name: Archivage des réponses ESPN brutes (debug, 7 jours)
@@ -89,28 +98,42 @@ jobs:
           if-no-files-found: ignore
 
       - name: Publication de data.json et etat_soirees.json (si modifiés)
-        # always() : l'état (notification envoyée) doit être publié même si une étape suivante du pipeline a échoué
-        if: always()
+        # échec du push = job en échec : pas de notification de résultats, alerte d'échec plus bas
+        id: publier
+        if: success()
+        run: bash .github/scripts/publier.sh
+
+      - name: Notification après vérification de la publication (origin/main, puis page publique)
+        id: notif
+        if: success() && steps.cible.outputs.soiree != ''
+        env:
+          PYTHONUNBUFFERED: "1"
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+          DASHBOARD_URL: ${{ secrets.DASHBOARD_URL }}
+          SOIREE: ${{ steps.cible.outputs.soiree }}
+          RENOTIFIER: ${{ inputs.renotifier }}
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add data.json
-          [ -f etat_soirees.json ] && git add etat_soirees.json
-          if git diff --staged --quiet; then
-            echo "Aucune modification de data.json ni de etat_soirees.json à publier."
-            exit 0
-          fi
-          if git diff --staged --quiet -- data.json; then
-            git commit -m "chore: état des soirées (etat_soirees.json)"
-          else
-            git commit -m "chore: mise à jour automatique des résultats (UEFA)"
-          fi
-          # push robuste : main avance (autres passages, commits manuels) ; -X theirs = nos fichiers générés l'emportent
-          for essai in 1 2 3 4 5; do
-            if git push; then exit 0; fi
-            echo "Push refusé (essai $essai/5) : rebase sur origin puis nouvelle tentative"
-            sleep $(( (RANDOM % 16) + 5 ))
-            git pull --rebase -X theirs origin "${GITHUB_REF_NAME}" || { git rebase --abort 2>/dev/null; true; }
-          done
-          echo "::error::Échec du push après 5 essais"
-          exit 1
+          OPTS=""
+          [ "$RENOTIFIER" = "true" ] && OPTS="--renotifier"
+          python run_pipeline.py --notifier "$SOIREE" $OPTS
+
+      - name: Publication de l'état « notifié » (etat_soirees.json)
+        if: success() && steps.cible.outputs.soiree != ''
+        run: bash .github/scripts/publier.sh --etat-seul
+
+      - name: Alerte ntfy d'échec de publication
+        if: failure() && steps.cible.outputs.soiree != ''
+        continue-on-error: true
+        env:
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+          SOIREE: ${{ steps.cible.outputs.soiree }}
+          OUTCOME_COLLECTE: ${{ steps.collecte.outcome }}
+          OUTCOME_PUBLIER: ${{ steps.publier.outcome }}
+          OUTCOME_NOTIF: ${{ steps.notif.outcome }}
+        run: |
+          if [ "$OUTCOME_COLLECTE" = "failure" ]; then CAUSE=collecte
+          elif [ "$OUTCOME_PUBLIER" = "failure" ]; then CAUSE=push
+          else CAUSE=page_non_a_jour; fi
+          python run_pipeline.py --alerte "$SOIREE" --cause "$CAUSE"
+          # mémoriser l'alerte (anti-spam du battement) : meilleur effort, un push en échec peut encore échouer
+          bash .github/scripts/publier.sh --etat-seul || true
