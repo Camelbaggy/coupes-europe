@@ -26,7 +26,8 @@ python collector.py --date 2026-11-05                   # collecte seule -> data
 python agents_flash.py                                  # résumés seuls : data_raw.json -> data.json
 python tools/inspect_data.py data.json                  # résumé lisible (notes, momentum, drapeaux manquants…)
 python -m http.server 8000                              # voir index.html (il lit data.json via fetch)
-python -m py_compile *.py tools/*.py                    # seul contrôle statique ; pas de suite de tests
+python -m py_compile *.py tools/*.py                    # contrôle statique
+python soirees.py --test && bash tools/test_veille.sh   # tests locaux : état / notification unique, veille.sh (faux gh)
 ```
 
 `AI_BUDGET_SECONDS=0` désactive tout appel Gemini (résumés de repli déterministes). Sans `GEMINI_API_KEY`, même
@@ -58,6 +59,25 @@ index.html  : page unique (CSS + JS inline), lit data.json ; aucune étape de bu
   ne pas committer `data.json` à la main.
 - `data_raw.json` (sortie collecteur, avec `raw_comments_for_llm` et `matches[].actions`) n'est pas versionné ;
   `agents_flash` retire ces champs avant d'écrire `data.json`.
+
+### Fiabilité des passages : état par soirée, notification unique, battement
+
+GitHub retarde ou saute les crons ; plusieurs mécanismes garantissent une mise à jour sans intervention.
+- **État par soirée** `etat_soirees.json` (racine, commité avec `data.json` par `update_dashboard.yml`, 60 jours gardés ; logique pure dans
+  `soirees.py`) : `{"AAAA-MM-JJ": {statut, notifie, maj, matchs, termines}}`, `statut` = `complet` (≥ 1 match, tous terminés) / `partiel`
+  (matchs non terminés ou liste UEFA illisible) / `aucun_match`. Écrit par `run_pipeline.py` à chaque passage, jamais avec `--week` ni
+  `--no-notify`. Un état `complet` n'est écrit qu'après la réussite de `data.json`.
+- **Notification unique** : push ntfy seulement si la soirée est `complet` et non notifiée ; une soirée restée `partiel` est notifiée une fois
+  à partir de 12 h UTC le lendemain ; `aucun_match` jamais ; `--renotifier` force. Un passage sur une soirée `complet` + notifiée + déjà dans
+  `data.json` s'arrête avant toute collecte (sans Gemini) sauf `--forcer`. Sans `NTFY_TOPIC` (simulation), la soirée est marquée notifiée.
+- **Battement** `battement.yml` (dispatch seul, job ~330 min, se relance lui-même, groupe `battement` sans annulation, même modèle que
+  courses-cyclistes) exécute toutes les 10 min `.github/scripts/veille.sh` : pour les soirées de match (mar-mer-jeu, samedi en mai-juin) entre
+  22 h 15 UTC et 13 h UTC le lendemain, si `etat_soirees.json` (lu sur main via `gh api`) n'est pas `aucun_match` / notifié, qu'aucun passage
+  d'`update_dashboard.yml` n'est en file ou en cours et que le dernier a démarré il y a ≥ 25 min :
+  `gh workflow run update_dashboard.yml --ref main -f mode_test_semaine=false -f date_specifique=<soirée>`. Les scripts sont lus au
+  démarrage d'un battement : après modification, relancer `battement.yml`. **Secours** : `veille_secours.yml` (cron horaire à :52) exécute le
+  même `veille.sh` et relance `battement.yml` s'il ne tourne pas ; le cron 22 h 30 de `update_dashboard.yml` est conservé. Premier lancement
+  (ou après arrêt) : `gh workflow run battement.yml --ref main`.
 
 ### Schéma de `data.json` (ce que lit `index.html`)
 

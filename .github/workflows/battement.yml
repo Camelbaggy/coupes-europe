@@ -1,0 +1,35 @@
+name: Battement (veille auto-entretenue des soirées)
+
+# GitHub saute ou retarde de plusieurs heures la plupart des crons, mais jamais les workflow_dispatch. Ce workflow est donc un
+# « battement » : un job de ~330 min qui, toutes les 10 min, exécute .github/scripts/veille.sh (relance update_dashboard.yml
+# pour la soirée de matchs en cours si elle n'est pas terminée / notifiée d'après etat_soirees.json publié sur main).
+# Au bout de ~330 min, il se relance lui-même (workflow_dispatch) puis se termine ; la concurrence (groupe battement, sans
+# annulation) place le suivant en attente jusqu'à la fin de celui-ci. Un autre battement déjà en cours à l'arrivée : sortie.
+# Secours : veille_secours.yml (cron horaire) relance battement.yml s'il n'est ni en file ni en cours. Lecture de la liste des
+# exécutions, de etat_soirees.json et déclenchements seulement (jeton du dépôt).
+# Premier lancement après fusion : gh workflow run battement.yml --ref main (ou bouton « Run workflow »).
+on:
+  workflow_dispatch:
+
+permissions:
+  actions: write
+  contents: read
+
+concurrency:
+  group: battement
+  cancel-in-progress: false
+
+jobs:
+  battement:
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    steps:
+      - name: Checkout des scripts
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github/scripts
+      - name: Battement
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: bash .github/scripts/battement.sh

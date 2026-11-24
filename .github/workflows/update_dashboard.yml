@@ -1,4 +1,4 @@
-name: Mise à jour Coupes d'Europe (23h30 & Test Semaine)
+name: Mise à jour Coupes d'Europe (soirée, battement & test semaine)
 
 on:
   schedule:
@@ -17,9 +17,24 @@ on:
         description: 'Ou forcer une date précise (YYYY-MM-DD, laisser vide sinon)'
         required: false
         type: string
+      forcer:
+        description: 'Retraiter une soirée déjà complète et notifiée (--forcer)'
+        required: false
+        default: false
+        type: boolean
+      renotifier:
+        description: 'Renvoyer le push ntfy même si la soirée a déjà été notifiée (--renotifier)'
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: write
+
+# un seul passage à la fois (data.json et etat_soirees.json sont commités) ; un passage en attente n'annule pas celui en cours
+concurrency:
+  group: update-dashboard
+  cancel-in-progress: false
 
 jobs:
   update-and-notify:
@@ -42,14 +57,21 @@ jobs:
           DASHBOARD_URL: ${{ secrets.DASHBOARD_URL }}
           DATE_SPECIFIQUE: ${{ inputs.date_specifique }}
           MODE_SEMAINE: ${{ inputs.mode_test_semaine }}
+          FORCER: ${{ inputs.forcer }}
+          RENOTIFIER: ${{ inputs.renotifier }}
         run: |
+          # Une soirée (cron, battement ou date précise) suit les règles d'état / notification unique de soirees.py ;
+          # seul --week (essai) les contourne.
+          OPTS=""
+          [ "$FORCER" = "true" ] && OPTS="$OPTS --forcer"
+          [ "$RENOTIFIER" = "true" ] && OPTS="$OPTS --renotifier"
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             if [ -n "$DATE_SPECIFIQUE" ]; then
-              python run_pipeline.py --save-raw raw_espn --date "$DATE_SPECIFIQUE"
+              python run_pipeline.py --save-raw raw_espn --date "$DATE_SPECIFIQUE" $OPTS
             elif [ "$MODE_SEMAINE" = "true" ]; then
               python run_pipeline.py --save-raw raw_espn --week
             else
-              python run_pipeline.py
+              python run_pipeline.py $OPTS
             fi
           else
             python run_pipeline.py
@@ -66,14 +88,29 @@ jobs:
           retention-days: 7
           if-no-files-found: ignore
 
-      - name: Publication de data.json sur GitHub Pages (si modifié)
+      - name: Publication de data.json et etat_soirees.json (si modifiés)
+        # always() : l'état (notification envoyée) doit être publié même si une étape suivante du pipeline a échoué
+        if: always()
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add data.json
+          [ -f etat_soirees.json ] && git add etat_soirees.json
           if git diff --staged --quiet; then
-            echo "Aucune modification de data.json à publier."
+            echo "Aucune modification de data.json ni de etat_soirees.json à publier."
+            exit 0
+          fi
+          if git diff --staged --quiet -- data.json; then
+            git commit -m "chore: état des soirées (etat_soirees.json)"
           else
             git commit -m "chore: mise à jour automatique des résultats (UEFA)"
-            git push
           fi
+          # push robuste : main avance (autres passages, commits manuels) ; -X theirs = nos fichiers générés l'emportent
+          for essai in 1 2 3 4 5; do
+            if git push; then exit 0; fi
+            echo "Push refusé (essai $essai/5) : rebase sur origin puis nouvelle tentative"
+            sleep $(( (RANDOM % 16) + 5 ))
+            git pull --rebase -X theirs origin "${GITHUB_REF_NAME}" || { git rebase --abort 2>/dev/null; true; }
+          done
+          echo "::error::Échec du push après 5 essais"
+          exit 1

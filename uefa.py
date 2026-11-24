@@ -119,12 +119,16 @@ def team_info(t: Dict[str, Any]) -> Dict[str, Any]:
 # ------------------------------------------------------------------------------
 # Appels API
 # ------------------------------------------------------------------------------
-def fetch_matches(comp_key: str, dates: List[str]) -> List[Dict[str, Any]]:
+def fetch_matches(comp_key: str, dates: List[str], erreurs: Optional[List[str]] = None) -> List[Dict[str, Any]]:
+    """Matchs des dates données. Liste illisible (réseau, HTTP) : [] et `comp_key` ajouté à `erreurs` si fourni
+    (distingue « aucun match » de « données indisponibles »)."""
     cid = COMPETITION_IDS[comp_key]
     d_from = min(dates)
     d_to = (date.fromisoformat(max(dates)) + timedelta(days=1)).isoformat()
     data = fetch_json(f"https://match.uefa.com/v5/matches?competitionId={cid}&fromDate={d_from}&toDate={d_to}"
                       f"&offset=0&limit=200&order=ASC&language=FR", raw_name=f"uefa_matches_{comp_key}.json")
+    if data is None and erreurs is not None:
+        erreurs.append(comp_key)
     wanted = set(dates)
     return [m for m in (data or []) if ((m.get("kickOffTime") or {}).get("date") or "")[:10] in wanted]
 

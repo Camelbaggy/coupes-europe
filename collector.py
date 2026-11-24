@@ -107,13 +107,15 @@ def collect_dates_data(target_dates: List[str], label_prefix: str = "Soirée",
         "source": "UEFA (données officielles) + ESPN (fil de commentaires)",
         "target_dates": target_dates,
         "notification": {"title": "Coupes d'Europe : Résultats et classements à jour", "summary": "",
-                         "match_night": False},
+                         "match_night": False, "matchs": 0, "termines": 0, "incomplet": False},
         "competitions": {},
     }
     finished_total = 0
+    matches_total = 0
+    erreurs_uefa: List[str] = []
 
     for comp_key, meta in TOURNAMENTS.items():
-        raw_matches = uefa.fetch_matches(comp_key, target_dates)
+        raw_matches = uefa.fetch_matches(comp_key, target_dates, erreurs_uefa)
         season = next((int(to_number(m.get("seasonYear"))) for m in raw_matches if m.get("seasonYear")),
                       uefa.season_year_for(date.fromisoformat(target_dates[0])))
         standings = uefa.fetch_standings(comp_key, season)
@@ -126,6 +128,7 @@ def collect_dates_data(target_dates: List[str], label_prefix: str = "Soirée",
             fr_match = any((m.get(k) or {}).get("countryCode") == "FRA" for k in ("homeTeam", "awayTeam"))
             match = build_match(comp_key, m, detailed=fr_match)
             matches.append(match)
+            matches_total += 1
             if match["finished"]:
                 finished_total += 1
             if not match["is_french_match"] or not match["finished"]:
@@ -172,6 +175,9 @@ def collect_dates_data(target_dates: List[str], label_prefix: str = "Soirée",
             print(f"[NOTES] {comp['name']} :")
             output["ratings"][comp_key] = ratings.rate_matches(rated)
     output["notification"]["match_night"] = finished_total > 0
+    # Compteurs pour l'état par soirée (soirees.py) ; incomplet = liste UEFA illisible pour une compétition
+    output["notification"].update({"matchs": matches_total, "termines": finished_total,
+                                   "incomplet": bool(erreurs_uefa)})
     with open(output_path, "w", encoding="utf-8") as f:
         json.dump(output, f, ensure_ascii=False, indent=2)
     print(f"[OK] {finished_total} match(s) terminé(s) -> {output_path}")
