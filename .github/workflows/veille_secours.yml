@@ -1,0 +1,39 @@
+name: Veille de secours (relance du battement)
+
+# Secours du battement : GitHub saute souvent les crons, mais celui-ci finit par passer. Chaque heure (à :52) :
+#   1. exécute le contrôle de veille.sh (relance update_dashboard.yml pour la soirée en cours si elle n'est pas terminée) ;
+#   2. relance battement.yml s'il n'est ni en file ni en cours (relance_battement.sh).
+# Lecture de la liste des exécutions, de etat_soirees.json et déclenchements seulement (jeton du dépôt).
+on:
+  schedule:
+    - cron: '52 * * * *'
+  workflow_dispatch:
+
+permissions:
+  actions: write
+  contents: read
+
+concurrency:
+  group: veille-secours
+  cancel-in-progress: true
+
+jobs:
+  veille:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout des scripts
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: .github/scripts
+      - name: Relance d'update_dashboard.yml si une soirée n'est pas terminée
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: bash .github/scripts/veille.sh
+      - name: Relance du battement s'il ne tourne pas
+        if: ${{ !cancelled() }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: bash .github/scripts/relance_battement.sh
