@@ -10,7 +10,7 @@ const sleep = (ms) => new Promise(r => setTimeout(r, ms));
   const errs = [];
   page.on('console', m => { if (m.type() === 'error' && !/flagcdn|img\.uefa|ERR_|Failed to load resource/.test(m.text())) errs.push(m.text()); });
   page.on('pageerror', e => errs.push('pageerror: ' + e.message));
-  await page.goto(BASE + '/index.html', { waitUntil: 'networkidle' });
+  await page.goto(BASE + '/index.html?c=ucl', { waitUntil: 'networkidle' });
   await page.waitForFunction(() => typeof couleursMatch === 'function' && clubIndex && clubIndex.size > 0);
 
   // 1. Toutes les soirées : écart minimal, contraste, sources

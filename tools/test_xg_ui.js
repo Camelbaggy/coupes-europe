@@ -14,7 +14,7 @@ const ok = (c, msg) => { if (!c) { echecs++; console.log('ECHEC : ' + msg); } el
   const errs = [];
   page.on('console', m => { if (m.type() === 'error' && !/flagcdn|img\.uefa|ERR_|Failed to load resource/.test(m.text())) errs.push(m.text()); });
   page.on('pageerror', e => errs.push('pageerror: ' + e.message));
-  await page.goto(BASE + '/index.html', { waitUntil: 'networkidle' });
+  await page.goto(BASE + '/index.html?c=ucl', { waitUntil: 'networkidle' });
   await page.waitForFunction(() => typeof openMatchModal === 'function' && appData && appData.competitions);
   const debord = () => page.evaluate(() => {
     const vw = document.documentElement.clientWidth, body = document.getElementById('modal-body-content');
