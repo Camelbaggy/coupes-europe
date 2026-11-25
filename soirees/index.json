@@ -241,9 +241,9 @@
    }
   ],
   "resumes": {
-   "gemini": 3,
-   "deterministe": 1,
-   "a_rattraper": 1
+   "gemini": 4,
+   "deterministe": 0,
+   "a_rattraper": 0
   },
   "reconstituee": true,
   "maj": "2026-11-25T01:35:46Z",
@@ -284,9 +284,9 @@
    }
   ],
   "resumes": {
-   "gemini": 0,
-   "deterministe": 2,
-   "a_rattraper": 2
+   "gemini": 2,
+   "deterministe": 0,
+   "a_rattraper": 0
   },
   "reconstituee": true,
   "maj": "2026-11-25T01:36:58Z",
@@ -385,9 +385,9 @@
    }
   ],
   "resumes": {
-   "gemini": 0,
-   "deterministe": 4,
-   "a_rattraper": 4
+   "gemini": 3,
+   "deterministe": 1,
+   "a_rattraper": 1
   },
   "reconstituee": true,
   "maj": "2026-11-25T01:37:38Z",
@@ -418,9 +418,9 @@
    }
   ],
   "resumes": {
-   "gemini": 0,
-   "deterministe": 1,
-   "a_rattraper": 1
+   "gemini": 1,
+   "deterministe": 0,
+   "a_rattraper": 0
   },
   "reconstituee": true,
   "maj": "2026-11-25T01:38:40Z",
@@ -461,9 +461,9 @@
    }
   ],
   "resumes": {
-   "gemini": 0,
-   "deterministe": 2,
-   "a_rattraper": 2
+   "gemini": 1,
+   "deterministe": 1,
+   "a_rattraper": 1
   },
   "reconstituee": true,
   "maj": "2026-11-25T01:39:01Z",
