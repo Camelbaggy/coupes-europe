@@ -1,5 +1,48 @@
 [
  {
+  "date": "2026-11-25",
+  "statut": "complet",
+  "matchs": 9,
+  "termines": 9,
+  "competitions": {
+   "ucl": {
+    "matchs": 9,
+    "stage": "league",
+    "tour": "J5"
+   }
+  },
+  "francais": [
+   {
+    "comp": "ucl",
+    "match_id": "2049634",
+    "home": "Paris",
+    "away": "Roma",
+    "home_fr": true,
+    "away_fr": false,
+    "score": "2-2",
+    "statut": "Terminé"
+   },
+   {
+    "comp": "ucl",
+    "match_id": "2049639",
+    "home": "Lille",
+    "away": "Bayern München",
+    "home_fr": true,
+    "away_fr": false,
+    "score": "2-1",
+    "statut": "Terminé"
+   }
+  ],
+  "resumes": {
+   "gemini": 2,
+   "deterministe": 0,
+   "a_rattraper": 0
+  },
+  "reconstituee": false,
+  "maj": "2026-11-25T22:22:15Z",
+  "fichier": "soirees/2026-11-25.json"
+ },
+ {
   "date": "2026-11-24",
   "statut": "complet",
   "matchs": 9,
