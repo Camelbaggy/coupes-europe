@@ -324,3 +324,17 @@ et le menu n'affiche que les soirées ayant des matchs.
 - **Mesures de la reconstitution locale** (UEFA joignable) : une soirée de préliminaires (26/08, 5 matchs) en 18 s, une soirée de
   phase de ligue (04/11, 10 matchs) en 23 s, listes de saison comprises (24 Mo, 3 requêtes) ; notes calculées normalement sur les
   tours préliminaires (moyenne 6,99 / 6,85, écart-type 0,75 / 0,82). Soirée de 40 matchs : environ 2 à 3 minutes.
+
+### Mise en œuvre de l'étape 3 : fiches de club (écarts et mesures par rapport à l'étude)
+
+- **Premier remplissage local (25/11/2026)** : 108 clubs (36 par coupe, aucun club dans deux coupes), 103 rapprochés par P7361, 5 par alias validés (clés = identifiants
+  UEFA : Como 79946, Sunderland 53360, Torreense 2603107, Mjällby 74233, Sint-Truidense 52883). Lecture UEFA complète en ~3 min (3 listes de saison, 3 classements, cumuls d'équipe, 3 × ~6 pages
+  d'effectifs, ~65 requêtes de stats joueurs). **Poids de `clubs/`** : 2,56 Mo bruts (JSON compact, 109 fichiers, de 14 à 34 Ko par club), ~340 Ko compressés ; `index.json` 46 Ko.
+- **Écart : Wikipédia.** L'API REST `page/summary`, page par page, est inutilisable depuis cet environnement (HTTP 429 quasi systématique, `Retry-After` qui s'allonge si on redemande trop
+  tôt : 4 résumés obtenus en 15 min). Remplacée par l'API MediaWiki `prop=extracts|info|pageprops&exintro&explaintext` par lots de 20 titres (6 requêtes pour 108 clubs) ; l'extrait est
+  l'introduction tronquée à des paragraphes entiers (250 à 900 caractères). Le débit reste limité par moments : après 3 échecs de suite le passage s'arrête et reprend au suivant.
+- **Écart : fondation = année seulement** (la précision d'une date Wikidata n'est pas lue : 1879-01-01 est un défaut, pas une date). Surnom : 1 club sur 108 en français.
+- **Écart : stats d'équipe** = `compstats` club par club (une requête pour toute la coupe), moyenne de compétition = moyenne simple des valeurs par match des 36 clubs ; les moyennes des
+  fiches non mises à jour par un passage de soirée datent de leur dernière mise à jour (champ `moyenne_competition.maj`, rappelé dans l'info-bulle).
+- **Écart : effectif** = inscrits UEFA filtrés sur `clubId` ; seuls ceux qui ont un numéro de club ou des minutes sont affichés (les autres sont comptés dans l'info-bulle). Un joueur
+  parti en cours de saison et absent de la liste inscrite n'apparaît pas (limite connue).
