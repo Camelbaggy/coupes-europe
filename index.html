@@ -2572,9 +2572,18 @@
     const clubCache = new Map();
     let activeClub = null, currentClubView = 'apercu', clubToken = 0;
 
+    // Index commun des fiches : clubs des coupes (clubs/index.json, ids UEFA) + clubs des championnats (donnees-football,
+    // championnats/clubs/index.json, ids `espn-…`). Un club présent des deux côtés (correspondance PROUVÉE par un match de coupe,
+    // fiches_ligues.py) a UNE fiche : les deux entrées pointent l'une vers l'autre (`uefa_id` / `espn`).
     async function loadClubIndex() {
-      const d = await fetchJson('clubs/index.json');
-      clubIndex = d && Array.isArray(d.clubs) ? new Map(d.clubs.map(c => [String(c.id), c])) : null;
+      const [d, l] = await Promise.all([fetchJson('clubs/index.json'), fetchJson(DONNEES + 'championnats/clubs/index.json')]);
+      const m = new Map();
+      ((d && d.clubs) || []).forEach(c => m.set(String(c.id), c));
+      ((l && l.clubs) || []).forEach(c => {
+        m.set(String(c.id), { ...c, source: 'ligue' });
+        if (c.uefa_id && m.has(String(c.uefa_id))) m.set(String(c.uefa_id), { ...m.get(String(c.uefa_id)), espn: String(c.id) });
+      });
+      clubIndex = m.size ? m : null;
     }
     const hasClub = (id) => !!(clubIndex && id != null && clubIndex.has(String(id)));
     // Lien vers la fiche d'un club (texte simple si le club n'a pas de fiche) ; `html` est déjà échappé par l'appelant
@@ -2590,9 +2599,47 @@
 
     async function loadClub(id) {
       if (clubCache.has(id)) return clubCache.get(id);
-      const f = await fetchJson('clubs/' + encodeURIComponent(id) + '.json');
-      if (f) clubCache.set(id, f);
+      const e = (clubIndex && clubIndex.get(id)) || {};
+      const idUefa = id.startsWith('espn-') ? e.uefa_id : id;
+      const idLigue = id.startsWith('espn-') ? id : e.espn;
+      const eLigue = idLigue && clubIndex && clubIndex.get(idLigue);
+      const [u, l] = await Promise.all([
+        idUefa ? fetchJson('clubs/' + encodeURIComponent(idUefa) + '.json') : null,
+        eLigue ? fetchJson(DONNEES + eLigue.fichier) : null]);
+      const f = fusionnerFiches(u, l);
+      if (f) [id, idUefa, idLigue].filter(Boolean).forEach(k => clubCache.set(String(k), f));
       return f;
+    }
+    // Fiche unique d'un club présent en coupe ET en championnat : base UEFA (stade, Wikidata, Wikipédia, histoire européenne),
+    // + championnat (matchs, classement, stats) ; joueurs rapprochés par date de naissance ET nom (un mot du nom en commun), jamais
+    // par le nom seul ; un joueur non rapproché reste listé tel quel.
+    const motsNom = (n) => new Set(String(n || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').split(/[^a-z]+/).filter(x => x.length > 2));
+    function fusionnerFiches(u, l) {
+      if (!u || !l) return u || l || null;
+      const matchs = [...((l.saison || {}).matchs || []), ...((u.saison || {}).matchs || [])]
+        .sort((a, b) => String(a.heure_utc || a.date).localeCompare(String(b.heure_utc || b.date)));
+      const joues = matchs.filter(x => x.pour != null);
+      const maintenant = new Date().toISOString().slice(0, 16);
+      const futur = matchs.find(x => x.pour == null && String(x.heure_utc || '') >= maintenant);
+      const eff = (u.effectif || []).map(j => ({ ...j }));
+      (l.effectif || []).forEach(e => {
+        const mots = motsNom(e.nom);
+        const j = e.naissance && eff.find(x => x.naissance === e.naissance && [...motsNom(x.nom)].some(w => mots.has(w)));
+        if (j) { j.stats = { ...(e.stats || {}), ...(j.stats || {}) }; j.matchs = e.matchs; j.joue = j.joue || e.joue; j.ids = [j.id, e.id]; }
+        else eff.push(e);
+      });
+      return { ...u, ligue: l.ligue, espn_id: l.espn_id, competitions: [...(l.competitions || []), ...(u.competitions || [])],
+        saison: { ...(u.saison || {}), matchs, forme: joues.slice(-5).map(x => x.resultat), prochain: futur ? futur.match_id : null },
+        rang: [...(l.rang || []), ...(u.rang || [])], stats: { ...(l.stats || {}), ...(u.stats || {}) },
+        stade: u.stade || l.stade, effectif: eff, maj: [u.maj, l.maj].filter(Boolean).sort().pop() };
+    }
+    // Nationalité en français d'après le code drapeau (ESPN donne le nom anglais) ; repli : nom tel que publié
+    const NOMS_PAYS = (() => { try { return new Intl.DisplayNames(['fr'], { type: 'region' }); } catch (e) { return null; } })();
+    function nationaliteFr(j) {
+      if (j && /^[a-z]{2}$/.test(j.drapeau || '') && NOMS_PAYS && String(j.id || '').startsWith('espn-')) {
+        try { return NOMS_PAYS.of(j.drapeau.toUpperCase()) || j.nationalite; } catch (e) { /* code inconnu */ }
+      }
+      return (j && j.nationalite) || '';
     }
 
     async function openClub(id, view) {
@@ -2665,9 +2712,9 @@
         const prec = r.rang_precedent != null ? ` · avant : ${r.rang_precedent}${r.rang_precedent === 1 ? 'er' : 'e'}` : '';
         return `<div class="cl-rank"><b>${esc(r.rang)}${r.rang === 1 ? 'er' : 'e'}</b>
           ${fl ? `<span class="cl-trend-${esc(r.tendance)}" title="Évolution depuis la journée précédente">${fl}</span>` : ''}
-          <span>${esc(COMP_FULL[r.comp] || r.comp)} · phase de ligue · ${esc(r.points ?? '–')} pts · ${esc(r.joues ?? '–')} match${r.joues > 1 ? 's' : ''}${esc(prec)}</span></div>`;
+          <span>${esc(COMP_FULL[r.comp] || r.comp)} · ${estLigue(r.comp) ? 'championnat' : 'phase de ligue'} · ${esc(r.points ?? '–')} pts · ${esc(r.joues ?? '–')} match${r.joues > 1 ? 's' : ''}${esc(prec)}</span></div>`;
       }).join('');
-      if (rangs) sections.push(`<div class="cl-sec"><h4>Classement actuel ${infoBtn('<p>Classement officiel UEFA à la date de la dernière mise à jour de la fiche (il ne dit rien du classement d\'une soirée passée : voir la page d\'accueil).</p>', 'Source du classement')}</h4>${rangs}</div>`);
+      if (rangs) sections.push(`<div class="cl-sec"><h4>Classement actuel ${infoBtn('<p>Classements officiels (UEFA pour les coupes, ESPN pour les championnats) à la date de la dernière mise à jour de la fiche (ils ne disent rien du classement d\'une journée passée : voir la page de la compétition).</p>', 'Source du classement')}</h4>${rangs}</div>`);
       const formeHtml = (f.saison && f.saison.forme || []).map(r => `<span class="form-dot form-${esc(r)}" title="${{ V: 'Victoire', N: 'Nul', D: 'Défaite' }[r]}">${esc(r)}</span>`).join('');
       if (formeHtml) sections.push(`<div class="cl-sec"><h4>Forme (5 derniers matchs) ${infoBtn('<p>Victoire / nul / défaite <b>calculés</b> d\'après les scores des matchs terminés (tirs au but : nul). Du plus ancien au plus récent.</p>', 'Méthode de la forme')}</h4><div class="cl-form">${formeHtml}</div></div>`);
       const prochain = (f.saison && f.saison.matchs || []).find(x => x.match_id === (f.saison || {}).prochain);
@@ -2685,7 +2732,7 @@
       if (wd.ville_siege && wd.ville_siege !== (st && st.ville)) faits.push(['Siège', esc(wd.ville_siege)]);
       if (wd.surnom) faits.push(['Surnom', esc(wd.surnom)]);
       if (lienSur(wd.site)) faits.push(['Site officiel', `<a href="${esc(lienSur(wd.site))}" target="_blank" rel="noopener noreferrer">${esc(wd.site.replace(/^https?:\/\/(www\.)?/i, '').replace(/\/$/, ''))}</a>`]);
-      const infoSrc = infoBtn(`<p><b>Sources.</b> Stade, ville, capacité et ouverture : UEFA (stade le plus utilisé par le club à domicile cette saison${st && st.autres_stades ? ' ; autres stades : ' + esc(st.autres_stades.join(', ')) : ''}). Fondation, surnom, siège, site officiel : <b>Wikidata</b>${wd.qid ? ` (<a href="https://www.wikidata.org/wiki/${esc(wd.qid)}" target="_blank" rel="noopener noreferrer">${esc(wd.qid)}</a>, rapproché par ${wd.preuve === 'alias' ? 'un rapprochement validé à la main' : 'l\'identifiant d\'équipe UEFA (P7361)'})` : ' (club non rapproché)'}, CC0. Une information absente n'est pas affichée.</p><p>Le logo est celui de l'UEFA (lien direct vers son image).</p>`, 'Sources de la fiche');
+      const infoSrc = infoBtn(`<p><b>Sources.</b> Stade, ville, capacité et ouverture : ${st && st.source === 'ESPN' ? 'ESPN' : 'UEFA'} (stade le plus utilisé par le club à domicile cette saison${st && st.autres_stades ? ' ; autres stades : ' + esc(st.autres_stades.join(', ')) : ''}). Fondation, surnom, siège, site officiel : <b>Wikidata</b>${wd.qid ? ` (<a href="https://www.wikidata.org/wiki/${esc(wd.qid)}" target="_blank" rel="noopener noreferrer">${esc(wd.qid)}</a>, rapproché par ${wd.preuve === 'alias' ? 'un rapprochement validé à la main' : 'l\'identifiant d\'équipe UEFA (P7361)'})` : ' (club non rapproché)'}, CC0. Une information absente n'est pas affichée.</p><p>Le logo est celui de l'UEFA (lien direct vers son image).</p>`, 'Sources de la fiche');
       if (faits.length) sections.push(`<div class="cl-sec"><h4>Le club ${infoSrc}</h4><dl class="cl-facts">${faits.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${v}</dd>`).join('')}</dl></div>`);
       else sections.push(`<div class="cl-sec"><h4>Le club ${infoSrc}</h4><div class="empty-state">Informations générales indisponibles.</div></div>`);
       if (wp && wp.extrait) {
@@ -2699,17 +2746,18 @@
     // --- Matchs : tous les matchs de la saison dans les compétitions UEFA, groupés par tour
     function clubMatchsHtml(f) {
       const matchs = (f.saison && f.saison.matchs) || [];
-      if (!matchs.length) return `<div class="empty-state">Aucun match cette saison dans les compétitions UEFA.</div>`;
+      if (!matchs.length) return `<div class="empty-state">Aucun match cette saison.</div>`;
       const groupes = [];
       matchs.forEach(x => {
         const cle = x.comp + '|' + (x.stage === 'league' ? 'league' : x.tour);
         let g = groupes.find(k => k.cle === cle);
-        if (!g) { g = { cle, comp: x.comp, titre: x.stage === 'league' ? 'Phase de ligue' : (x.tour || 'Tour'), liste: [] }; groupes.push(g); }
+        if (!g) { g = { cle, comp: x.comp, titre: estLigue(x.comp) ? 'Championnat' : x.stage === 'league' ? 'Phase de ligue' : (x.tour || 'Tour'), liste: [] }; groupes.push(g); }
         g.liste.push(x);
       });
       const comps = new Set(groupes.map(g => g.comp));
-      const info = infoBtn('<p>Tous les matchs du club cette saison dans les compétitions UEFA (tours préliminaires compris). Le score est donné <b>du point de vue du club</b> ; D = à domicile, E = à l\'extérieur ; tab = tirs au but (le résultat V/N/D est calculé sur le score hors tirs au but).</p><p>Un score encadré ouvre la fiche du match de la soirée conservée par le dashboard.</p>', 'Aide des matchs');
-      return `<div class="cl-round" style="display:flex;justify-content:space-between;align-items:center">Saison ${esc(f.saison_uefa ? (f.saison_uefa - 1) + '-' + String(f.saison_uefa).slice(2) : '')} ${info}</div>` + groupes.map(g => `
+      const info = infoBtn('<p>Tous les matchs du club cette saison : championnat (calendrier ESPN) et compétitions UEFA (tours préliminaires compris). Le score est donné <b>du point de vue du club</b> ; D = à domicile, E = à l\'extérieur ; tab = tirs au but (le résultat V/N/D est calculé sur le score hors tirs au but).</p><p>Un score encadré ouvre la fiche du match de la soirée conservée par le dashboard.</p>', 'Aide des matchs');
+      groupes.sort((a, b) => (estLigue(b.comp) ? 1 : 0) - (estLigue(a.comp) ? 1 : 0));   // championnat d'abord
+      return `<div class="cl-round" style="display:flex;justify-content:space-between;align-items:center">Saison ${esc(f.saison_uefa ? (f.saison_uefa - 1) + '-' + String(f.saison_uefa).slice(2) : (f.saison_label || ''))} ${info}</div>` + groupes.map(g => `
         <div class="cl-round">${comps.size > 1 ? esc(COMP_FULL[g.comp] || g.comp) + ' · ' : ''}${esc(g.titre)}</div>
         ${g.liste.map(x => {
           const res = x.resultat ? `<span class="cl-res form-${esc(x.resultat)}">${esc(x.resultat)}</span>` : '<span></span>';
@@ -2859,6 +2907,11 @@
 
     // Ouvre la fiche du match d'une soirée conservée (charge soirees/<date>.json si besoin)
     async function openMatchFromClub(matchId, date, comp) {
+      if (estLigue(comp)) {
+        const d = await loadJourLigue(comp, date);
+        if (!d || !openMatchModal(matchId, d, comp)) toast('Ce match n\'est pas encore disponible.');
+        return;
+      }
       let data = soireeCache.get(date);
       if (!data) {
         data = await fetchJson('soirees/' + date + '.json');
@@ -2882,6 +2935,12 @@
       clean_sheet: ['Matchs sans encaisser', 'somme', 'Défense'], tackles: ['Tacles', 'somme', 'Défense'],
       fouls_committed: ['Fautes commises', 'somme', 'Discipline'], yellow_cards: ['Cartons jaunes', 'somme', 'Discipline'], red_cards: ['Cartons rouges', 'somme', 'Discipline'],
       distance_covered: ['Distance parcourue (km)', 'somme', 'Physique'], top_speed: ['Vitesse max. (km/h)', 'max', 'Physique'],
+      // championnats (ESPN / Opta, cumuls calculés sur les matchs collectés)
+      xg: ['Buts attendus (xG)', 'somme', 'Attaque'], xa: ['Passes décisives attendues (xA)', 'somme', 'Attaque'], big_chances: ['Grosses occasions', 'somme', 'Attaque'],
+      dribbles: ['Dribbles réussis', 'somme', 'Attaque'], key_passes: ['Passes clés', 'somme', 'Construction'],
+      delivery_into_penalty_area: ['Entrées dans la surface', 'somme', 'Construction'], final_third_entries: ['Entrées dans le dernier tiers', 'somme', 'Construction'],
+      recovered_ball: ['Ballons récupérés', 'somme', 'Défense'], interceptions: ['Interceptions', 'somme', 'Défense'], tackles_won: ['Tacles réussis', 'somme', 'Défense'],
+      clearances: ['Dégagements', 'somme', 'Défense'], duels_won: ['Duels gagnés', 'somme', 'Défense'], ppda: ['PPDA', 'moyenne', 'Défense'],
     };
     function clubStatsHtml(f) {
       const comps = Object.keys(f.stats || {});
@@ -2890,10 +2949,11 @@
         const s = f.stats[comp], cum = s.cumul || {}, pm = s.par_match || {}, moy = (s.moyenne_competition || {});
         const mv = moy.valeurs || {};
         const n = s.matchs || 0;
-        const info = infoBtn(`<p><b>Cumuls</b> : statistiques officielles UEFA (compétition, saison en cours). <b>Par match</b> : calculé = cumul ÷ nombre de matchs (la possession et la précision sont déjà des moyennes ; la vitesse est un maximum). <b>Moy. comp.</b> : moyenne simple, sur les ${esc(moy.clubs || '')} clubs de la compétition, de la valeur par match — <b>calculée</b> par le dashboard${moy.maj ? ', au ' + esc(jourLong(moy.maj)) : ''}.</p><p>V / N / D calculés d'après les scores. Le suivi physique de l'UEFA est parfois incomplet sur certains matchs : ces valeurs sont indicatives.</p>`, 'Méthode des statistiques');
+        const info = infoBtn(estLigue(comp) ? `<p><b>Cumuls</b> : <b>calculés</b> sur les matchs collectés de la saison (statistiques d'équipe ESPN / Opta). <b>Par match</b> : cumul ÷ nombre de matchs (possession, précision des passes et PPDA : moyennes). <b>Moy. comp.</b> : moyenne simple, sur les ${esc(moy.clubs || '')} clubs du championnat, de la valeur par match${moy.maj ? ', au ' + esc(jourLong(moy.maj)) : ''}.</p><p>V / N / D calculés d'après les scores.</p>` : `<p><b>Cumuls</b> : statistiques officielles UEFA (compétition, saison en cours). <b>Par match</b> : calculé = cumul ÷ nombre de matchs (la possession et la précision sont déjà des moyennes ; la vitesse est un maximum). <b>Moy. comp.</b> : moyenne simple, sur les ${esc(moy.clubs || '')} clubs de la compétition, de la valeur par match — <b>calculée</b> par le dashboard${moy.maj ? ', au ' + esc(jourLong(moy.maj)) : ''}.</p><p>V / N / D calculés d'après les scores. Le suivi physique de l'UEFA est parfois incomplet sur certains matchs : ces valeurs sont indicatives.</p>`, 'Méthode des statistiques');
         const v = s.vnd || {};
         let rows = '', groupe = '';
-        Object.keys(STAT_META).forEach(k => {
+        const GRP = ['Attaque', 'Construction', 'Défense', 'Discipline', 'Physique'];
+        Object.keys(STAT_META).sort((a, b) => GRP.indexOf(STAT_META[a][2]) - GRP.indexOf(STAT_META[b][2])).forEach(k => {
           if (cum[k] == null) return;
           const [lib, type, grp] = STAT_META[k];
           if (grp !== groupe) { groupe = grp; rows += `<tr class="grp"><td colspan="4">${esc(grp)}</td></tr>`; }
@@ -2919,7 +2979,8 @@
       const visibles = tous.filter(j => j.numero || j.joue);
       if (!visibles.length) return `<div class="empty-state">Effectif indisponible.</div>`;
       const POSTES = [['GOALKEEPER', 'Gardiens'], ['DEFENDER', 'Défenseurs'], ['MIDFIELDER', 'Milieux'], ['FORWARD', 'Attaquants']];
-      const info = infoBtn(`<p>Joueurs <b>inscrits auprès de l'UEFA</b> pour ce club cette saison (liste officielle comp.uefa.com), ayant un numéro de club ou des minutes jouées${tous.length > visibles.length ? ` ; ${tous.length - visibles.length} inscrit${tous.length - visibles.length > 1 ? 's' : ''} sans numéro ni minute non affiché${tous.length - visibles.length > 1 ? 's' : ''}` : ''}.</p><p>Matchs, minutes, buts, passes décisives : cumuls officiels UEFA toutes compétitions UEFA de la saison confondues ; un joueur sans minute n'a pas de statistiques. Touchez un joueur pour sa fiche.</p>`, 'Aide de l\'effectif');
+      const avecLigue = !!f.ligue;
+      const info = infoBtn(`${avecLigue ? '<p><b>Championnat</b> : effectif ESPN ; matchs, minutes, buts, passes décisives et note moyenne <b>calculés</b> sur les matchs collectés de la saison. Un joueur présent en coupe et en championnat est rapproché par sa date de naissance et son nom.</p>' : ''}<p>Joueurs <b>inscrits auprès de l'UEFA</b> pour ce club cette saison (liste officielle comp.uefa.com), ayant un numéro de club ou des minutes jouées${tous.length > visibles.length ? ` ; ${tous.length - visibles.length} inscrit${tous.length - visibles.length > 1 ? 's' : ''} sans numéro ni minute non affiché${tous.length - visibles.length > 1 ? 's' : ''}` : ''}.</p><p>Matchs, minutes, buts, passes décisives : cumuls officiels UEFA toutes compétitions UEFA de la saison confondues ; un joueur sans minute n'a pas de statistiques. Touchez un joueur pour sa fiche.</p>`, 'Aide de l\'effectif');
       const bloc = (titre, liste) => liste.length ? `<div class="cl-round">${esc(titre)}</div>` + liste.map(j => {
         const t = sommeStats(j);
         const st = j.joue ? [`${nf(t.matches_appearance || 0)} m.`, `${nf(t.minutes_played_official || 0)}′`,
@@ -2927,10 +2988,10 @@
         return `<button type="button" class="cl-eff-row ${j.joue ? '' : 'sans-minute'}" onclick="openPlayerFromClub('${esc(j.id)}')">
           <span class="num">${esc(j.numero || '')}</span>
           ${j.photo ? `<img class="ph" src="${esc(j.photo)}" alt="" loading="lazy" onerror="this.style.visibility='hidden'">` : '<span class="ph"></span>'}
-          <span class="who"><span class="nm">${esc(j.nom)}</span><small>${j.drapeau ? flag({ flag: j.drapeau, country_name: j.nationalite }) : ''}${esc(j.nationalite || '')}${j.age ? ' · ' + esc(j.age) + ' ans' : ''}</small></span>
+          <span class="who"><span class="nm">${esc(j.nom)}</span><small>${j.drapeau ? flag({ flag: j.drapeau, country_name: nationaliteFr(j) }) : ''}${esc(nationaliteFr(j))}${j.age ? ' · ' + esc(j.age) + ' ans' : ''}${j.parti ? ' · parti' : ''}</small></span>
           <span class="st">${esc(st)}</span></button>`;
       }).join('') : '';
-      return `<div class="cl-round" style="display:flex;justify-content:space-between;align-items:center">Effectif inscrit UEFA ${info}</div>`
+      return `<div class="cl-round" style="display:flex;justify-content:space-between;align-items:center">${avecLigue ? 'Effectif' : 'Effectif inscrit UEFA'} ${info}</div>`
         + POSTES.map(([k, titre]) => bloc(titre, visibles.filter(j => j.poste === k))).join('')
         + bloc('Autres', visibles.filter(j => !POSTES.some(([k]) => k === j.poste)));
     }
@@ -2939,13 +3000,16 @@
     // réduite construite avec les seules données de clubs/<id>.json (pas de note : elle se calcule match par match).
     function openPlayerFromClub(pid) {
       const f = activeClub;
-      for (const k of COMP_KEYS) {
-        const comp = (appData && appData.competitions && appData.competitions[k]) || {};
-        const m = (comp.matches || []).find(x => x.players && x.players[pid]);
-        if (m) { openPlayer(pid, m); return; }
-      }
       const j = f && (f.effectif || []).find(x => x.id === pid);
+      if (!j || !(j.stats && Object.keys(j.stats).some(estLigue))) {   // joueur de coupe seulement : comportement d'origine
+        for (const k of Object.keys((appData && appData.competitions) || {})) {
+          const comp = appData.competitions[k] || {};
+          const m = (comp.matches || []).find(x => x.players && x.players[pid]);
+          if (m) { openPlayer(pid, m); return; }
+        }
+      }
       if (!j) return;
+      if (j.stats && Object.keys(j.stats).some(estLigue)) { ficheJoueurSaison(f, j); return; }
       const t = sommeStats(j);
       const items = [['matches_appearance', 'Matchs'], ['minutes_played_official', 'Minutes'], ['goals', 'Buts'], ['assists', 'Passes décisives'],
         ['yellow_cards', 'Cartons jaunes'], ['red_cards', 'Cartons rouges']];
@@ -2966,6 +3030,45 @@
           <div class="ps-meta">${j.drapeau ? flag({ flag: j.drapeau, country_name: j.nationalite }) : ''} ${esc(j.nationalite || '')}${j.age ? ` · ${esc(j.age)} ans` : ''}</div></div></div>
         <div class="ps-tags">${tags}</div>
         ${cells ? `<div class="ps-section"><h4>Statistiques de la saison ${info}</h4><div class="ps-grid">${cells}</div></div>` : `<div class="empty-state" style="margin-top:12px">Aucune statistique : ce joueur n'a pas encore joué.<div class="info-row">${info}</div></div>`}`;
+      document.getElementById('player-modal').classList.add('open');
+      bringToFront(document.getElementById('player-modal'));
+      document.getElementById('player-body').scrollTop = 0;
+    }
+
+    // Fiche de SAISON d'un joueur (championnat, et coupes s'il y joue aussi) : une ligne par compétition (matchs, minutes, buts,
+    // passes décisives, note moyenne), puis la liste de ses matchs de championnat (note du match ; un match ouvre sa fiche).
+    function ficheJoueurSaison(f, j) {
+      const lignes = Object.entries(j.stats || {}).map(([comp, s]) => `<tr><td>${esc(COMP_FULL[comp] || comp)}</td>
+        <td>${esc(nf(s.matches_appearance || 0))}</td><td>${esc(nf(s.minutes_played_official || 0))}</td>
+        <td>${esc(nf(j.poste === 'GOALKEEPER' ? (s.clean_sheet || 0) : (s.goals || 0)))}</td><td>${esc(nf(j.poste === 'GOALKEEPER' ? (s.goals_conceded || 0) : (s.assists || 0)))}</td>
+        <td><b>${s.note_moyenne != null ? esc(Number(s.note_moyenne).toFixed(1)) : '–'}</b></td></tr>`).join('');
+      const xg = Object.values(j.stats || {}).reduce((t, s) => t + (s.xg || 0), 0), xa = Object.values(j.stats || {}).reduce((t, s) => t + (s.xa || 0), 0);
+      const matchs = (j.matchs || []).slice().reverse().map(m => `<button type="button" class="cl-match" style="width:100%;background:none;border:none;color:inherit;font:inherit;text-align:left" onclick="openMatchFromClub('${esc(m.match_id)}', '${esc(m.date)}', '${esc(m.comp)}')">
+          <span class="cl-date">${esc(jourCourt(m.date))}</span>
+          <span class="cl-opp"><span class="cl-loc">${m.domicile ? 'D' : 'E'}</span><span class="nm">${esc(m.adversaire || '')}</span></span>
+          <span class="cl-score">${esc(m.score || '')}</span>
+          <span style="font-size:0.75rem;color:var(--text-muted)">${esc(m.minutes)}′${m.buts ? ' · ⚽' + (m.buts > 1 ? '×' + esc(m.buts) : '') : ''}${m.passes ? ' · 🅰' : ''}</span>
+          ${m.note != null ? `<span class="rating-badge ${ratingClass(m.note)}">${esc(Number(m.note).toFixed(1))}</span>` : '<span></span>'}</button>`).join('');
+      const notes = Object.values(j.stats || {}).filter(s => s.note_moyenne != null);
+      const moy = notes.length ? notes.reduce((t, s) => t + s.note_moyenne * (s.matchs_notes || 1), 0) / notes.reduce((t, s) => t + (s.matchs_notes || 1), 0) : null;
+      const photo = j.photo ? `<img class="ps-photo" src="${esc(j.photo)}" alt="" onerror="this.style.visibility='hidden'">` : `<div class="ps-photo"></div>`;
+      const tags = [j.poste_fr, j.numero ? 'N° ' + j.numero : '', j.naissance ? 'Né le ' + new Date(j.naissance + 'T12:00:00Z').toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' }) : '', j.parti ? 'A quitté le club' : '']
+        .filter(Boolean).map(x => `<span class="ps-tag">${esc(x)}</span>`).join('');
+      const info = infoBtn('<p>Fiche de saison. Championnat : statistiques <b>calculées</b> sur les matchs collectés (ESPN / Opta), note moyenne = moyenne des notes de ses matchs d\'au moins 10 minutes ; coupes : cumuls officiels UEFA. Gardiens : matchs sans encaisser et buts encaissés à la place des buts et passes décisives.</p><p>Touchez un match pour sa fiche détaillée.</p>', 'Aide de la fiche de saison');
+      document.getElementById('player-body').innerHTML = `
+        <div class="modal-close-row">
+          <span class="section-sub">${flag({ flag: f.drapeau, country_name: f.pays, logo: (f.logos || {})['70'] })} ${esc(f.nom)}</span>
+          <button class="btn-close" onclick="closePlayer()">✕</button>
+        </div>
+        <div class="ps-head">${photo}<div>
+          <div class="ps-name">${j.numero ? `<span style="color:var(--text-muted)">${esc(j.numero)}</span> ` : ''}${esc(j.nom)}</div>
+          <div class="ps-meta">${j.drapeau ? flag({ flag: j.drapeau, country_name: nationaliteFr(j) }) : ''} ${esc(nationaliteFr(j))}${j.age ? ` · ${esc(j.age)} ans` : ''}</div></div>
+          <div class="ps-rating">${moy != null ? `<span class="rating-badge ${ratingClass(moy)}">${esc(moy.toFixed(1))}</span><small>note moy.</small>` : '<small>non noté</small>'}</div></div>
+        <div class="ps-tags">${tags}</div>
+        <div class="ps-section"><h4>Saison ${info}</h4>
+          <table class="cl-table"><thead><tr><th>Compétition</th><th>M.</th><th>Min.</th><th>${j.poste === 'GOALKEEPER' ? 'CS' : 'Buts'}</th><th>${j.poste === 'GOALKEEPER' ? 'BE' : 'PD'}</th><th>Note</th></tr></thead><tbody>${lignes}</tbody></table>
+          ${xg || xa ? `<p class="momentum-note">Championnat : xG ${esc(xg.toLocaleString('fr-FR', { maximumFractionDigits: 2 }))} · xA ${esc(xa.toLocaleString('fr-FR', { maximumFractionDigits: 2 }))}</p>` : ''}</div>
+        ${matchs ? `<div class="ps-section"><h4>Matchs de championnat</h4>${matchs}</div>` : ''}`;
       document.getElementById('player-modal').classList.add('open');
       bringToFront(document.getElementById('player-modal'));
       document.getElementById('player-body').scrollTop = 0;

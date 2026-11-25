@@ -328,3 +328,29 @@ une fois par journée » s'applique. Mesuré le 25/11 : 8 journées ajoutées (J
 
 **Interface** : titre « Classement · calculé » + info-bulle propre au championnat (critères, date), « = » des ex æquo ; info-bulle
 « Reconstituée » adaptée aux championnats (`RECONSTITUEE_LIGUE_INFO`).
+
+## 15. Étape 5 livrée : fiches de club et de joueur communes (25/11/2026)
+
+Décision du propriétaire (25/11) : « une fiche par club et par joueur », coupes et championnats réunis.
+- **Générateur** `fiches_ligues.py` (exécuté par donnees-football après chaque collecte et chaque reconstitution, jamais bloquant) :
+  `championnats/clubs/<espn-id>.json` AU SCHÉMA des fiches UEFA (`clubs/<id UEFA>.json`) + `index.json` + `correspondances.json`.
+  Calendrier ESPN de la saison du point de vue du club (journée, V/N/D calculé, `soiree` = jour collecté), forme, prochain match, classement
+  ESPN actuel, stats d'équipe CUMULÉES sur les matchs collectés (par match ; possession, précision, PPDA moyennées ; moyenne du championnat),
+  stade le plus fréquent à domicile, couleur de maillot la plus fréquente à domicile / à l'extérieur, effectif ESPN + stats de saison
+  calculées par joueur (matchs, titularisations, minutes, buts, passes décisives, cartons, xG, xA, note moyenne ; gardiens : arrêts, buts
+  encaissés, matchs sans encaisser) et liste de ses matchs (note de chaque match) ; un joueur parti en cours de saison reste listé (« parti »).
+- **Correspondance ESPN <-> UEFA PROUVÉE** : un match de coupe du club UEFA dont l'événement ESPN est connu (`xg_espn_id` des soirées
+  publiées) ; le résumé ESPN de cet événement donne l'id ESPN du club. Jamais par le nom seul. Mesuré (Ligue 1, 25/11) : 7 clubs rapprochés
+  (Paris, Marseille, Lens, Lille, Lyon, Monaco, Rennes).
+- **Page** (`index.html`) : index commun des fiches (coupes + championnats) ; une fiche UNIQUE pour un club des deux mondes
+  (`fusionnerFiches` : base UEFA — stade, Wikidata, Wikipédia, histoire européenne — + championnat : matchs, classement, stats ; matchs triés
+  par date, forme et prochain match recalculés) ; joueurs rapprochés par DATE DE NAISSANCE ET un mot du nom en commun (jamais par le nom
+  seul). Lignes du classement, noms de la fiche de match et compos ouvrent la fiche ; le score d'un match de championnat ouvre sa fiche.
+  Nationalité ESPN (anglais) affichée en français par le code pays (`Intl.DisplayNames`). **Fiche de saison du joueur** (`ficheJoueurSaison`) :
+  une ligne par compétition (matchs, minutes, buts / passes décisives, gardiens : matchs sans encaisser / buts encaissés, note moyenne),
+  xG / xA du championnat, liste de ses matchs de championnat avec la note de chaque match (ouvre la fiche du match).
+- Vérifié (Playwright 390 x 844, données réelles de Ligue 1) : fiche PSG fusionnée (Ligue 1 + LDC), gardien rapproché (une ligne Ligue 1, une
+  ligne LDC), 0 débordement, 0 erreur de page (la seule erreur réseau est une photo de joueur absente chez l'UEFA, masquée).
+- Limites : pas d'extrait Wikipédia / Wikidata pour un club présent seulement en championnat (Wikidata n'a l'identifiant ESPN que de
+  41 clubs : à rapprocher plus tard avec preuve) ; pas d'onglet « Histoire » pour ces clubs tant que l'historique des classements (§ 16, en
+  cours) n'est pas branché.
