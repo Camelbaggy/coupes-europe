@@ -1293,5 +1293,86 @@
   "reconstituee": true,
   "maj": "2026-11-25T01:49:37Z",
   "fichier": "soirees/2026-07-14.json"
+ },
+ {
+  "date": "2026-07-09",
+  "statut": "complet",
+  "matchs": 27,
+  "termines": 27,
+  "competitions": {
+   "uel": {
+    "matchs": 6,
+    "stage": "qualifying",
+    "tour": "T1 aller"
+   },
+   "uecl": {
+    "matchs": 21,
+    "stage": "qualifying",
+    "tour": "T1 aller"
+   }
+  },
+  "francais": [],
+  "resumes": {
+   "gemini": 0,
+   "deterministe": 0,
+   "a_rattraper": 0
+  },
+  "reconstituee": true,
+  "maj": "2026-11-25T01:49:57Z",
+  "fichier": "soirees/2026-07-09.json"
+ },
+ {
+  "date": "2026-07-08",
+  "statut": "complet",
+  "matchs": 7,
+  "termines": 7,
+  "competitions": {
+   "ucl": {
+    "matchs": 4,
+    "stage": "qualifying",
+    "tour": "T1 aller"
+   },
+   "uecl": {
+    "matchs": 3,
+    "stage": "qualifying",
+    "tour": "T1 aller"
+   }
+  },
+  "francais": [],
+  "resumes": {
+   "gemini": 0,
+   "deterministe": 0,
+   "a_rattraper": 0
+  },
+  "reconstituee": true,
+  "maj": "2026-11-25T01:50:37Z",
+  "fichier": "soirees/2026-07-08.json"
+ },
+ {
+  "date": "2026-07-07",
+  "statut": "complet",
+  "matchs": 12,
+  "termines": 12,
+  "competitions": {
+   "ucl": {
+    "matchs": 10,
+    "stage": "qualifying",
+    "tour": "T1 aller"
+   },
+   "uecl": {
+    "matchs": 2,
+    "stage": "qualifying",
+    "tour": "T1 aller"
+   }
+  },
+  "francais": [],
+  "resumes": {
+   "gemini": 0,
+   "deterministe": 0,
+   "a_rattraper": 0
+  },
+  "reconstituee": true,
+  "maj": "2026-11-25T01:50:48Z",
+  "fichier": "soirees/2026-07-07.json"
  }
 ]
