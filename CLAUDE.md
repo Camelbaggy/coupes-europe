@@ -211,8 +211,8 @@ dans ce match (`shirt_color` de `home_team` / `away_team`) ; sinon (2) couleur p
   5 % vers le texte de la page) jusqu'à 4,5 sur tous les fonds, pour les chiffres et noms colorés (`--home-ink` / `--away-ink`).
 - **UNE fonction JS `couleursMatch(m)`** → `{home, away}` = `{fond, texte, bord, encre, source}` (`source` : `maillot` / `club` / `secondaire` / `neutre`) ; `couleurClub(id)` pour une
   fiche de club. Utilisée PARTOUT où deux équipes sont colorées, par variables CSS `--home-color/-ink/-on/-bord` et `--away-…` posées en ligne (`coulPoserMatch(el, m)` sur
-  `#match-modal`, `coulStyleMatch(m)` sur tuiles et cartes) : pastilles des compos (`.player-dot`, classe `lis` = liseré), momentum (dégradés, traits de but, légende ; trait de
-  contour des aires si liseré), barres / valeurs / en-tête des stats, pastilles `.sw-eq` (légende des compos, tuiles), bandeau `.duo-bar` (en-tête de fiche, cartes françaises).
+  `#match-modal`, `coulStyleMatch(m)` sur les cartes françaises ; pas de couleurs dans la liste des résultats, choix du propriétaire du 25/11/2026) : pastilles des compos (`.player-dot`, classe `lis` = liseré), momentum (dégradés, traits de but, légende ; trait de
+  contour des aires si liseré), barres / valeurs / en-tête des stats, pastilles `.sw-eq` (légende des compos), bandeau `.duo-bar` (en-tête de fiche, cartes françaises).
   Une nouvelle vue à deux équipes lit ces variables, jamais de couleur codée. **Fiche de club** : `coulPoserClub` pose `--club-color/-ink/-on/-bord` sur `#club-sheet`
   (bandeau d'en-tête, soulignement de l'onglet actif, rang, pastille D / E) avec la même règle de lisibilité ; sans couleur : accent bleu de la page.
 - **Parité Python / JS** : `couleurs.py` et le bloc `// ===== COULEURS : début / fin =====` d'`index.html` sont deux implémentations de la même règle ; `python couleurs.py --test`

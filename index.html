@@ -1499,14 +1499,14 @@
           const sep = comp._multi && m._soiree !== dernier ? `<div class="date-sep">${esc(jourLong(m._soiree))}</div>` : '';
           dernier = m._soiree;
           return sep + `
-          <div class="match-tile" style="${coulStyleMatch(m)}" onclick="openMatchModal('${esc(m.match_id)}')">
+          <div class="match-tile" onclick="openMatchModal('${esc(m.match_id)}')">
             <div class="tile-teams">
               <div class="tile-team-row">
-                <span class="tile-team-name ${m.home_team.is_french ? 'is-fr' : ''}"><i class="sw-eq home"></i>${flag(m.home_team)} ${esc(m.home_team.name)}</span>
+                <span class="tile-team-name ${m.home_team.is_french ? 'is-fr' : ''}">${flag(m.home_team)} ${esc(m.home_team.name)}</span>
                 <span class="tile-team-score">${m.status === 'À venir' ? '' : m.home_team.score}</span>
               </div>
               <div class="tile-team-row">
-                <span class="tile-team-name ${m.away_team.is_french ? 'is-fr' : ''}"><i class="sw-eq away"></i>${flag(m.away_team)} ${esc(m.away_team.name)}</span>
+                <span class="tile-team-name ${m.away_team.is_french ? 'is-fr' : ''}">${flag(m.away_team)} ${esc(m.away_team.name)}</span>
                 <span class="tile-team-score">${m.status === 'À venir' ? '' : m.away_team.score}</span>
               </div>
             </div>
