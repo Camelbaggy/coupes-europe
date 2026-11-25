@@ -248,5 +248,182 @@
   "reconstituee": true,
   "maj": "2026-11-25T01:35:46Z",
   "fichier": "soirees/2026-10-22.json"
+ },
+ {
+  "date": "2026-10-21",
+  "statut": "complet",
+  "matchs": 9,
+  "termines": 9,
+  "competitions": {
+   "ucl": {
+    "matchs": 9,
+    "stage": "league",
+    "tour": "J3"
+   }
+  },
+  "francais": [
+   {
+    "comp": "ucl",
+    "match_id": "2049605",
+    "home": "Lille",
+    "away": "Galatasaray",
+    "home_fr": true,
+    "away_fr": false,
+    "score": "2-4",
+    "statut": "Terminé"
+   },
+   {
+    "comp": "ucl",
+    "match_id": "2049603",
+    "home": "Club Brugge",
+    "away": "Lens",
+    "home_fr": false,
+    "away_fr": true,
+    "score": "3-0",
+    "statut": "Terminé"
+   }
+  ],
+  "resumes": {
+   "gemini": 0,
+   "deterministe": 2,
+   "a_rattraper": 2
+  },
+  "reconstituee": true,
+  "maj": "2026-11-25T01:36:58Z",
+  "fichier": "soirees/2026-10-21.json"
+ },
+ {
+  "date": "2026-10-20",
+  "statut": "complet",
+  "matchs": 9,
+  "termines": 9,
+  "competitions": {
+   "ucl": {
+    "matchs": 9,
+    "stage": "league",
+    "tour": "J3"
+   }
+  },
+  "francais": [
+   {
+    "comp": "ucl",
+    "match_id": "2049589",
+    "home": "Paris",
+    "away": "Barcelona",
+    "home_fr": true,
+    "away_fr": false,
+    "score": "4-2",
+    "statut": "Terminé"
+   }
+  ],
+  "resumes": {
+   "gemini": 0,
+   "deterministe": 1,
+   "a_rattraper": 1
+  },
+  "reconstituee": true,
+  "maj": "2026-11-25T01:37:21Z",
+  "fichier": "soirees/2026-10-20.json"
+ },
+ {
+  "date": "2026-10-15",
+  "statut": "complet",
+  "matchs": 36,
+  "termines": 36,
+  "competitions": {
+   "uel": {
+    "matchs": 18,
+    "stage": "league",
+    "tour": "J2"
+   },
+   "uecl": {
+    "matchs": 18,
+    "stage": "league",
+    "tour": "J1"
+   }
+  },
+  "francais": [
+   {
+    "comp": "uel",
+    "match_id": "2050076",
+    "home": "Lyon",
+    "away": "Crystal Palace",
+    "home_fr": true,
+    "away_fr": false,
+    "score": "3-2",
+    "statut": "Terminé"
+   },
+   {
+    "comp": "uel",
+    "match_id": "2050078",
+    "home": "Marseille",
+    "away": "Olympiacos",
+    "home_fr": true,
+    "away_fr": false,
+    "score": "0-1",
+    "statut": "Terminé"
+   },
+   {
+    "comp": "uel",
+    "match_id": "2050084",
+    "home": "Rennes",
+    "away": "OFI Crete",
+    "home_fr": true,
+    "away_fr": false,
+    "score": "2-1",
+    "statut": "Terminé"
+   },
+   {
+    "comp": "uecl",
+    "match_id": "2050324",
+    "home": "CSKA Sofia",
+    "away": "Monaco",
+    "home_fr": false,
+    "away_fr": true,
+    "score": "1-2",
+    "statut": "Terminé"
+   }
+  ],
+  "resumes": {
+   "gemini": 0,
+   "deterministe": 4,
+   "a_rattraper": 4
+  },
+  "reconstituee": true,
+  "maj": "2026-11-25T01:37:38Z",
+  "fichier": "soirees/2026-10-15.json"
+ },
+ {
+  "date": "2026-10-14",
+  "statut": "complet",
+  "matchs": 9,
+  "termines": 9,
+  "competitions": {
+   "ucl": {
+    "matchs": 9,
+    "stage": "league",
+    "tour": "J2"
+   }
+  },
+  "francais": [
+   {
+    "comp": "ucl",
+    "match_id": "2049580",
+    "home": "Man City",
+    "away": "Paris",
+    "home_fr": false,
+    "away_fr": true,
+    "score": "2-4",
+    "statut": "Terminé"
+   }
+  ],
+  "resumes": {
+   "gemini": 0,
+   "deterministe": 1,
+   "a_rattraper": 1
+  },
+  "reconstituee": true,
+  "maj": "2026-11-25T01:38:40Z",
+  "fichier": "soirees/2026-10-14.json"
  }
 ]
