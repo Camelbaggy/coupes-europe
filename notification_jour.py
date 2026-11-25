@@ -117,9 +117,12 @@ def decider(jour: str, maintenant: dt.datetime, etat_soirees: Dict[str, Any], in
     return "notifier", comps, f"{jour} : prêt ({', '.join(COURT[c] for c in comps)})"
 
 
+MISE_EN_SERVICE = "2026-11-25"   # premier jour de la notification commune (avant : une notification par soirée, déjà envoyée)
+
+
 def jours_candidats(maintenant: dt.datetime) -> List[str]:
-    """Aujourd'hui et les deux jours précédents (UTC)."""
-    return [(maintenant.date() - dt.timedelta(days=k)).isoformat() for k in (2, 1, 0)]
+    """Aujourd'hui et les deux jours précédents (UTC), jamais avant la mise en service."""
+    return [j for j in ((maintenant.date() - dt.timedelta(days=k)).isoformat() for k in (2, 1, 0)) if j >= MISE_EN_SERVICE]
 
 
 # ------------------------------------------------------------------------------
