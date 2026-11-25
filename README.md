@@ -7,17 +7,19 @@ avec focus sur les clubs français. Spécifications : `Projet_foot.md`.
 
 | Étape | Fichier | Rôle |
 |---|---|---|
-| 1 | `collector.py` (+ `uefa.py`, `espn.py`, `netutil.py`) | Collecte déterministe → `data_raw.json` |
+| 1 | `collector.py` (+ `uefa.py`, `espn.py`, `ratings.py`, `netutil.py`) | Collecte déterministe → `data_raw.json` |
 | 2 | `agents_flash.py` | Résumés des matchs des clubs français (Gemini rédacteur + contrôleur), repli sans IA |
-| 3 | `notify.py` | Push ntfy avec lien vers le dashboard |
-| — | `run_pipeline.py` | Enchaîne les 3 étapes |
-| — | `index.html` | Dashboard statique (GitHub Pages) qui lit `data.json` |
+| 3 | `historique.py`, `clubs.py` | Soirée archivée dans `soirees/`, `data.json` = soirée la plus récente, fiches des clubs qui ont joué |
+| 4 | `publication.py` + `notify.py` | Après publication VÉRIFIÉE sur la page publique : une seule notification ntfy par soirée (alerte distincte en cas d'échec) |
+| — | `run_pipeline.py` | Enchaîne les étapes (et les modes de rattrapage) |
+| — | `index.html` | Dashboard statique (GitHub Pages), sans dépendance |
 
-Le workflow `update_dashboard.yml` tourne mardi, mercredi et jeudi à 22h30 UTC (23h30 à Paris en hiver)
-et commit `data.json` (copie de la soirée la plus récente) ainsi que `soirees/<date>.json` et `soirees/index.json` :
-l'historique de toutes les soirées, que l'accueil propose dans un menu déroulant (`?soiree=AAAA-MM-JJ`).
-Les soirées passées sont reconstituées par `historique_soirees.yml` (classement recalculé depuis les scores pour la
-phase de ligue, résumés sans IA) puis les résumés de la phase de ligue sont rattrapés par Gemini (`rattrapage_ia.yml`).
+`update_dashboard.yml` tourne mardi, mercredi et jeudi à 22h30 UTC ; GitHub retardant ou sautant ses crons, le workflow
+`battement.yml` vérifie toutes les 10 minutes, les soirs de match, que la soirée est publiée et notifiée, et relance la
+mise à jour si besoin. L'accueil propose, pour chaque coupe, un menu des journées et tours (toutes les soirées de la saison,
+`?c=ucl&tour=j5`). Les soirées passées ont été reconstituées (`historique_soirees.yml`), leurs résumés rattrapés par Gemini
+(`rattrapage_ia.yml`) et leurs xG ajoutés (`completer_xg.yml`). Chaque club a une fiche (aperçu, matchs, stats, effectif,
+histoire européenne complète et palmarès), mise à jour chaque lundi (`clubs.yml`). Le détail technique est dans `CLAUDE.md`.
 
 ## Sources de données
 
@@ -38,11 +40,18 @@ flagcdn.com. Angleterre, Écosse, pays de Galles et Irlande du Nord ont leur pro
 **ESPN (complément)** : fil de commentaires texte (Opta, en anglais) des matchs des clubs français, rapproché du
 match UEFA par date, score et nom d'équipe. Il sert uniquement de matière première au récit de l'IA.
 
+**ESPN, buts attendus (xG)** : l'UEFA ne publie aucun xG ; ceux du modèle Opta sont lus sur ESPN pour tous les matchs
+terminés (xG, xG des tirs cadrés, passes décisives attendues), avec un rapprochement strict et un contrôle xG / xG encaissés.
+C'est une estimation, présentée comme telle.
+
+**Wikidata et Wikipédia** : fondation, ville, site et extrait encyclopédique des fiches de club (CC BY-SA).
+
 **Valeurs calculées (jamais inventées)** :
 - *momentum* : indice de pression minute par minute. Les actions officielles (buts, tirs, attaques dangereuses,
   corners, arrêts adverses, hors-jeu, coups francs obtenus) sont pondérées et créditées à l'équipe qui attaque,
   puis lissées sur environ 5 minutes ;
-- *statistiques par mi-temps* : comptage des actions officielles de chaque période.
+- *statistiques par mi-temps* : comptage des actions officielles de chaque période (tirs, tirs cadrés, corners, cartons jaunes) ;
+- *classement d'une soirée passée*, *palmarès européen*, *couleurs d'équipe* : calculés à partir des données officielles (voir `CLAUDE.md`).
 
 FotMob et SofaScore ont été écartés : leurs protections anti-robots (en-tête signé, Cloudflare) bloquent les
 serveurs de GitHub Actions, et les contourner irait contre leurs conditions d'utilisation.
@@ -90,7 +99,7 @@ python tools/inspect_data.py data.json                  # contrôle lisible du r
 python -m http.server 8000                              # puis http://localhost:8000
 ```
 
-Aucune dépendance externe (bibliothèque standard Python 3.9+).
+Aucune dépendance externe (bibliothèque standard Python, 3.11 en CI).
 
 ## Tests sur une branche
 
