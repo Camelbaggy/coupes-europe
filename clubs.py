@@ -22,6 +22,10 @@ Usage :
   python clubs.py --tous                  mise à jour complète des fiches (hebdomadaire)
   python clubs.py --clubs 52747,52277     certains clubs seulement
   python clubs.py --couleurs              couleurs des clubs seules (clubs/couleurs.json + champ `couleurs` de l'index)
+  python clubs.py --historique            historique européen complet (clubs/historique/<id>.json, voir histoire.py) : premier remplissage,
+                                          reprenable (les clubs qui ont déjà un fichier sont sautés) ; --clubs id,… ; --cache DIR garde le
+                                          JSON brut hors du dépôt ; --refaire recalcule tout
+  python clubs.py --historique --saison-courante   met à jour la saison courante seulement (matchs depuis le 20 juin ; --depuis AAAA-MM-JJ)
   python clubs.py --test                  tests purs (sans réseau)
 Options : --dossier clubs  --saison 2027  --sans-wiki (ni Wikidata ni Wikipédia)
 """
@@ -1138,11 +1142,24 @@ def main() -> None:
     p.add_argument("--saison", type=int)
     p.add_argument("--dossier", default=DOSSIER)
     p.add_argument("--sans-wiki", action="store_true")
+    p.add_argument("--historique", action="store_true", help="historique européen complet des clubs (clubs/historique/)")
+    p.add_argument("--saison-courante", action="store_true", help="avec --historique : seulement les matchs de la saison courante")
+    p.add_argument("--depuis", help="avec --historique : matchs depuis cette date AAAA-MM-JJ (début d'une saison)")
+    p.add_argument("--cache", help="avec --historique : dossier du JSON brut UEFA (gzip), hors du dépôt")
+    p.add_argument("--refaire", action="store_true", help="avec --historique : recalcule aussi les clubs déjà faits")
     p.add_argument("--test", action="store_true")
     a = p.parse_args()
     if a.test:
         _tests()
         return
+    if a.historique:
+        import histoire
+        ids = [x.strip() for x in a.clubs.split(",") if x.strip()] if a.clubs else \
+            [c["id"] for c in ((lire(os.path.join(a.dossier, INDEX)) or {}).get("clubs") or [])]
+        if not ids:
+            p.error("aucun club : clubs/index.json absent ou vide (lancer d'abord --tous) ou --clubs requis")
+        depuis = a.depuis or (f"{histoire.debut_saison_courante()}-06-{histoire.JOUR_COUPURE_JUIN:02d}" if a.saison_courante else None)
+        sys.exit(histoire.collecter(ids, depuis, os.path.join(a.dossier, "historique"), a.cache, a.refaire))
     if a.couleurs:
         sys.exit(mettre_a_jour_couleurs(a.saison, a.dossier))
     if not a.tous and not a.clubs:

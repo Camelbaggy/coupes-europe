@@ -33,6 +33,8 @@ python soirees.py --test && python publication.py --test && bash tools/test_veil
 python clubs.py --test                                  # fiches de club : extraction, agrégats, alias, valeur absente = absente (sans réseau)
 python clubs.py --tous                                  # mise à jour complète de clubs/ (UEFA + Wikidata + Wikipédia, ~10 min)
 python clubs.py --clubs 52747,52277                     # certains clubs seulement (identifiants UEFA)
+python histoire.py --test                               # historique européen : saison depuis la date, finales / titres (cumul, tirs au but, match rejoué), 7 fixtures réelles, fusion de la saison courante
+python clubs.py --historique [--clubs id,…] [--cache DIR]   # historique européen complet (clubs/historique/<id>.json ; reprenable ; ~11 min, 818 Mo téléchargés une fois) ; --saison-courante = mise à jour hebdomadaire
 python clubs.py --couleurs                              # couleurs des clubs seules (compositions UEFA -> clubs/couleurs.json + champ `couleurs` de clubs/index.json)
 node tools/test_couleurs_ui.js http://localhost:8765 /tmp/caps   # Playwright 390 x 844 : 40 soirées (ΔE, contrastes), rendu compos / stats / momentum / fiche de club, captures (serveur : python -m http.server 8765)
 python couleurs.py --test                               # règle des couleurs : ΔE76, contraste, choix, agrégation + parité Python / JS (Node) du bloc COULEURS d'index.html
@@ -62,6 +64,7 @@ run_pipeline.py ─┬─ collector.py ── uefa.py   (source principale, offi
                  ├─ historique.py (soirees/<date>.json + soirees/index.json ; data.json = soirée la plus récente)
                  ├─ classement.py (classement de phase de ligue RECALCULÉ depuis les scores, pour une soirée passée)
                  ├─ clubs.py (fiches de club clubs/<id UEFA>.json + clubs/index.json : UEFA, Wikidata, Wikipédia FR ; couleurs principales)
+                 ├─ histoire.py (historique européen clubs/historique/<id UEFA>.json : tous les matchs UEFA du club, bilans, palmarès calculé ; `clubs.py --historique`)
                  ├─ couleurs.py (règle des couleurs d'équipe, fonctions pures ; jumeau du bloc COULEURS d'index.html)
                  ├─ reconstitution.py (--reconstituer : soirées passées ; --rattraper-ia : résumés Gemini par lots)
                  └─ notify.py (publication JSON ntfy)
@@ -152,9 +155,24 @@ fiches club, couleurs, historique européen.
   rattrapage_ia.yml --ref main` (puis le cron, 2 passages par jour), (3) relancer `battement.yml` seulement si `.github/scripts/veille.sh` a changé
   (ce n'est pas le cas ici).
 
+### Historique européen et palmarès (`histoire.py`, `clubs/historique/`, étape 5)
+
+Détail, règles, cas vérifiés et mesures : `docs/histoire_europeenne.md`. En bref : `clubs/historique/<id UEFA>.json` (108 fichiers, 1,40 Mo bruts / 0,43 Mo gzip, 62 octets par
+match, chargés à la demande par l'onglet **Histoire** de la fiche de club ; la fiche `clubs/<id>.json` ne grossit pas). Source : `match.uefa.com/v5/matches?teamId=<id>` SANS
+`competitionId` (C1, C2, C3, LC, Supercoupe `SCUP`, villes de foires, Intertoto, Coupe intercontinentale `EUSA`). Saison européenne = 20 juin -> 19 juin dérivée de la DATE
+(`seasonYear` incohérent, deux exceptions documentées : finales d'été et août 2020). Finale : match rejoué = le rejoué décide, match unique = score puis tirs au but, deux manches
+= CUMUL puis tirs au but puis vainqueur donné par l'UEFA, sinon `?` (« non déterminé », jamais deviné) ; `ecarts` consigne tout désaccord avec le vainqueur UEFA (0 sur les 108 clubs).
+Titres = C1 / C2 / C3 / LC / Supercoupe ; villes de foires, Intertoto, Coupe intercontinentale à part. Matchs annulés / arrêtés / forfaits : listés, jamais comptés. Toute la logique
+(palmarès, bilan, meilleur parcours) est en Python et testée ; `index.html` ne fait que regrouper (décennies) et afficher. **Collecte** : `python clubs.py --historique` (reprenable,
+`--cache DIR` garde le JSON brut HORS du dépôt) puis `--historique --saison-courante` (matchs depuis le 20 juin ; résultat identique à une reconstruction complète) ; les deux
+tournent dans `clubs.yml` (lundi) sans bloquer la publication. Ne pas committer `clubs/historique/` à la main. Interface : 5e onglet « Histoire » (`attachTabSwipe` inchangé,
+`CLUB_VIEWS`), palmarès, liste des finales repliable, bilan par compétition, saisons par décennie repliables (matchs rendus à l'ouverture), info-bulles `infoBtn`, accent `--club-ink` ;
+`python tools/test_histoire_ui.js <url> <dossier>` (Playwright). Un glissement CDP vers la droite déclenche le retour arrière du navigateur headless (sans rapport avec la page) :
+les tests de glissement utilisent de vrais `TouchEvent` dans la page.
+
 ### Fiches de club (`clubs.py`, `clubs/`, étape 3)
 
-Décisions du propriétaire du 25/11/2026 (`docs/etude_fiches_clubs.md`) : entraîneur non affiché ; historique européen complet = plus tard (étape 5) ;
+Décisions du propriétaire du 25/11/2026 (`docs/etude_fiches_clubs.md`) : entraîneur non affiché ; historique européen complet = étape 5 (livrée, voir la section ci-dessus) ;
 couleurs = étape 4 (§ Couleurs des équipes) ; 5 alias Wikidata validés. Règle cardinale inchangée : valeur absente = absente (pas d'extrait, pas de stade : rien n'est affiché).
 - **Fichiers** (JSON compact, jamais édités à la main) : `clubs/index.json` `{saison, maj, clubs[]}` (108 clubs = les 36 du classement de chaque coupe : `id` UEFA, `nom`,
   `nom_officiel`, `nom_court`, `pays`, `code_pays`, `drapeau`, `francais`, `logos{70,240,700}` (liens UEFA, rien n'est copié dans le dépôt), `competitions[]`, `qid` si

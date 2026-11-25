@@ -23,6 +23,8 @@
       --zone-top8: #10b981;
       --zone-playoff: #f59e0b;
       --zone-elim: #ef4444;
+      --or: #fbbf24;
+      --argent: #cbd5e1;
       --home-color: #38bdf8;
       --away-color: #f43f5e;
       /* Variantes lisibles (contraste AA) des couleurs d'équipe pour le texte */
@@ -902,7 +904,7 @@
     .club-logo.vide { display: inline-block; }
     .club-name { font-size: 1.1rem; font-weight: 800; line-height: 1.2; }
     .club-sub { font-size: 0.78rem; color: var(--text-muted); display: flex; flex-wrap: wrap; gap: 2px 8px; align-items: center; }
-    #club-tabs { grid-template-columns: repeat(4, 1fr); }
+    #club-tabs { grid-template-columns: repeat(5, 1fr); }
     .club-body { padding: 14px 16px 24px; overflow-y: auto; flex: 1; min-height: 0; overscroll-behavior: contain; }
     .club-link { background: none; border: 0; padding: 0; margin: 0; color: inherit; font: inherit; font-weight: inherit; text-align: inherit;
       cursor: pointer; text-decoration: underline dotted rgba(148, 163, 184, 0.7); text-underline-offset: 3px; display: inline; }
@@ -958,6 +960,59 @@
     .cl-eff-row .st { font-size: 0.72rem; color: var(--text-muted); text-align: right; white-space: nowrap; }
     .cl-eff-row img.ph { width: 34px; height: 34px; border-radius: 50%; object-fit: cover; background: var(--bg-elevated); flex-shrink: 0; }
     .cl-eff-row.sans-minute .nm { font-weight: 500; color: var(--text-muted); }
+    /* Onglet Histoire : palmarès, bilan, saisons européennes (clubs/historique/<id>.json) */
+    #club-tabs .subtab-btn { padding-left: 2px; padding-right: 2px; }
+    .hi-sum { font-size: 0.82rem; color: var(--text-muted); margin-bottom: 4px; }
+    .hi-sum b { color: var(--text-main); }
+    .hi-pal { display: grid; grid-template-columns: 52px 1fr; gap: 2px 12px; align-items: center; background: var(--bg-main);
+      border: 1px solid var(--border); border-radius: 12px; padding: 10px 12px; margin-bottom: 6px; }
+    .hi-pal .n { grid-row: 1 / span 3; font-size: 1.9rem; font-weight: 800; line-height: 1; text-align: center; color: var(--or); }
+    .hi-pal .n.zero { color: var(--text-muted); font-size: 1.3rem; }
+    .hi-pal .t { font-weight: 700; font-size: 0.9rem; }
+    .hi-pal .l { font-size: 0.78rem; color: var(--text-muted); line-height: 1.4; }
+    .hi-pal .l b { color: var(--text-main); font-weight: 600; }
+    .hi-sub { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); margin: 12px 0 6px; }
+    details.hi-fins, details.hi-dec, details.hi-ed { border-radius: 10px; }
+    details.hi-fins > summary, details.hi-dec > summary, details.hi-ed > summary { cursor: pointer; list-style: none; min-height: 44px; display: flex;
+      align-items: center; gap: 8px; font-size: 0.84rem; }
+    details > summary::-webkit-details-marker { display: none; }
+    details.hi-fins > summary { color: var(--club-ink); font-weight: 600; }
+    details.hi-fins > summary::after, details.hi-dec > summary::after, details.hi-ed > summary::after { content: '▾'; margin-left: auto; color: var(--text-muted);
+      transition: transform 0.15s; flex-shrink: 0; }
+    details[open] > summary::after { transform: rotate(180deg); }
+    .hi-fin { display: grid; grid-template-columns: 26px 1fr; gap: 2px 8px; padding: 8px 2px; border-top: 1px solid rgba(255, 255, 255, 0.05); font-size: 0.84rem; align-items: start; }
+    .hi-fin .big { font-weight: 700; }
+    .hi-fin .det { font-size: 0.74rem; color: var(--text-muted); line-height: 1.4; }
+    .hi-badge { width: 22px; height: 22px; border-radius: 50%; font-size: 0.68rem; font-weight: 800; display: inline-flex; align-items: center; justify-content: center;
+      color: #0b0f17; flex-shrink: 0; }
+    .hi-badge.V { background: var(--or); } .hi-badge.D { background: var(--argent); } .hi-badge.q { background: var(--bg-elevated); color: var(--text-muted); }
+    .hi-comp { background: var(--bg-main); border: 1px solid var(--border); border-radius: 12px; padding: 10px 12px; margin-bottom: 6px; }
+    .hi-comp .h { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; font-weight: 700; font-size: 0.9rem; }
+    .hi-comp .h small { font-weight: 500; font-size: 0.72rem; color: var(--text-muted); white-space: nowrap; }
+    .hi-comp .best { font-size: 0.78rem; color: var(--text-muted); margin: 2px 0 6px; line-height: 1.4; }
+    .hi-comp .best b { color: var(--club-ink); font-weight: 700; }
+    .hi-stats { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; text-align: center; font-variant-numeric: tabular-nums; }
+    .hi-stats span { display: block; font-size: 0.66rem; color: var(--text-muted); }
+    .hi-stats b { font-size: 0.92rem; }
+    details.hi-dec { border-top: 1px solid var(--border); }
+    details.hi-dec > summary { font-weight: 700; color: var(--text-main); }
+    details.hi-dec > summary small { font-weight: 500; font-size: 0.72rem; color: var(--text-muted); }
+    details.hi-ed { margin-left: 2px; border-top: 1px solid rgba(255, 255, 255, 0.05); }
+    details.hi-ed > summary { display: grid; grid-template-columns: 62px minmax(0, 1fr) auto 14px; gap: 6px; font-size: 0.82rem; }
+    details.hi-ed > summary::after { margin-left: 0; }
+    .hi-s { font-weight: 800; font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .hi-n { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-muted); font-size: 0.78rem; }
+    .hi-i { font-size: 0.76rem; font-weight: 600; text-align: right; color: var(--text-muted); max-width: 132px; }
+    .hi-i.win { color: var(--or); font-weight: 800; } .hi-i.fin { color: var(--argent); font-weight: 700; } .hi-i.ec { color: var(--club-ink); }
+    .hi-body { padding: 0 0 8px; }
+    .hi-m { display: grid; grid-template-columns: 78px 1fr auto 22px; align-items: center; gap: 8px; padding: 6px 4px; min-height: 40px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05); font-size: 0.82rem; }
+    .hi-m .d { font-size: 0.7rem; color: var(--text-muted); line-height: 1.25; }
+    .hi-m .o { display: flex; align-items: center; gap: 6px; min-width: 0; }
+    .hi-m .o .nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .hi-m .sc { font-weight: 800; white-space: nowrap; text-align: right; }
+    .hi-m .sc small, .hi-m .sc .hi-st { display: block; font-size: 0.64rem; font-weight: 600; color: var(--text-muted); }
+    .hi-m .hi-st { font-weight: 600; }
     #toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); z-index: 100001; background: var(--bg-elevated); color: var(--text-main);
       border: 1px solid var(--border); border-radius: 10px; padding: 9px 14px; font-size: 0.82rem; box-shadow: 0 8px 24px rgba(0,0,0,0.5);
       max-width: calc(100vw - 32px); }
@@ -1068,6 +1123,7 @@
         <button class="subtab-btn" data-cview="matchs" onclick="switchClubView('matchs')">Matchs</button>
         <button class="subtab-btn" data-cview="stats" onclick="switchClubView('stats')">Stats</button>
         <button class="subtab-btn" data-cview="effectif" onclick="switchClubView('effectif')">Effectif</button>
+        <button class="subtab-btn" data-cview="histoire" onclick="switchClubView('histoire')">Histoire</button>
       </div>
       <div class="club-body" id="club-body"></div>
     </div>
@@ -2196,7 +2252,7 @@
     }
 
     // ---------- Fiches de club : clubs/index.json (108 clubs) + clubs/<id UEFA>.json ----------
-    const CLUB_VIEWS = ['apercu', 'matchs', 'stats', 'effectif'];
+    const CLUB_VIEWS = ['apercu', 'matchs', 'stats', 'effectif', 'histoire'];
         let clubIndex = null;            // Map id -> entrée de l'index ; null = pas d'index (aucun lien vers une fiche)
     const clubCache = new Map();
     let activeClub = null, currentClubView = 'apercu', clubToken = 0;
@@ -2275,10 +2331,11 @@
       body.scrollTop = 0;
       if (!activeClub) return;
       body.innerHTML = view === 'matchs' ? clubMatchsHtml(activeClub) : view === 'stats' ? clubStatsHtml(activeClub)
-        : view === 'effectif' ? clubEffectifHtml(activeClub) : clubApercuHtml(activeClub);
+        : view === 'effectif' ? clubEffectifHtml(activeClub) : view === 'histoire' ? '<div class="empty-state">Chargement de l\'historique…</div>' : clubApercuHtml(activeClub);
       slideIn(body, slide);
+      if (view === 'histoire') renderHistoire(activeClub);
     }
-    attachTabSwipe({   // fiche de club : Aperçu / Matchs / Stats / Effectif
+    attachTabSwipe({   // fiche de club : Aperçu / Matchs / Stats / Effectif / Histoire
       zone: () => document.getElementById('club-body'),
       stop: () => document.getElementById('club-sheet'),
       tabs: () => CLUB_VIEWS, current: () => currentClubView, go: switchClubView,
@@ -2352,6 +2409,138 @@
             ${cible}${res}</div>`;
         }).join('')}`).join('');
     }
+
+
+    // --- Histoire : clubs/historique/<id>.json (chargé à la demande, jamais avec la fiche). Tout y est calculé par histoire.py ;
+    // la page ne fait que regrouper et afficher (aucune règle de palmarès ici).
+    const histoCache = new Map();
+    let histoToken = 0;
+    async function loadHistoire(id) {
+      if (histoCache.has(id)) return histoCache.get(id);
+      const d = await fetchJson('clubs/historique/' + encodeURIComponent(id) + '.json');
+      if (d && Array.isArray(d.ed) && d.tours && d.adv) { histoCache.set(id, d); return d; }
+      return null;     // échec : pas de mise en cache, nouvel essai à la prochaine ouverture
+    }
+    async function renderHistoire(f) {
+      const id = String(f.id), tok = ++histoToken, body = document.getElementById('club-body');
+      const h = await loadHistoire(id);
+      if (tok !== histoToken || currentClubView !== 'histoire' || !activeClub || String(activeClub.id) !== id) return;
+      body.innerHTML = h ? histoireHtml(h) : `<div class="empty-state">L'historique européen de ce club n'est pas encore disponible.</div>`;
+    }
+    const hiDate = (iso) => iso ? new Date(iso + 'T12:00:00Z').toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' }) : '';
+    const hiPlur = (n, s, p) => `${n} ${n > 1 ? (p || s + 's') : s}`;
+    function hiAdv(h, id) {
+      const a = h.adv[id] || ['Adversaire inconnu', '', ''];
+      return `${flag({ flag: a[1], country_name: '' })} ${clubLink(id, esc(a[0]))}`;
+    }
+    // Score d'un match du point de vue du club : « 3-1 », a.p. = après prolongation, tab = tirs au but ; annulé / arrêté / forfait = jamais comptés
+    function hiScore(m) {
+      const x = m[6] || {};
+      if (x.st === 'annule') return '<span class="hi-st">Annulé</span>';
+      if (x.st === 'arrete') return '<span class="hi-st">Arrêté</span>';
+      if (m[4] == null) return '<span class="hi-st">Sans score</span>';
+      const note = [x.ap ? 'a.p.' : '', x.tab ? `tab ${x.tab[0]}-${x.tab[1]}` : '', x.st === 'forfait' ? 'forfait' : ''].filter(Boolean).join(' · ');
+      return `${esc(m[4])}-${esc(m[5])}${note ? `<small>${esc(note)}</small>` : ''}`;
+    }
+    const hiRes = (m) => (m[4] == null || (m[6] && m[6].st)) ? '' : m[4] > m[5] ? 'V' : m[4] < m[5] ? 'D' : 'N';
+    function hiMatchRow(h, m) {
+      const r = hiRes(m), lieu = m[3] === 1 ? 'D' : m[3] === 0 ? 'E' : '';
+      return `<div class="hi-m"><span class="d">${esc(hiDate(m[0]))}</span>
+        <span class="o">${lieu ? `<span class="cl-loc" title="${lieu === 'D' ? 'À domicile' : 'À l\'extérieur'}">${lieu}</span>` : ''}<span class="nm">${hiAdv(h, m[2])}</span></span>
+        <span class="sc">${hiScore(m)}</span>${r ? `<span class="cl-res form-${r}">${r}</span>` : '<span></span>'}</div>`;
+    }
+    // « 3-0 puis 0-2 » ; finale à match unique : « 1-1 a.p. (tab 5-4) »
+    const hiManche = (m) => `${m[2]}-${m[3]}${m[6] ? ' a.p.' : ''}${m[4] != null && m[5] != null ? ` (tab ${m[4]}-${m[5]})` : ''}`;
+    function hiFinaleHtml(h, e) {
+      const f = e.f, res = f.r === 'V' ? 'V' : f.r === 'D' ? 'D' : 'q';
+      const verbe = { V: 'Titre', D: 'Finale perdue', '?': 'Issue non déterminée' }[f.r];
+      let score;
+      if (f.m.length === 1) score = hiManche(f.m[0]);
+      else if (f.rejoue) score = f.m.map((m, i) => hiManche(m) + (i === f.m.length - 1 ? ' (match rejoué)' : '')).join(', puis ');
+      else score = (f.cumul ? `cumul ${f.cumul[0]}-${f.cumul[1]} (` : '(') + f.m.map(hiManche).join(' puis ') + ')';
+      const det = [verbe, f.dep ? `départage : ${f.dep}` : '', (f.m.length === 1 || f.rejoue) && f.lieu ? f.lieu : '', f.pourquoi && f.r === '?' ? f.pourquoi : ''].filter(Boolean).join(' · ');
+      return `<div class="hi-fin"><span class="hi-badge ${res}">${f.r === '?' ? '?' : f.r}</span>
+        <div><div class="big">${esc(e.s)} · ${esc(h.noms[e.n])}</div>
+        <div>${hiAdv(h, f.adv)} · ${esc(score)}</div><div class="det">${esc(det)}</div></div></div>`;
+    }
+    // Issue d'une édition : Vainqueur / Finaliste / tour atteint ; « En cours » pour la saison courante
+    function hiIssue(h, e) {
+      const ec = e.ec ? 'À ce jour · ' : '';     // saison courante : tour atteint jusqu'ici (le club peut déjà être éliminé)
+      if (e.i === 'V') return ['Vainqueur', 'win'];
+      if (e.i === 'D') return ['Finaliste', 'fin'];
+      if (e.i === '?') return ['Finale', ''];
+      return [ec + (h.tours[e.t] || ''), e.ec ? 'ec' : ''];
+    }
+    function histoireHtml(h) {
+      const comps = Object.keys(h.comp || {});
+      const tot = Object.values(h.bilan || {}).reduce((a, b) => ({ j: a.j + b.j, ed: a.ed + b.ed }), { j: 0, ed: 0 });
+      if (!h.ed.length) return `<div class="empty-state">Aucun match européen enregistré pour ce club.</div>`;
+      const sec = [];
+      sec.push(`<p class="hi-sum"><b>${esc(hiPlur(tot.j, 'match'))}</b> dans les compétitions européennes · ${esc(hiPlur(tot.ed, 'édition'))} · depuis <b>${esc(h.depuis ? h.depuis.slice(0, 4) : '')}</b></p>`);
+      // --- Palmarès : titres par compétition (les compétitions UEFA d'abord, les autres coupes à part)
+      const finalesDe = (c) => h.ed.filter(e => e.c === c && e.f);
+      const ligne = (c) => {
+        const fs = finalesDe(c); if (!fs.length) return '';
+        const v = fs.filter(e => e.f.r === 'V'), d = fs.filter(e => e.f.r === 'D'), q = fs.filter(e => e.f.r === '?');
+        const saisons = (l) => l.map(e => esc(e.s)).join(', ');
+        return `<div class="hi-pal"><div class="n ${v.length ? '' : 'zero'}">${v.length || '–'}</div>
+          <div class="t">${esc(h.comp[c].nom)}</div>
+          <div class="l">${v.length ? `<b>${esc(hiPlur(v.length, 'titre'))}</b> : ${saisons(v)}` : 'Aucun titre'}</div>
+          <div class="l">${d.length ? `${esc(hiPlur(d.length, 'finale perdue', 'finales perdues'))} : ${saisons(d)}` : 'Aucune finale perdue'}${q.length ? ` · ${esc(hiPlur(q.length, 'finale'))} d'issue non déterminée : ${saisons(q)}` : ''}</div></div>`;
+      };
+      const infoPal = infoBtn(`<p><b>Titres</b> : finales gagnées en Ligue des champions (Coupe des clubs champions), Coupe des vainqueurs de coupe, Ligue Europa (Coupe UEFA), Ligue Conférence et Supercoupe d'Europe. La Coupe des villes de foires, la Coupe Intertoto et la Coupe intercontinentale sont listées à part : ce ne sont pas des titres UEFA.</p>
+        <p><b>Calcul</b> d'après les scores UEFA, jamais inventé : finale à match unique = score (prolongation comprise) puis tirs au but ; finale en <b>deux manches</b> (Coupe UEFA jusqu'en 1997, Supercoupe, villes de foires…) = <b>cumul</b> des deux scores ; en cas d'égalité, tirs au but de la 2e manche, sinon le vainqueur que l'UEFA indique (buts à l'extérieur, tirage au sort…), sinon « issue non déterminée ». Finale rejouée : le match rejoué décide.</p>`, 'Méthode du palmarès');
+      const officielles = comps.filter(c => h.comp[c].titre), autres = comps.filter(c => !h.comp[c].titre);
+      const palOff = officielles.map(ligne).join(''), palAut = autres.map(ligne).join('');
+      const toutes = h.ed.filter(e => e.f);
+      sec.push(`<div class="cl-sec"><h4>Palmarès européen ${infoPal}</h4>${palOff || '<div class="empty-state">Aucune finale européenne jouée.</div>'}
+        ${palAut ? `<div class="hi-sub">Autres coupes (hors titres UEFA)</div>${palAut}` : ''}
+        ${toutes.length ? `<details class="hi-fins"><summary>Toutes les finales (${toutes.length})</summary>${toutes.slice().reverse().map(e => hiFinaleHtml(h, e)).join('')}</details>` : ''}</div>`);
+      // --- Bilan par compétition + meilleur parcours
+      const infoBilan = infoBtn(`<p>Matchs <b>terminés</b>, score après prolongation ; une victoire aux tirs au but compte pour un nul (comme partout dans le dashboard). Les matchs annulés, arrêtés ou perdus / gagnés par forfait ne sont pas comptés. <b>Meilleur parcours</b> : tour le plus avancé atteint ; l'ordre des tours numérotés d'autrefois par rapport aux phases de groupes est indicatif.</p>`, 'Méthode du bilan');
+      const cartes = comps.map(c => {
+        const b = h.bilan[c] || {}, m = (h.meilleurs || {})[c];
+        const best = m ? `Meilleur parcours : <b>${esc(m.lib)}</b> (${esc(m.s.length > 4 ? m.s.slice(0, 4).join(', ') + '…' : m.s.join(', '))})` : '';
+        return `<div class="hi-comp"><div class="h"><span>${esc(h.comp[c].nom)}</span><small>${esc(hiPlur(b.ed || 0, 'édition'))}</small></div>
+          ${best ? `<div class="best">${best}</div>` : ''}
+          <div class="hi-stats"><div><b>${esc(b.j)}</b><span>J</span></div><div><b>${esc(b.v)}</b><span>V</span></div><div><b>${esc(b.n)}</b><span>N</span></div><div><b>${esc(b.d)}</b><span>D</span></div><div><b>${esc(b.bp)}-${esc(b.bc)}</b><span>Buts</span></div></div></div>`;
+      }).join('');
+      sec.push(`<div class="cl-sec"><h4>Bilan par compétition ${infoBilan}</h4>${cartes}</div>`);
+      // --- Saisons européennes, par décennie (la plus récente d'abord) ; les matchs d'une édition ne sont affichés qu'à son ouverture
+      const infoSaisons = infoBtn(`<p><b>Source</b> : UEFA (match.uefa.com), tous les matchs du club depuis ${esc(h.depuis ? h.depuis.slice(0, 4) : 'l\'origine')}. La <b>saison européenne</b> court du 20 juin au 19 juin ; la Coupe Intertoto, jouée de juin à août, prend l'année du match. Nom de la compétition : celui de l'époque. Score du point de vue du club (D = à domicile, E = à l'extérieur, a.p. = après prolongation, tab = tirs au but) ; aucun D / E pour les finales à match unique (lieu non précisé par l'UEFA).</p>`, 'Source et méthode des saisons');
+      const decs = new Map();
+      h.ed.forEach((e, i) => {
+        const d = Math.floor(parseInt(e.s.slice(0, 4), 10) / 10) * 10;
+        if (!decs.has(d)) decs.set(d, []);
+        decs.get(d).push(i);
+      });
+      const html = [...decs.keys()].sort((a, b) => b - a).map((d, k) => {
+        const idx = decs.get(d).slice().reverse();
+        const titres = idx.filter(i => h.ed[i].i === 'V' && h.comp[h.ed[i].c] && h.comp[h.ed[i].c].titre).length;
+        return `<details class="hi-dec" ${k === 0 ? 'open' : ''}><summary>${d}-${d + 9} <small>${esc(hiPlur(idx.length, 'édition'))}${titres ? ` · ${esc(hiPlur(titres, 'titre'))}` : ''}</small></summary>
+          ${idx.map(i => {
+            const e = h.ed[i], [lib, cls] = hiIssue(h, e);
+            return `<details class="hi-ed" data-i="${i}"><summary><span class="hi-s">${esc(e.s)}</span><span class="hi-n">${esc(h.noms[e.n])}</span><span class="hi-i ${cls}">${esc(lib)}</span></summary><div class="hi-body"></div></details>`;
+          }).join('')}</details>`;
+      }).join('');
+      sec.push(`<div class="cl-sec"><h4>Saisons européennes ${infoSaisons}</h4>${html}</div>`);
+      sec.push(`<p class="momentum-note">Historique mis à jour le ${esc(new Date(h.maj).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Europe/Paris' }))}.</p>`);
+      return sec.join('');
+    }
+    // Ouverture d'une édition : ses matchs sont rendus une seule fois, groupés par tour
+    document.getElementById('club-body').addEventListener('toggle', (ev) => {
+      const d = ev.target;
+      if (!d.classList || !d.classList.contains('hi-ed') || !d.open || d.dataset.rendu || !activeClub) return;
+      const h = histoCache.get(String(activeClub.id)), e = h && h.ed[Number(d.dataset.i)];
+      if (!e) return;
+      let cur = -1, out = '';
+      e.m.forEach(m => {
+        if (m[1] !== cur) { cur = m[1]; out += `<div class="cl-round">${esc(h.tours[m[1]] || '')}</div>`; }
+        out += hiMatchRow(h, m);
+      });
+      d.querySelector('.hi-body').innerHTML = out;
+      d.dataset.rendu = '1';
+    }, true);
 
     // Ouvre la fiche du match d'une soirée conservée (charge soirees/<date>.json si besoin)
     async function openMatchFromClub(matchId, date, comp) {

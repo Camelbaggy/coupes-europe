@@ -338,3 +338,9 @@ et le menu n'affiche que les soirées ayant des matchs.
   fiches non mises à jour par un passage de soirée datent de leur dernière mise à jour (champ `moyenne_competition.maj`, rappelé dans l'info-bulle).
 - **Écart : effectif** = inscrits UEFA filtrés sur `clubId` ; seuls ceux qui ont un numéro de club ou des minutes sont affichés (les autres sont comptés dans l'info-bulle). Un joueur
   parti en cours de saison et absent de la liste inscrite n'apparaît pas (limite connue).
+
+### Mise en œuvre de l'étape 5 : historique européen (écarts et mesures par rapport à l'étude)
+
+Voir `docs/histoire_europeenne.md` (règles, cas vérifiés, format). Écarts par rapport à l'étude : le téléchargement unique pèse **818 Mo non compressés** (86 Mo en gzip), pas
+0,5 Go ; le publié pèse **1,40 Mo** (0,43 Mo gzip, 62 octets par match, palmarès et bilans compris), pas 250 Ko ; `EUSA` est la Coupe intercontinentale (la Supercoupe d'Europe est `SCUP`) ;
+la saison se dérive de la date avec coupure au 20 juin et deux exceptions (finales d'été, août 2020) ; 37 matchs annulés, 5 arrêtés et 23 forfaits sont listés sans être comptés.
