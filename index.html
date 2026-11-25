@@ -1038,6 +1038,13 @@
     .hi-pal .l { font-size: 0.78rem; color: var(--text-muted); line-height: 1.4; }
     .hi-pal .l b { color: var(--text-main); font-weight: 600; }
     .hi-sub { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); margin: 12px 0 6px; }
+    .ligue-nav { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; margin: 12px 0 4px; background: var(--bg-card);
+      border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.06); }
+    .ligue-nav[hidden] { display: none; }
+    .ligue-nav button { min-height: 40px; border: 0; border-radius: 9px; background: transparent; color: var(--text-muted); font: inherit;
+      font-size: 0.86rem; font-weight: 600; cursor: pointer; }
+    .ligue-nav button[aria-selected="true"] { background: var(--bg-elevated); color: var(--text-main); box-shadow: inset 0 -2px 0 var(--tab-accent, var(--accent-ucl)); }
+    #comp-view.histo > section:not(#hist-section), #comp-view.histo > .tour-bar { display: none !important; }
     .hs-bar { display: flex; align-items: center; gap: 8px; padding: 10px 12px 4px; }
     .hs-bar select { flex: 1; min-height: 44px; background: var(--bg-elevated); color: var(--text-main); border: 1px solid rgba(255, 255, 255, 0.12);
       border-radius: 10px; padding: 0 10px; font: inherit; font-size: 0.9rem; }
@@ -1132,6 +1139,11 @@
     <!-- ACCUEIL : derniers résultats en date + une tuile par compétition (coupes et championnats) -->
     <div id="accueil" hidden></div>
     <div id="comp-view">
+    <!-- Championnats : « Cette saison » / « Saisons passées » (vue dédiée, ?vue=histo&saison=…) -->
+    <div class="ligue-nav" id="ligue-nav" role="tablist" aria-label="Période" hidden>
+      <button type="button" role="tab" data-lvue="saison" onclick="choisirVueLigue('saison')">Cette saison</button>
+      <button type="button" role="tab" data-lvue="histo" onclick="choisirVueLigue('histo')">Saisons passées</button>
+    </div>
     <div class="tour-bar" id="tour-bar" hidden></div>
     <!-- 1. FOCUS CLUBS FRANÇAIS -->
     <section id="focus-section">
@@ -1565,17 +1577,21 @@
     // URL partageable : ?c=ucl&tour=j5 ; ?soiree=AAAA-MM-JJ (ancien format, aussi #soiree= ou #AAAA-MM-JJ) reste compris en lecture
     function urlParams() {
       const p = new URLSearchParams(location.search), h = location.hash.replace(/^#(soiree=)?/, '');
-      return { c: p.get('c'), tour: p.get('tour'), soiree: [p.get('soiree'), h].find(v => v && /^\d{4}-\d{2}-\d{2}$/.test(v)) || null };
+      return { c: p.get('c'), tour: p.get('tour'), vue: p.get('vue'), saison: p.get('saison'),
+        soiree: [p.get('soiree'), h].find(v => v && /^\d{4}-\d{2}-\d{2}$/.test(v)) || null };
     }
     function syncUrl() {
       const u = new URL(location.href), id = tourChoice[currentComp];
       if (vue === 'accueil') {
-        ['c', 'tour', 'soiree'].forEach(x => u.searchParams.delete(x)); u.hash = '';
+        ['c', 'tour', 'soiree', 'vue', 'saison'].forEach(x => u.searchParams.delete(x)); u.hash = '';
         try { history.replaceState(history.state, '', u); } catch (e) { /* aperçu hors page */ }
         return;
       }
       u.searchParams.delete('soiree'); u.searchParams.set('c', currentComp);
       if (id) u.searchParams.set('tour', id); else u.searchParams.delete('tour');
+      const histo = estLigue(currentComp) && vueLigue === 'histo';
+      if (histo) { u.searchParams.set('vue', 'histo'); if (histChoix[currentComp]) u.searchParams.set('saison', histChoix[currentComp]); else u.searchParams.delete('saison'); }
+      else { u.searchParams.delete('vue'); u.searchParams.delete('saison'); }
       u.hash = '';
       try { history.replaceState(history.state, '', u); } catch (e) { /* aperçu hors page : sans effet */ }
     }
@@ -1632,7 +1648,11 @@
     // Aiguillage : sans paramètre = accueil ; ?c=<coupe|championnat>[&tour=] ; ?soiree= (ancien lien) = la coupe de cette soirée
     async function route() {
       const u = urlParams();
-      if (estLigue(u.c)) { await showTour(u.c, u.tour); return; }
+      if (estLigue(u.c)) {
+        vueLigue = u.vue === 'histo' ? 'histo' : 'saison';
+        if (u.saison) histChoix[u.c] = u.saison;
+        await showTour(u.c, u.tour); return;
+      }
       if (!u.c && !u.soiree) { await afficherAccueil(); return; }
       await ouvrirCoupes(u);
     }
@@ -1699,8 +1719,9 @@
     function entrer(k, tourId) {
       closeInfo();
       const u = new URL(location.href);
-      ['soiree', 'tour'].forEach(x => u.searchParams.delete(x));
+      ['soiree', 'tour', 'vue', 'saison'].forEach(x => u.searchParams.delete(x));
       u.searchParams.set('c', k); u.hash = '';
+      vueLigue = 'saison';
       if (tourId) u.searchParams.set('tour', tourId);
       try { history.pushState({ depuisAccueil: 1 }, '', u); } catch (e) { /* aperçu hors page */ }
       showTour(k, tourId);
@@ -1937,21 +1958,48 @@
       return v;
     }
     const histSaisons = (d) => Object.keys(d.saisons).filter(x => (d.saisons[x].rows || []).length).sort().reverse();
+    // Vue d'un championnat : « Cette saison » (journées, classement actuel) ou « Saisons passées » (vue dédiée, sans le reste)
+    let vueLigue = 'saison';
+    function majVueLigue(k) {
+      const nav = document.getElementById('ligue-nav'), cv = document.getElementById('comp-view');
+      const ligue = estLigue(k);
+      nav.hidden = !ligue;
+      nav.style.setProperty('--tab-accent', `var(--accent-${k})`);
+      nav.querySelectorAll('button').forEach(b => b.setAttribute('aria-selected', String(ligue && b.dataset.lvue === vueLigue)));
+      cv.classList.toggle('histo', ligue && vueLigue === 'histo');
+    }
+    function choisirVueLigue(v) {
+      closeInfo();
+      if (vueLigue === v) return;
+      vueLigue = v;
+      majVueLigue(currentComp);
+      renderHistLigue(currentComp);
+      syncUrl();
+      window.scrollTo({ top: 0 });
+    }
     async function renderHistLigue(k) {
       const sec = document.getElementById('hist-section');
       const tok = ++histTok;
-      if (!estLigue(k)) { sec.hidden = true; return; }
+      majVueLigue(k);
+      if (!estLigue(k) || vueLigue !== 'histo') { sec.hidden = true; return; }
+      sec.hidden = false;
+      document.getElementById('hist-container').innerHTML = '<div class="empty-state">Chargement des saisons passées…</div>';
       const v = await loadHistLigue(k);
       if (tok !== histTok || currentComp !== k) return;
-      if (!v || !histSaisons(v.d).length) { sec.hidden = true; return; }
+      if (!v || !histSaisons(v.d).length) {
+        document.getElementById('hist-title').textContent = 'Saisons passées';
+        document.getElementById('hist-container').innerHTML = '<div class="empty-state">Les classements des saisons passées de ce championnat ne sont pas encore disponibles.</div>';
+        return;
+      }
       if (!histChoix[k] || !(v.d.saisons[histChoix[k]] || {}).rows) histChoix[k] = histSaisons(v.d)[0];
       const n = histSaisons(v.d).length, ill = Object.keys(v.d.saisons).length - n;
-      document.getElementById('hist-title').innerHTML = `Saisons passées ${infoBtn(`<p>Classement <b>final</b> de chaque saison de première division, tel que publié : ESPN depuis 2002-03, Wikipédia avant (page française, sinon page de la langue du championnat). Rien n'est recalculé ni corrigé : le rang est celui de la source, les mentions (déclassement, pénalités) sont affichées telles quelles.</p><p>Contrôles : matchs = victoires + nuls + défaites, buts marqués = buts encaissés sur l'ensemble du championnat ; une saison qui ne les passe pas n'est pas affichée${ill ? ` (${ill} saison${ill > 1 ? 's' : ''} sur ${n + ill})` : ''}. Un nombre de points qui diffère du barème de l'époque est signalé sous le tableau.</p><p>Un club est cliquable quand il est relié à une fiche du dashboard (identifiant ESPN, ou article Wikipédia du club = même élément Wikidata).</p>`, 'Source des saisons passées')}`;
+      document.getElementById('hist-title').innerHTML = `${esc(COMP_FULL[k])} · saisons passées ${infoBtn(`<p>Classement <b>final</b> de chaque saison de première division, tel que publié : ESPN depuis 2002-03, Wikipédia avant (page française, sinon page de la langue du championnat). Rien n'est recalculé ni corrigé : le rang est celui de la source, les mentions (déclassement, pénalités) sont affichées telles quelles.</p><p>Contrôles : matchs = victoires + nuls + défaites, buts marqués = buts encaissés sur l'ensemble du championnat ; une saison qui ne les passe pas n'est pas affichée${ill ? ` (${ill} saison${ill > 1 ? 's' : ''} sur ${n + ill})` : ''}. Un nombre de points qui diffère du barème de l'époque est signalé sous le tableau.</p><p>Un club est cliquable quand il est relié à une fiche du dashboard (identifiant ESPN, ou article Wikipédia du club = même élément Wikidata).</p>`, 'Source des saisons passées')}`;
       document.getElementById('hist-container').innerHTML = histLigueHtml(k, v);
       sec.hidden = false;
     }
     function choisirSaisonHist(k, x) {
       histChoix[k] = x;
+      syncUrl();
       const v = histLigueCache.get(k);
       if (v) document.getElementById('hist-container').innerHTML = histLigueHtml(k, v);
     }
@@ -1978,7 +2026,7 @@
         <table class="standings-table hs-table"><thead><tr><th>#</th><th class="col-team">Club</th><th>MJ</th><th>V-N-D</th><th>Buts</th><th>Pts</th></tr></thead>
           <tbody>${corps}</tbody></table>
         <div class="hs-note">Source : ${src} (${esc(sv.source)})${(sv.controles || {}).points_victoire ? ` · victoire à ${esc(sv.controles.points_victoire)} points` : ''}${ecarts ? `<br>Points différents du barème, tels que publiés (pénalité, bonus…) : ${ecarts}.` : ''}</div>
-        <details class="hs-champ"><summary>1ers de chaque saison</summary>${champions}
+        <details class="hs-champ"><summary>Palmarès : 1er de chaque saison (${histSaisons(v.d).length} saisons)</summary>${champions}
           <div class="hs-note" style="padding:6px 0 0">Club classé 1er dans la source, mention comprise : ce n'est pas une liste officielle des titres (un titre peut avoir été retiré).</div></details>`;
     }
 

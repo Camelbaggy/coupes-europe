@@ -394,7 +394,10 @@ nationalité, photo). La compo et le déroulé référencent les joueurs par `id
   `championnats/historique/<ligue>.json` + `index.json`), publié tel quel (rang de la source, mentions, pénalités ; jamais re-trié ni décompté en
   titres). `encyclo_ligues.parcours_championnat` rattache les lignes aux clubs actuels (ligne ESPN : `espn_id` ; ligne Wikipédia : `club_wiki` ->
   élément Wikidata = élément de la fiche ; cache `championnats/clubs/wiki_qid.json`) -> `championnat_hist` des fiches (onglet Histoire,
-  « En championnat ») et `championnats/clubs/liens_historique.json` (clubs cliquables du bloc « Saisons passées » sous le classement).
+  « En championnat ») et `championnats/clubs/liens_historique.json` (clubs cliquables de la vue « Saisons passées »).
+  Interface : barre `#ligue-nav` « Cette saison | Saisons passées » en tête de chaque championnat (`vueLigue`, `choisirVueLigue`, `majVueLigue`) ;
+  « Saisons passées » = vue DÉDIÉE (`#comp-view.histo` masque journées, résultats et classement actuel) : choix de la saison, classement final,
+  palmarès repliable ; URL `?c=fl1&vue=histo&saison=1992-93` ; la vue est gardée en passant d'un championnat à l'autre, une coupe la quitte.
 - **Ligue 2** (`fl2`, ESPN `fra.2`, décision du 26/11/2026) : ESPN n'en publie que les actions CLÉS (buts, cartons, remplacements : 15-22 par match),
   ~33 stats d'équipe sans xG, ~12 stats par joueur. `ligues.LIGUES["fl2"]["flux"] = "reduit"` (`flux_reduit`) : ni momentum, ni stats par
   mi-temps, ni notes (valeurs calculées sur ces données = fausses) ; le match porte `flux: "reduit"` et `source: "ESPN"`, la fiche l'explique.
