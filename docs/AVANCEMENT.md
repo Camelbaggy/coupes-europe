@@ -38,8 +38,9 @@ Tout ce qui suit est fusionné sur `main` et en ligne (https://camelbaggy.github
 
 ## À vérifier à la reprise
 
-0. Championnats : résultat du workflow `test_ligues.yml` (commit `[test-ligues]`) ; journées Bundesliga et Serie A (calcul local en cours au
-   moment de la rédaction) ; écart Málaga-Villarreal (Wikipédia 1-2 / ESPN 1-3) à recouper.
+0. Championnats : essai Actions réussi (run 45622687373) ; journées L1 300/306, PL 380/380, Liga 371/379, SA 380/380, BL 306/306 ;
+   écart Málaga-Villarreal (Wikipédia 1-2 / ESPN 1-3) à recouper ; push de `donnees-football` (main) et activation de Pages en attente
+   de l'accord du propriétaire.
 
 1. `completer_xg.yml` : run terminé en succès, soirées avec xG (ouvrir une fiche de match d'une soirée passée, onglet Stats).
 2. Soirée du 25/11 (LDC) puis du 26/11 (LE + LC) : notification unique reçue, xG présents dès le passage du soir.

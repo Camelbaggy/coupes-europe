@@ -377,7 +377,17 @@ def calculer(ligue: str, saison: int, matchs_espn: List[Dict[str, Any]], equipes
     anomalies += fusionner(anciens, paires, occupe, "cache")
 
     def lot(liste: List[Tuple[str, str, Optional[int], Any]]) -> List[Tuple[str, str, int]]:
-        return [(corr[d], corr[e], j) for d, e, j, _ in liste if j is not None and d in corr and e in corr]
+        # Révision ancienne : un club a pu y porter un autre lien (« SV 07 Elversberg » / « SV Elversberg »). Ses noms
+        # inconnus sont rapprochés (noms) des seuls clubs ESPN dont le nom actuel est ABSENT de cette révision.
+        noms = {x[0] for x in liste} | {x[1] for x in liste}
+        local = {n: corr[n] for n in noms if n in corr}
+        inconnus = sorted(n for n in noms if n not in corr)
+        if inconnus:
+            absents = {e: equipes_espn.get(e, []) + [w for w, e2 in corr.items() if e2 == e]
+                       for e in set(corr.values()) - set(local.values())}
+            extra, _ = apparier(inconnus, absents, ligue)
+            local.update(extra)
+        return [(local[d], local[e], j) for d, e, j, _ in liste if j is not None and d in local and e in local]
 
     anomalies += fusionner(lot(items), paires, occupe, f"révision {rev}")
     manquants = lambda: [m for m in matchs_espn if (m["home"], m["away"]) not in paires]  # noqa: E731

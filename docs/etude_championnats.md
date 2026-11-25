@@ -232,8 +232,14 @@ journées présentes), `journees.json` (cache Wikipédia + calendrier ESPN de la
 **Journées (Wikipédia), mesuré le 25/11/2026** :
 - Ligue 1 : 300/306 matchs (18 clubs dont 3 rapprochés par les scores : Auxerre, Lyon, Brest) ; 6 sans journée : la page met Troyes deux
   fois en J33 (erreur de la page, écartée par le contrôle) et une case J30 / J6 contredite par une révision plus récente.
-- Premier League : 380/380, 0 anomalie. Liga : un écart de score Wikipédia / ESPN (Málaga-Villarreal 1-2 contre 1-3) : signalé, à recouper
-  (étape 3, football-data.co.uk) ; au-delà de 2 % d'écarts, la correspondance des clubs est rejetée.
+- Premier League : 380/380 ; Serie A (Wikipédia IT) : 380/380 ; Bundesliga : 306/306 (un club, Elversberg, a changé de lien d'une révision
+  à l'autre : les noms inconnus d'une ancienne révision sont rapprochés des seuls clubs ESPN absents de cette révision).
+- Liga : 371/379. Les 8 matchs sans journée (J1-J3, J8, août 2026) : la page FR n'avait pas encore les journées avant qu'ils soient joués ;
+  complément prévu par la page locale (Wikipédia ES, « Primera División de España 2026-27 ») à l'étape 4 (reconstitution). ESPN ne liste que
+  379 matchs de Liga sur 380 (à vérifier). Un écart de score Wikipédia / ESPN (Málaga-Villarreal 1-2 contre 1-3) : signalé, à recouper à
+  l'étape 3 (football-data.co.uk) ; au-delà de 2 % d'écarts, la correspondance des clubs serait rejetée.
+- Essai GitHub Actions du 25/11 (`test_ligues.yml`, run 45622687373) : 16 matchs du 22/11 en 6 min, 0 alerte, xG 16/16 ; classement
+  `officiel` pour la Ligue 1, `absent` pour les autres (des matchs postérieurs avaient déjà commencé : règle `classement_valable`).
 - Rapprochement des clubs : noms (indice de Jaccard des mots distinctifs, réciproque), puis scores (≥ 3 matchs joués identiques, aucun
   contraire, candidat unique), puis alias manuels `alias_equipes_wiki.json` (aucun nécessaire à ce jour).
 - Wikipédia répond souvent HTTP 429 depuis le conteneur de développement (attentes de 40 à 50 s respectées) : ~10 révisions par
