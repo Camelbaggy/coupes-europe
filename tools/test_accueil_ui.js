@@ -2,7 +2,7 @@
 // Usage : node tools/test_accueil_ui.js http://localhost:8767 /tmp/caps [dossier-donnees-relatif]
 // Le serveur sert index.html + soirees/ + clubs/ + data.json, et un dossier de données de championnats (défaut « donnees/ »,
 // passé à la page par ?donnees=). Contrôles : 0 erreur console, 0 débordement horizontal, accueil (derniers résultats,
-// 9 tuiles), championnat (onglets, journée, classement, fiche de match : stats Opta, compos, momentum), retour à l'accueil,
+// 16 tuiles), championnat (onglets, journée, classement, fiche de match : stats Opta, compos, momentum), retour à l'accueil,
 // anciens liens des coupes (?c=ucl&tour=…, ?soiree=…).
 const { chromium, devices } = require('playwright');
 
@@ -27,7 +27,7 @@ const { chromium, devices } = require('playwright');
   await page.goto(`${base}/?${q}`);
   await page.waitForSelector('#accueil .acc-tuile', { timeout: 20000 });
   ok(await page.isVisible('#accueil') && !(await page.isVisible('#comp-view')), 'accueil affiché sans paramètre');
-  ok((await page.$$('#accueil .acc-tuile')).length === 9, '9 tuiles (3 coupes + 6 championnats)');
+  ok((await page.$$('#accueil .acc-tuile')).length === 16, '16 tuiles (3 coupes + 6 championnats majeurs + 7 autres)');
   const blocs = await page.$$eval('#accueil .acc-bloc-h b', els => els.map(e => e.textContent));
   ok(blocs.length > 0, `derniers résultats : ${blocs.join(', ')}`);
   ok(await debord() <= 0, 'accueil : pas de débordement horizontal');

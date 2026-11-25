@@ -38,6 +38,10 @@ CRITERES = {
     "bl": ["points", "gd", "gf"],
     "fl1": ["points", "gd", "gf"],
     "fl2": ["points", "gd", "gf"],         # règlement LFP, mêmes premiers critères que la Ligue 1
+    # Championnats secondaires (26/11/2026) : critères appliqués seulement quand ils sont sûrs ; sinon les points seuls (deux clubs à
+    # égalité de points = même rang, suivi de « = » : jamais de départage deviné)
+    "ned": ["points", "gd", "gf"], "nor": ["points", "gd", "gf"], "aut": ["points", "gd", "gf"],
+    "por": ["points"], "bel": ["points"], "tur": ["points"], "gre": ["points"],
     "liga": ["points", "h2h", "gd", "gf"],
     "sa": ["points", "h2h", "gd", "gf"],
 }

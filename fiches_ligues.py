@@ -196,8 +196,9 @@ def construire(donnees: str, ligues_demandees: List[str], avec_effectifs: bool =
     maintenant = datetime.now(timezone.utc)
     fin_historique = time.time() + budget_historique_s
     ids_coupes = {str(c["id"]) for c in ((ligues._get(COUPES_PAGES + "clubs/index.json")[0] or {}).get("clubs") or [])}
-    annee = run_ligues.saison_de(maintenant.astimezone(ligues._PARIS).date().isoformat())
-    lib = run_ligues.libelle_saison(annee)
+    jour_paris = maintenant.astimezone(ligues._PARIS).date().isoformat()
+    annee = run_ligues.saison_de(jour_paris)
+    lib = run_ligues.libelle_saison(annee)        # libellé de l'index commun (saison sur deux années)
     base = os.path.join(donnees, "championnats", "clubs")
     corr_chemin = os.path.join(base, "correspondances.json")
     corr = _lire(corr_chemin) or {}
@@ -212,7 +213,8 @@ def construire(donnees: str, ligues_demandees: List[str], avec_effectifs: bool =
     index = [c for c in index if c.get("ligue") not in ligues_demandees]
     for lg in ligues_demandees:
         meta = ligues.LIGUES[lg]
-        dossier = os.path.join(donnees, "championnats", lg, lib)
+        annee, lib_lg = run_ligues.saison_de(jour_paris, lg), run_ligues.libelle_saison(run_ligues.saison_de(jour_paris, lg), lg)
+        dossier = os.path.join(donnees, "championnats", lg, lib_lg)
         calendrier = run_ligues.matchs_saison(lg, annee)
         clubs = run_ligues._CLUBS.get(lg) or {}
         if not calendrier or not clubs:
@@ -263,7 +265,7 @@ def construire(donnees: str, ligues_demandees: List[str], avec_effectifs: bool =
             st = stats_club(det, club)
             f = {"id": club, "espn_id": cid, "nom": row.get("team"), "nom_officiel": row.get("team"), "nom_court": row.get("short_name"),
                  "pays": meta["country_name"], "code_pays": meta["country"], "drapeau": FLAG_CODES.get(meta["country"], ""),
-                 "francais": meta["country"] == "FRA", "ligue": lg, "competitions": [lg], "saison_label": lib,
+                 "francais": meta["country"] == "FRA", "ligue": lg, "competitions": [lg], "saison_label": lib_lg,
                  "logos": {"70": row.get("logo", ""), "240": row.get("logo", "")},
                  "saison": {"matchs": liste, "forme": [x["resultat"] for x in joues[-5:]],
                             "prochain": futurs[0]["match_id"] if futurs else None},
