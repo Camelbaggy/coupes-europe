@@ -296,21 +296,29 @@ Chromium/Playwright préinstallé et un `data.json` de test servi en local.
 
 ### Accueil : menu des soirées, glissement entre coupes
 
-- **Menu des soirées** (`#soiree-select`, dans l'en-tête, masqué sans index) : options de `soirees/index.json` (plus récente d'abord, défaut), libellé
-  `soireeLabel` = « mardi 24 novembre 2026 · LDC J5 » (coupes de même tour regroupées : `LDC/LE J4`, `LDC/LC Barrages retour`, « (partielle) » si le
-  statut l'est). `showSoiree(date)` charge `data.json` pour la plus récente (copie de sa soirée), sinon `soirees/<date>.json` (cache mémoire, jeton
-  contre les réponses périmées, `main.loading`). URL partageable : `?soiree=AAAA-MM-JJ` (posée par `chooseSoiree`, `replaceState`) ou `#soiree=` /
-  `#AAAA-MM-JJ` en lecture ; date inconnue = plus récente ; pas d'index (404) = `data.json` seul, sans menu. Changer de soirée choisit la première coupe
-  qui a des matchs si la coupe courante n'en a pas (`pickCompetition`).
+- **Menu des journées / tours, un par coupe** (plus de menu global des soirées) : en tête du contenu de chaque onglet LDC / LE / LC, bouton `#tour-btn` (`renderTourBar`,
+  titre court « Journée 5 » + sous-titre « 24-25 nov. · 18 matchs ») qui ouvre une feuille du bas `#tour-modal` (`openTourMenu` / `closeTourMenu` / `chooseTour`, poignée +
+  `attachSheetDrag`, tour courant surligné `aria-selected`, `role=dialog` / `listbox` / `option`, flèches / Début / Fin, Tab piégé, Échap, focus rendu au bouton ; elle est dans
+  `SHEET_IDS`, donc `closeTopSheet` et le verrou de défilement la gèrent). Les tours viennent de `soirees/index.json` (`buildTours` : paire `competitions.<clé>.{stage, tour}`
+  regroupée sur toutes les soirées ; id = slug du `tour`, ex. `j5`, `barrages-retour`, `t3-retour`). Groupes (`GROUPES`, du plus récent au plus ancien) : Phase finale (`knockout`),
+  Phase de ligue, Barrages (`qualifying` dont le tour commence par « Barrages »), Tours préliminaires ; dans un groupe, date de fin décroissante. Libellés `tourTitre` : `J5` ->
+  « Journée 5 », `T3 retour` -> « 3e tour retour ». Défaut = tour le plus récent dont une soirée a des matchs terminés (`defaultTour`).
+  `showTour(coupe, id, slide)` charge les `soirees/<date>.json` du tour (`loadSoiree` : data.json pour la plus récente, cache `soireeCache`) et les fusionne (`loadTour`, cache
+  `tourCache`) : matchs par soirée puis heure (`_soiree` posé sur chaque match / carte, sans doublon de `match_id`), intertitres de date `.date-sep` si le tour a plusieurs
+  soirées (`_multi`), cartes des clubs français = celles de ces soirées, classement / `standings_source` / `standings_at` = ceux de la soirée la plus récente du tour. `appData` n'est
+  plus une soirée mais une vue `{competitions: {clé: fusion}}` : `openMatchModal`, `openPlayerFromClub` etc. continuent de lire `appData.competitions[clé]`. Chaque coupe garde son
+  tour (`tourChoice`) quand on change d'onglet ou qu'on glisse (`switchCompetition`). Badge d'en-tête « Reconstituée » + info-bulle discrète (`RECONSTITUEE_INFO`, à côté du bouton)
+  si au moins une soirée du tour est reconstituée. URL partageable : `?c=ucl&tour=j5` (`syncUrl`, `replaceState`) ; l'ancien `?soiree=AAAA-MM-JJ` (ou `#soiree=` / `#AAAA-MM-JJ`)
+  reste lu : il ouvre la coupe (`c` si la soirée la joue, sinon la première) et le tour de cette soirée ; tour inconnu = défaut ; pas d'index (404) = `data.json` seul, sans menu.
 - **Classement** (`renderCompetition`) : `standings_source` `officiel` (ou absent) = tableau + légende des zones comme avant ; `calcule` = titre « Classement
   Phase de Ligue · calculé » + info-bulle (`standingsInfoHtml` : critères appliqués / non appliqués, date de calcul), sans légende ni zones, `=` après le rang d'un
   ex æquo ; `absent` = section masquée. Sans `zone`, la pastille de rang des cartes est neutre (`rank-pill none`, rang seul). Badge d'en-tête « Reconstituée »
-  et note + info-bulle sous le menu pour une soirée reconstituée.
+  (voir ci-dessus).
 - **Glissement entre onglets : composant UNIQUE `attachTabSwipe({zone, stop, tabs, current, go})` + `slideIn(el, 'slide-l' | 'slide-r')`**, utilisé par l'accueil
   (zone `#main-zone`, onglets LDC / LE / LC, `switchCompetition(clé, slide)`) et par la fiche de match (`#modal-body-content`, Déroulé / Compos / Stats,
   `switchModalView`). Toute nouvelle feuille à onglets (fiche club) l'appelle avec sa zone, sa liste d'onglets et sa fonction de changement. Règles communes :
   seuil 56 px, |dx| >= 1,5 |dy| (le défilement vertical n'est jamais gêné : écoute en fin de geste, aucun `preventDefault`), pas de boucle aux extrémités, ignoré sur
-  un élément défilant en X, `data-noswipe` et les champs de saisie (le menu des soirées est dans l'en-tête, hors zone), `touchcancel` annule, `prefers-reduced-motion`
+  un élément défilant en X, `data-noswipe` et les champs de saisie (le menu des tours est dans la zone mais son bouton ne gêne pas : un toucher n'est pas un geste ; sa feuille est hors de `<main>`), `touchcancel` annule, `prefers-reduced-motion`
   supprime la transition (`.slide-l` / `.slide-r`). `html, body { overscroll-behavior-x: none }` empêche le retour arrière du navigateur par-dessus un balayage.
   `main` a une hauteur minimale (`--app-h`) pour que la zone de glissement couvre l'écran. Les feuilles (fiche de match, fiche joueur) sont hors de `<main>` : un geste
   dans une feuille ne change jamais la coupe de l'accueil.

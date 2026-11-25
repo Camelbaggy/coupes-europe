@@ -121,19 +121,51 @@
       border-bottom-color: var(--accent-uecl);
     }
 
-    /* Soirées : menu déroulant (soirees/index.json) */
-    .soiree-bar { margin: -4px 0 8px; }
-    .soiree-bar[hidden] { display: none; }
-    #soiree-select {
-      width: 100%; min-height: 40px; padding: 8px 34px 8px 12px; border-radius: 10px; border: 1px solid var(--border);
-      background: var(--bg-card) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 12px center;
-      color: var(--text-main); font: inherit; font-size: 0.88rem; font-weight: 600; text-overflow: ellipsis;
-      -webkit-appearance: none; appearance: none; cursor: pointer;
+    /* Menu des journées / tours (propre à chaque coupe) : bouton en tête du contenu + feuille du bas */
+    .tour-bar { display: flex; align-items: stretch; gap: 8px; margin-bottom: -8px; }
+    .tour-bar[hidden] { display: none; }
+    .tour-btn {
+      flex: 1; min-width: 0; min-height: 52px; display: flex; align-items: center; gap: 10px; padding: 8px 12px 8px 14px; text-align: left;
+      background: var(--bg-card); color: var(--text-main); font: inherit; cursor: pointer;
+      border: 1px solid var(--border); border-left: 4px solid var(--tour-accent, var(--accent-ucl)); border-radius: 12px;
     }
-    #soiree-select:disabled { opacity: 0.6; }
-    #soiree-select option { background: var(--bg-card); color: var(--text-main); }
-    .soiree-note { font-size: 0.76rem; color: var(--text-muted); line-height: 1.5; }
-    .soiree-note[hidden] { display: none; }
+    .tour-btn:focus-visible, .tour-opt:focus-visible { outline: 2px solid var(--tour-accent, var(--accent-ucl)); outline-offset: 2px; }
+    .tour-btn[aria-expanded="true"] { background: var(--bg-card-hover); }
+    .tour-txt { flex: 1; min-width: 0; display: flex; flex-direction: column; line-height: 1.25; }
+    .tour-t { font-size: 1rem; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .tour-d { font-size: 0.76rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .tour-chev { width: 12px; height: 8px; flex-shrink: 0; opacity: 0.8; }
+    .tour-bar .info-btn { align-self: center; }
+    .date-sep { grid-column: 1 / -1; font-size: 0.76rem; font-weight: 700; color: var(--text-muted); margin-top: 4px; }
+    .date-sep::first-letter { text-transform: uppercase; }
+    .date-sep:first-child { margin-top: 0; }
+    .tour-backdrop {
+      position: fixed; top: 0; left: 0; right: 0; height: var(--app-h); z-index: 56; display: none; align-items: flex-end; justify-content: center;
+      background: rgba(0, 0, 0, 0.6);
+    }
+    .tour-backdrop.open { display: flex; }
+    .tour-sheet {
+      background: var(--bg-card); width: 100%; max-width: 520px; max-height: calc(var(--app-h) - var(--sheet-gap) - 40px); display: flex; flex-direction: column;
+      border-radius: 20px 20px 0 0; border-top: 1px solid var(--border); overflow: hidden; animation: slideUp 0.2s ease-out; will-change: transform;
+      padding-bottom: env(safe-area-inset-bottom, 0px);
+    }
+    .tour-sheet.settle { transition: transform 0.22s ease-out; }
+    @media (prefers-reduced-motion: reduce) { .tour-sheet.settle { transition: none; } }
+    .tour-sheet .sheet-handle { background: var(--bg-card); }
+    .tour-head { touch-action: none; display: flex; justify-content: space-between; align-items: center; padding: 2px 16px 10px; border-bottom: 1px solid var(--border); }
+    .tour-head b { font-size: 1rem; }
+    .tour-head small { display: block; font-size: 0.76rem; color: var(--text-muted); }
+    .tour-list { overflow-y: auto; flex: 1; min-height: 0; overscroll-behavior: contain; padding: 4px 12px 16px; }
+    .tour-grp { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); padding: 14px 4px 6px; }
+    .tour-opt {
+      width: 100%; min-height: 52px; display: flex; align-items: center; gap: 10px; padding: 8px 12px; margin-bottom: 4px; text-align: left;
+      background: transparent; color: var(--text-main); font: inherit; cursor: pointer; border: 1px solid transparent; border-radius: 12px;
+    }
+    .tour-opt .tour-t { font-weight: 700; }
+    .tour-opt:active { background: var(--bg-card-hover); }
+    .tour-opt[aria-selected="true"] { background: color-mix(in srgb, var(--tour-accent) 16%, var(--bg-card)); border-color: var(--tour-accent); }
+    .tour-opt[aria-selected="true"]::after { content: "✓"; color: var(--tour-accent); font-weight: 800; }
+    .tour-opt .tour-n { font-size: 0.74rem; color: var(--text-muted); white-space: nowrap; }
     main.loading { opacity: 0.45; pointer-events: none; transition: opacity 0.15s ease; }
     .sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); border: 0; }
 
@@ -940,10 +972,6 @@
       </div>
       <span class="badge-live" id="last-updated-badge">Chargement…</span>
     </div>
-    <div class="soiree-bar" id="soiree-bar" hidden>
-      <label class="sr-only" for="soiree-select">Soirée affichée</label>
-      <select id="soiree-select" onchange="chooseSoiree(this.value)"></select>
-    </div>
     <nav class="tabs-bar">
       <button class="tab-btn active" data-comp="ucl" onclick="switchCompetition('ucl')">Ligue des Champions</button>
       <button class="tab-btn" data-comp="uel" onclick="switchCompetition('uel')">Ligue Europa</button>
@@ -952,7 +980,7 @@
   </header>
 
   <main id="main-zone">
-    <div class="soiree-note" id="soiree-note" hidden></div>
+    <div class="tour-bar" id="tour-bar" hidden></div>
     <!-- 1. FOCUS CLUBS FRANÇAIS -->
     <section>
       <div class="section-header">
@@ -965,7 +993,7 @@
     <!-- 2. TOUS LES RÉSULTATS DE LA SOIRÉE -->
     <section>
       <div class="section-header">
-        <h2 class="section-title">Résultats de la soirée</h2>
+        <h2 class="section-title">Résultats</h2>
         <span class="section-sub" id="grid-hint"></span>
       </div>
       <div id="matches-grid-container" class="matches-grid"></div>
@@ -1020,6 +1048,15 @@
     </div>
   </div>
 
+
+  <!-- MENU DES JOURNÉES / TOURS (feuille du bas, propre à la coupe affichée) -->
+  <div class="tour-backdrop" id="tour-modal" onclick="if (event.target.id === 'tour-modal') closeTourMenu()">
+    <div class="tour-sheet" id="tour-sheet" role="dialog" aria-modal="true" aria-labelledby="tour-sheet-title">
+      <div class="sheet-handle" aria-hidden="true"></div>
+      <div class="tour-head" id="tour-head"></div>
+      <div class="tour-list" id="tour-list" role="listbox" aria-labelledby="tour-sheet-title"></div>
+    </div>
+  </div>
 
   <!-- FICHE DE CLUB (empilée selon l'ordre d'ouverture : bringToFront) -->
   <div class="club-backdrop" id="club-modal" onclick="if (event.target.id === 'club-modal') closeClub()">
@@ -1105,10 +1142,8 @@
 
     // ---------- Soirées : soirees/index.json (menu) + soirees/<date>.json ; repli sur data.json sans index ----------
     const COMP_KEYS = ['ucl', 'uel', 'uecl'];
-    const COMP_SHORT = { ucl: 'LDC', uel: 'LE', uecl: 'LC' };
-    let soireeIndex = null;        // lignes de l'index (plus récente d'abord) ; null = pas d'index : menu masqué
-    let currentSoiree = null;
-    let soireeToken = 0;
+    const COMP_FULL = { ucl: 'Ligue des Champions', uel: 'Ligue Europa', uecl: 'Ligue Conférence' };
+    let soireeIndex = null;        // lignes de l'index (plus récente d'abord) ; null = pas d'index : pas de menu
     const soireeCache = new Map();
 
     async function fetchJson(url) {
@@ -1118,96 +1153,234 @@
       } catch (e) { return null; }
     }
 
-    // Soirée demandée par l'URL : ?soiree=AAAA-MM-JJ, #soiree=AAAA-MM-JJ ou #AAAA-MM-JJ
-    function soireeFromUrl() {
-      const q = new URLSearchParams(location.search).get('soiree');
-      const h = location.hash.replace(/^#(soiree=)?/, '');
-      return [q, h].find(v => v && /^\d{4}-\d{2}-\d{2}$/.test(v)) || null;
-    }
+    // ---------- Menu des journées / tours : un par coupe, construit depuis soirees/index.json ----------
+    // Un tour (journée de phase de ligue, barrages, tour préliminaire…) peut s'étaler sur plusieurs soirées : il charge
+    // et fusionne les soirees/<date>.json concernées (index : competitions.<clé>.{stage, tour}).
+    const GROUPES = [   // ordre du menu : du plus récent au plus ancien
+      { k: 'finale', t: 'Phase finale' }, { k: 'ligue', t: 'Phase de ligue' }, { k: 'barrages', t: 'Barrages' }, { k: 'prelim', t: 'Tours préliminaires' }];
+    let toursByComp = {};          // clé de coupe -> tours (groupe, puis date décroissante)
+    const tourChoice = {};         // clé de coupe -> id du tour choisi (conservé quand on change de coupe)
+    const tourCache = new Map();   // 'coupe|id' -> { comp (fusion des matchs), meta }
+    let tourToken = 0;
 
-    // « mardi 24 novembre 2026 · LDC J5 » ; coupes de même tour regroupées : « LDC/LE/LC J5 · … »
-    function soireeLabel(l) {
-      const date = new Date(l.date + 'T12:00:00Z').toLocaleDateString('fr-FR',
-        { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
-      const groups = [];
+    const slug = (v) => String(v).toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+    function groupeDe(t) {
+      if (t.stage === 'knockout') return 'finale';
+      if (t.stage === 'league') return 'ligue';
+      if (t.stage === 'qualifying') return /^barrage/i.test(t.tour) ? 'barrages' : 'prelim';
+      return /^J\d/.test(t.tour) ? 'ligue' : 'prelim';
+    }
+    // « J5 » -> « Journée 5 » ; « T3 retour » -> « 3e tour retour » ; « Barrages aller » inchangé
+    function tourTitre(t) {
+      let m = /^J(\d+)$/.exec(t.tour);
+      if (m) return 'Journée ' + m[1];
+      m = /^T(\d+) (aller|retour)$/.exec(t.tour);
+      if (m) return (m[1] === '1' ? '1er' : m[1] + 'e') + ' tour ' + m[2];
+      return t.tour || (GROUPES.find(g => g.k === t.groupe) || {}).t || 'Tour';
+    }
+    // « 24-25 nov. », « 31 août-1 sept. »
+    function datesCourtes(dates) {
+      const p = (iso) => ({ j: Number(iso.slice(8)), m: new Date(iso + 'T12:00:00Z').toLocaleDateString('fr-FR', { month: 'short', timeZone: 'UTC' }) });
+      const a = p(dates[0]), b = p(dates[dates.length - 1]);
+      if (dates.length === 1 || dates[0] === dates[dates.length - 1]) return `${a.j} ${a.m}`;
+      return a.m === b.m ? `${a.j}-${b.j} ${a.m}` : `${a.j} ${a.m}-${b.j} ${b.m}`;
+    }
+    const tourSousTitre = (t) => datesCourtes(t.dates) + (t.matchs ? ` · ${t.matchs} match${t.matchs > 1 ? 's' : ''}` : '');
+
+    function buildTours() {
+      toursByComp = {};
       COMP_KEYS.forEach(k => {
-        const c = l.competitions && l.competitions[k];
-        if (!c) return;
-        const g = groups.find(x => x.tour === c.tour);
-        if (g) g.k.push(COMP_SHORT[k]); else groups.push({ tour: c.tour, k: [COMP_SHORT[k]] });
+        const map = new Map();
+        soireeIndex.forEach(l => {
+          const c = l.competitions && l.competitions[k];
+          if (!c) return;
+          const key = (c.stage || '') + '|' + (c.tour || '');
+          let t = map.get(key);
+          if (!t) { t = { comp: k, stage: c.stage || '', tour: c.tour || '', dates: [], matchs: 0, jouee: false, reconstituee: false }; map.set(key, t); }
+          t.dates.push(l.date); t.matchs += c.matchs || 0;
+          if ((l.termines || 0) > 0) t.jouee = true;
+          if (l.reconstituee) t.reconstituee = true;
+        });
+        const used = new Set();
+        const list = [...map.values()];
+        list.forEach(t => {
+          t.dates.sort(); t.fin = t.dates[t.dates.length - 1]; t.groupe = groupeDe(t); t.titre = tourTitre(t);
+          t.id = slug(t.tour || t.stage || 'tour');
+          if (used.has(t.id)) t.id += '-' + slug(t.stage);
+          used.add(t.id);
+        });
+        const rang = (t) => GROUPES.findIndex(g => g.k === t.groupe);
+        list.sort((a, b) => rang(a) - rang(b) || b.fin.localeCompare(a.fin));
+        toursByComp[k] = list;
       });
-      const comps = groups.map(g => g.k.join('/') + (g.tour ? ' ' + g.tour : '')).join(' · ');
-      return date + (comps ? ' · ' + comps : '') + (l.statut === 'partiel' ? ' (partielle)' : '');
+    }
+    // Par défaut : le tour le plus récent qui a des matchs terminés
+    function defaultTour(k) {
+      const l = toursByComp[k] || [];
+      return l.filter(t => t.jouee).sort((a, b) => b.fin.localeCompare(a.fin))[0] || l[0] || null;
     }
 
-    function renderSoireeMenu() {
-      const bar = document.getElementById('soiree-bar');
-      bar.hidden = !soireeIndex;
-      if (!soireeIndex) return;
-      const sel = document.getElementById('soiree-select');
-      sel.innerHTML = soireeIndex.map(l => `<option value="${esc(l.date)}">${esc(soireeLabel(l))}</option>`).join('');
-      sel.value = currentSoiree;
+    // Une soirée : cache, puis data.json pour la plus récente (copie de sa soirée), sinon soirees/<date>.json
+    async function loadSoiree(date) {
+      let data = soireeCache.get(date);
+      if (data) return data;
+      if (soireeIndex && date === soireeIndex[0].date) {
+        const latest = await fetchJson('data.json');
+        if (latest && (latest.target_dates || []).length === 1 && latest.target_dates[0] === date) data = latest;
+      }
+      if (!data) data = await fetchJson('soirees/' + date + '.json');
+      if (data) soireeCache.set(date, data);
+      return data;
+    }
+    const minutesKickoff = (m) => {
+      const r = /(\d{1,2}):(\d{2})\s*$/.exec(m.kickoff || '');
+      return r ? (Number(r[1]) < 6 ? 24 : 0) * 60 + Number(r[1]) * 60 + Number(r[2]) : 0;   // après minuit = fin de soirée
+    };
+    // Fusionne la coupe de toutes les soirées du tour : matchs (soirée puis heure, sans doublon), cartes des clubs français ;
+    // classement et reste = ceux de la soirée la plus récente du tour (officiel ou calculé, règles inchangées).
+    async function loadTour(t) {
+      const key = t.comp + '|' + t.id;
+      if (tourCache.has(key)) return tourCache.get(key);
+      const datas = await Promise.all(t.dates.map(loadSoiree));
+      if (datas.some(d => !d)) return null;
+      const matches = [], focus = [], seen = new Set(), seenF = new Set();
+      let base = {}, rec = false;
+      datas.forEach((d, i) => {
+        const c = (d.competitions || {})[t.comp] || {};
+        base = c;
+        if (d.reconstituee) rec = true;
+        (c.matches || []).map((m, j) => [m, j]).sort((a, b) => minutesKickoff(a[0]) - minutesKickoff(b[0]) || a[1] - b[1]).forEach(([m]) => {
+          if (seen.has(m.match_id)) return;
+          seen.add(m.match_id); m._soiree = t.dates[i]; matches.push(m);
+        });
+        (c.french_clubs_focus || []).forEach(f => {
+          const k = f.match_id + '|' + f.club_id;
+          if (seenF.has(k)) return;
+          seenF.add(k); f._soiree = t.dates[i]; focus.push(f);
+        });
+      });
+      const last = datas[datas.length - 1];
+      const hit = {
+        comp: { ...base, matches, french_clubs_focus: focus, matchday_label: '', _multi: t.dates.length > 1 },
+        meta: { last_updated: last.last_updated, reconstituee: rec },
+      };
+      tourCache.set(key, hit);
+      return hit;
     }
 
-    function updateBadgeAndNote() {
-      const badge = document.getElementById('last-updated-badge'), note = document.getElementById('soiree-note');
-      if (appData.last_updated) {
-        const d = new Date(appData.last_updated);
-        badge.textContent = (appData.reconstituee ? 'Reconstituée ' : 'MàJ ') +
+    function updateBadge(meta) {
+      const badge = document.getElementById('last-updated-badge');
+      if (meta && meta.last_updated) {
+        const d = new Date(meta.last_updated);
+        badge.textContent = (meta.reconstituee ? 'Reconstituée ' : 'MàJ ') +
           d.toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Paris' });
       }
-      if (appData.reconstituee) {
-        const le = appData.reconstituee_le ? new Date(appData.reconstituee_le).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Europe/Paris' }) : '';
-        note.innerHTML = 'Soirée reconstituée' + (le ? ' le ' + esc(le) : '') + ' à partir des données officielles UEFA ' +
-          infoBtn('<p>Cette soirée a été rejouée après coup avec le même pipeline que les soirées du jour : scores, buteurs, statistiques, momentum et notes des joueurs viennent de l\'UEFA.</p><p>Le classement de la phase de ligue est recalculé d\'après les scores (voir son info-bulle). Les résumés sont d\'abord générés sans IA à partir des données officielles ; ceux de la phase de ligue sont ensuite remplacés par des résumés IA contrôlés.</p>', 'Soirée reconstituée');
-        note.hidden = false;
-      } else { note.hidden = true; note.innerHTML = ''; }
+    }
+    const RECONSTITUEE_INFO = '<p>Cette journée (ou une de ses soirées) a été rejouée après coup avec le même pipeline que les soirées du jour : scores, buteurs, statistiques, momentum et notes des joueurs viennent de l\'UEFA.</p><p>Le classement de la phase de ligue est recalculé d\'après les scores (voir son info-bulle). Les résumés sont d\'abord générés sans IA à partir des données officielles ; ceux de la phase de ligue sont ensuite remplacés par des résumés IA contrôlés.</p>';
+
+    // Bouton du menu, en tête du contenu de la coupe affichée (+ info-bulle discrète si une soirée du tour est reconstituée)
+    function renderTourBar(t) {
+      const bar = document.getElementById('tour-bar');
+      bar.hidden = !t;
+      if (!t) { bar.innerHTML = ''; return; }
+      bar.style.setProperty('--tour-accent', `var(--accent-${t.comp})`);
+      bar.innerHTML = `<button type="button" class="tour-btn" id="tour-btn" aria-haspopup="dialog" aria-expanded="false" aria-label="${esc(t.titre + ', ' + tourSousTitre(t) + '. Changer de journée ou de tour')}" onclick="openTourMenu()">
+          <span class="tour-txt"><span class="tour-t">${esc(t.titre)}</span><span class="tour-d">${esc(tourSousTitre(t))}</span></span>
+          <svg class="tour-chev" viewBox="0 0 12 8" aria-hidden="true"><path d="M1 1l5 5 5-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>${t.reconstituee ? infoBtn(RECONSTITUEE_INFO, 'Journée reconstituée') : ''}`;
     }
 
-    // Choisit la coupe affichée : celle demandée si elle a des matchs, sinon la première qui en a (évite un écran vide)
-    function pickCompetition() {
-      const has = (k) => ((appData.competitions || {})[k] || {}).matches && appData.competitions[k].matches.length > 0;
-      if (!has(currentComp)) { const k = COMP_KEYS.find(has); if (k) currentComp = k; }
-      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.comp === currentComp));
+    // Feuille du bas : la liste des tours de la coupe affichée, regroupés, le tour courant surligné
+    function openTourMenu() {
+      const k = currentComp, list = toursByComp[k] || [];
+      if (!list.length) return;
+      const cur = tourChoice[k];
+      const sheet = document.getElementById('tour-sheet');
+      sheet.style.setProperty('--tour-accent', `var(--accent-${k})`);
+      document.getElementById('tour-head').innerHTML = `<div><b id="tour-sheet-title">${esc(COMP_FULL[k])}</b><small>Choisir une journée ou un tour</small></div>
+        <button type="button" class="btn-close" onclick="closeTourMenu()" aria-label="Fermer">✕</button>`;
+      document.getElementById('tour-list').innerHTML = GROUPES.map(g => {
+        const ts = list.filter(t => t.groupe === g.k);
+        if (!ts.length) return '';
+        return `<div role="group" aria-labelledby="tg-${g.k}"><div class="tour-grp" id="tg-${g.k}">${esc(g.t)}</div>${ts.map(t =>
+          `<button type="button" role="option" class="tour-opt" data-id="${esc(t.id)}" aria-selected="${t.id === cur}" tabindex="${t.id === cur ? 0 : -1}" onclick="chooseTour('${esc(t.id)}')">
+            <span class="tour-txt"><span class="tour-t">${esc(t.titre)}</span><span class="tour-d">${esc(datesCourtes(t.dates))}</span></span>
+            <span class="tour-n">${t.matchs} match${t.matchs > 1 ? 's' : ''}</span></button>`).join('')}</div>`;
+      }).join('');
+      const modal = document.getElementById('tour-modal');
+      modal.classList.add('open'); bringToFront(modal); syncBodyLock();
+      const b = document.getElementById('tour-btn'); if (b) b.setAttribute('aria-expanded', 'true');
+      const sel = document.querySelector('#tour-list .tour-opt[aria-selected="true"]') || document.querySelector('#tour-list .tour-opt');
+      if (sel) { sel.focus({ preventScroll: true }); sel.scrollIntoView({ block: 'center' }); }
     }
-
-    // Charge (cache, puis data.json pour la plus récente, sinon soirees/<date>.json) et affiche une soirée.
-    async function showSoiree(date) {
-      const token = ++soireeToken;
-      const main = document.getElementById('main-zone'), sel = document.getElementById('soiree-select');
-      main.classList.add('loading'); sel.disabled = true;
-      let data = soireeCache.get(date);
-      if (!data) {
-        if (soireeIndex && date === soireeIndex[0].date) {
-          const latest = await fetchJson('data.json');   // data.json = copie de la soirée la plus récente
-          if (latest && (latest.target_dates || []).length === 1 && latest.target_dates[0] === date) data = latest;
-        }
-        if (!data) data = await fetchJson('soirees/' + date + '.json');
-        if (data) soireeCache.set(date, data);
+    function closeTourMenu() {
+      const modal = document.getElementById('tour-modal');
+      if (!modal.classList.contains('open')) return;
+      modal.classList.remove('open'); syncBodyLock();
+      const b = document.getElementById('tour-btn');
+      if (b) { b.setAttribute('aria-expanded', 'false'); b.focus({ preventScroll: true }); }
+    }
+    function chooseTour(id) {
+      closeTourMenu();
+      if (id !== tourChoice[currentComp]) showTour(currentComp, id);
+    }
+    document.getElementById('tour-modal').addEventListener('keydown', (e) => {   // flèches / Début / Fin dans la liste, Tab piégé dans la feuille
+      const opts = [...document.querySelectorAll('#tour-list .tour-opt')], i = opts.indexOf(document.activeElement);
+      const go = (n) => { e.preventDefault(); const o = opts[Math.max(0, Math.min(opts.length - 1, n))]; if (o) { opts.forEach(x => x.tabIndex = -1); o.tabIndex = 0; o.focus(); } };
+      if (e.key === 'ArrowDown') go(i + 1); else if (e.key === 'ArrowUp') go(i < 0 ? 0 : i - 1);
+      else if (e.key === 'Home') go(0); else if (e.key === 'End') go(opts.length - 1);
+      else if (e.key === 'Tab') {
+        const f = [...document.querySelectorAll('#tour-sheet button')].filter(x => x.tabIndex >= 0), a = document.activeElement;
+        if (e.shiftKey && a === f[0]) { e.preventDefault(); f[f.length - 1].focus(); }
+        else if (!e.shiftKey && a === f[f.length - 1]) { e.preventDefault(); f[0].focus(); }
       }
-      if (token !== soireeToken) return;   // une autre soirée a été demandée entre-temps
-      main.classList.remove('loading'); sel.disabled = false;
-      if (!data) {
-        main.insertAdjacentHTML('afterbegin', `<div class="empty-state" id="soiree-err">Impossible de charger la soirée du ${esc(date)}.</div>`);
-        return;
-      }
-      const err = document.getElementById('soiree-err'); if (err) err.remove();
-      appData = data;
-      currentSoiree = date;
-      if (soireeIndex) document.getElementById('soiree-select').value = date;
-      updateBadgeAndNote();
-      pickCompetition();
-      renderCompetition(currentComp);
-    }
+    });
 
-    // Menu : change de soirée et rend l'URL partageable (?soiree=AAAA-MM-JJ, sans nouvelle entrée d'historique)
-    function chooseSoiree(date) {
-      if (!date || date === currentSoiree) return;
-      const u = new URL(location.href);
-      u.searchParams.set('soiree', date);
+    // URL partageable : ?c=ucl&tour=j5 ; ?soiree=AAAA-MM-JJ (ancien format, aussi #soiree= ou #AAAA-MM-JJ) reste compris en lecture
+    function urlParams() {
+      const p = new URLSearchParams(location.search), h = location.hash.replace(/^#(soiree=)?/, '');
+      return { c: p.get('c'), tour: p.get('tour'), soiree: [p.get('soiree'), h].find(v => v && /^\d{4}-\d{2}-\d{2}$/.test(v)) || null };
+    }
+    function syncUrl() {
+      const u = new URL(location.href), id = tourChoice[currentComp];
+      u.searchParams.delete('soiree'); u.searchParams.set('c', currentComp);
+      if (id) u.searchParams.set('tour', id); else u.searchParams.delete('tour');
       u.hash = '';
       try { history.replaceState(null, '', u); } catch (e) { /* aperçu hors page : sans effet */ }
-      showSoiree(date);
+    }
+
+    // Affiche la coupe `compKey` pour le tour `id` (défaut : le plus récent joué) ; `slide` = animation du glissement entre coupes
+    async function showTour(compKey, id, slide) {
+      const token = ++tourToken;
+      const main = document.getElementById('main-zone');
+      currentComp = compKey;
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.comp === compKey));
+      const t = (toursByComp[compKey] || []).find(x => x.id === id) || defaultTour(compKey);
+      const err = document.getElementById('soiree-err'); if (err) err.remove();
+      if (!t) {   // coupe sans aucune soirée conservée
+        tourChoice[compKey] = null; renderTourBar(null); syncUrl();
+        main.classList.remove('loading');
+        appData.competitions[compKey] = { name: COMP_FULL[compKey], french_clubs_focus: [], matches: [], standings: [], standings_source: 'absent' };
+        renderCompetition(compKey);
+        return;
+      }
+      tourChoice[compKey] = t.id;
+      renderTourBar(t); syncUrl();
+      let hit = tourCache.get(compKey + '|' + t.id);
+      if (!hit) {
+        main.classList.add('loading');
+        hit = await loadTour(t);
+        if (token !== tourToken) return;   // un autre tour / une autre coupe a été demandé entre-temps
+      }
+      main.classList.remove('loading');
+      if (!hit) {
+        main.insertAdjacentHTML('afterbegin', `<div class="empty-state" id="soiree-err">Impossible de charger ${esc(t.titre)}.</div>`);
+        return;
+      }
+      appData.competitions[compKey] = hit.comp;
+      updateBadge(hit.meta);
+      renderCompetition(compKey);
+      if (slide) slideIn(main, slide);
     }
 
     async function initDashboard() {
@@ -1215,10 +1388,25 @@
       const lignes = Array.isArray(idx) ? idx.filter(l => l && /^\d{4}-\d{2}-\d{2}$/.test(l.date)).sort((a, b) => b.date.localeCompare(a.date)) : [];
       soireeIndex = lignes.length ? lignes : null;
       if (soireeIndex) {
-        const wanted = soireeFromUrl();
-        currentSoiree = soireeIndex.some(l => l.date === wanted) ? wanted : soireeIndex[0].date;
-        renderSoireeMenu();
-        await showSoiree(currentSoiree);
+        appData = { competitions: {} };
+        buildTours();
+        const u = urlParams();
+        let comp = 'ucl', id = null;
+        const row = u.soiree && soireeIndex.find(l => l.date === u.soiree);
+        if (row) {   // ancien lien ?soiree= : ouvre la coupe et le tour de cette soirée
+          const ks = COMP_KEYS.filter(k => row.competitions && row.competitions[k]);
+          if (ks.length) {
+            comp = ks.includes(u.c) ? u.c : ks[0];
+            const c = row.competitions[comp];
+            const t = toursByComp[comp].find(x => x.stage === (c.stage || '') && x.tour === (c.tour || ''));
+            id = t && t.id;
+          }
+        } else {
+          if (COMP_KEYS.includes(u.c)) comp = u.c;
+          id = u.tour;
+        }
+        if (!(toursByComp[comp] || []).length) comp = COMP_KEYS.find(k => toursByComp[k].length) || 'ucl';
+        await showTour(comp, id);
         return;
       }
       // Pas d'index (hébergement ancien, première publication) : data.json seul, sans menu
@@ -1229,16 +1417,23 @@
         return;
       }
       appData = latest;
-      updateBadgeAndNote();
-      pickCompetition();
+      updateBadge({ last_updated: latest.last_updated, reconstituee: latest.reconstituee });
+      const has = (k) => ((latest.competitions || {})[k] || {}).matches && latest.competitions[k].matches.length > 0;
+      if (!has(currentComp)) { const k = COMP_KEYS.find(has); if (k) currentComp = k; }
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.comp === currentComp));
       renderCompetition(currentComp);
     }
 
     function switchCompetition(compKey, slide) {
-      currentComp = compKey;
-      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.comp === compKey));
-      renderCompetition(compKey);
-      if (slide) slideIn(document.getElementById('main-zone'), slide);
+      closeInfo();
+      if (!soireeIndex) {   // sans index : data.json seul
+        currentComp = compKey;
+        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.comp === compKey));
+        renderCompetition(compKey);
+        if (slide) slideIn(document.getElementById('main-zone'), slide);
+        return;
+      }
+      showTour(compKey, tourChoice[compKey], slide);   // chaque coupe garde son tour choisi
     }
 
     function getZoneLabel(zone, rank) {
@@ -1261,7 +1456,10 @@
       if (!comp.french_clubs_focus || comp.french_clubs_focus.length === 0) {
         frContainer.innerHTML = `<div class="empty-state">Aucun club français n'a joué sur cette période${comp.name ? ' en ' + esc(comp.name) : ''}.</div>`;
       } else {
+        let dernierF = null;
         frContainer.innerHTML = comp.french_clubs_focus.map(fc => {
+          const sepF = comp._multi && fc._soiree !== dernierF ? `<div class="date-sep">${esc(jourLong(fc._soiree))}</div>` : '';
+          dernierF = fc._soiree;
           const goalsHtml = (fc.goals || []).map(g => {
             const tag = g.kind === 'csc' ? ' csc' : g.kind === 'pen' ? ' sp' : '';
             const mine = (g.team === 'home' ? fc.home_team : fc.away_team).name === fc.club_name;
@@ -1269,7 +1467,7 @@
             return `<span class="goal-chip ${mine ? 'mine' : ''}">⚽ ${who}${tag} (${esc(g.minute)})</span>`;
           }).join('');
           const source = fc.summary_source === 'gemini' ? '✓ Résumé IA contrôlé sur les données officielles' : '✓ Résumé généré depuis les données officielles';
-          return `
+          return sepF + `
             <article class="fr-card" style="${coulStyleMatch(fc)}" onclick="openMatchModal('${esc(fc.match_id)}')">
               <div class="fr-card-top">
                 <span class="fr-club-tag">${clubLink(fc.club_id, `${flag(fc.home_team.name === fc.club_name ? fc.home_team : fc.away_team) || '🇫🇷'} ${esc(fc.club_name)}`)}</span>
@@ -1296,7 +1494,11 @@
       if (!comp.matches || comp.matches.length === 0) {
         gridContainer.innerHTML = `<div class="empty-state">Aucun match sur cette période dans cette compétition.</div>`;
       } else {
-        gridContainer.innerHTML = comp.matches.map(m => `
+        let dernier = null;
+        gridContainer.innerHTML = comp.matches.map(m => {
+          const sep = comp._multi && m._soiree !== dernier ? `<div class="date-sep">${esc(jourLong(m._soiree))}</div>` : '';
+          dernier = m._soiree;
+          return sep + `
           <div class="match-tile" style="${coulStyleMatch(m)}" onclick="openMatchModal('${esc(m.match_id)}')">
             <div class="tile-teams">
               <div class="tile-team-row">
@@ -1313,7 +1515,8 @@
               <div>${esc(m.status)}</div>
               <div style="margin-top:4px;color:var(--accent-ucl)">Détails ›</div>
             </div>
-          </div>`).join('');
+          </div>`;
+        }).join('');
       }
 
       // 4. Classement : officiel UEFA (soirée récente) ou recalculé depuis les scores (soirée passée) ; rien pour les préliminaires
@@ -1905,6 +2108,7 @@
     }
     attachSheetDrag(document.getElementById('modal-sheet'), document.getElementById('modal-body-content'), '.sheet-handle, .modal-header', () => closeMatchModal());
     attachSheetDrag(document.getElementById('player-sheet'), document.getElementById('player-body'), '.sheet-handle, .ps-head', () => closePlayer());
+    attachSheetDrag(document.getElementById('tour-sheet'), document.getElementById('tour-list'), '.sheet-handle, .tour-head', () => closeTourMenu());
     attachSheetDrag(document.getElementById('club-sheet'), document.getElementById('club-body'), '.sheet-handle, .club-head', () => closeClub());
 
     // ---------- Glissement horizontal entre onglets : COMPOSANT UNIQUE ----------
@@ -1965,7 +2169,7 @@
     // (bouton, glissement vers le bas, fond, Échap) ne ferme que la feuille du dessus.
     let zTop = 100;
     function bringToFront(el) { el.style.zIndex = String(++zTop); }
-    const SHEET_IDS = ['match-modal', 'club-modal', 'player-modal'];
+    const SHEET_IDS = ['match-modal', 'club-modal', 'player-modal', 'tour-modal'];
     function syncBodyLock() {
       document.body.style.overflow = SHEET_IDS.some(id => document.getElementById(id).classList.contains('open')) ? 'hidden' : '';
     }
@@ -1973,7 +2177,7 @@
       const ouvertes = SHEET_IDS.map(id => document.getElementById(id)).filter(el => el.classList.contains('open'));
       if (!ouvertes.length) return;
       const haut = ouvertes.reduce((a, b) => Number(b.style.zIndex || 0) > Number(a.style.zIndex || 0) ? b : a);
-      if (haut.id === 'player-modal') closePlayer(); else if (haut.id === 'club-modal') closeClub(); else closeMatchModal();
+      if (haut.id === 'player-modal') closePlayer(); else if (haut.id === 'club-modal') closeClub(); else if (haut.id === 'tour-modal') closeTourMenu(); else closeMatchModal();
     }
     let toastTimer = null;
     function toast(msg) {
@@ -1993,8 +2197,7 @@
 
     // ---------- Fiches de club : clubs/index.json (108 clubs) + clubs/<id UEFA>.json ----------
     const CLUB_VIEWS = ['apercu', 'matchs', 'stats', 'effectif'];
-    const COMP_FULL = { ucl: 'Ligue des Champions', uel: 'Ligue Europa', uecl: 'Ligue Conférence' };
-    let clubIndex = null;            // Map id -> entrée de l'index ; null = pas d'index (aucun lien vers une fiche)
+        let clubIndex = null;            // Map id -> entrée de l'index ; null = pas d'index (aucun lien vers une fiche)
     const clubCache = new Map();
     let activeClub = null, currentClubView = 'apercu', clubToken = 0;
 
