@@ -16,6 +16,8 @@ Contenu d'une fiche (valeurs absentes = absentes, aucune valeur inventée) :
   (cumul / matchs ; possession et précision = moyennes), moyenne du championnat (moyenne simple des valeurs par match de ses clubs) ;
 - `stade` : stade le plus fréquent dans les matchs à domicile collectés ; `couleurs.principale` : couleur de maillot la plus fréquente à
   domicile (maillot porté, ESPN), `secondaire` : la plus fréquente à l'extérieur si différente ;
+- `wikidata` / `wikipedia` / `histoire` : fondation, siège, site, surnom, stade (capacité…), extrait Wikipédia FR, historique européen
+  (voir encyclo_ligues.py : club -> article Wikipédia du tableau des résultats -> élément Wikidata, jamais par le nom seul) ;
 - `effectif` : effectif ESPN (poste, numéro, âge, date de naissance, nationalité, photo) + statistiques de la saison CALCULÉES sur les
   matchs collectés (matchs joués, titularisations, minutes, buts, passes décisives, cartons, xG, xA, note moyenne ; gardiens : arrêts,
   buts encaissés, matchs sans encaisser) et la liste de ses matchs (`matchs`) ; un joueur parti en cours de saison reste listé.
@@ -32,11 +34,13 @@ import json
 import os
 import re
 import sys
+import time
 from collections import Counter
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 import classement_ligue
+import encyclo_ligues
 import ligues
 from netutil import FLAG_CODES
 
@@ -185,9 +189,12 @@ def correspondances(ancien: Dict[str, Any], pays: List[str]) -> Dict[str, Any]:
 # ------------------------------------------------------------------------------
 # Construction des fiches
 # ------------------------------------------------------------------------------
-def construire(donnees: str, ligues_demandees: List[str], avec_effectifs: bool = True) -> Dict[str, Any]:
+def construire(donnees: str, ligues_demandees: List[str], avec_effectifs: bool = True, avec_encyclo: bool = True,
+               budget_historique_s: float = 480) -> Dict[str, Any]:
     import run_ligues
     maintenant = datetime.now(timezone.utc)
+    fin_historique = time.time() + budget_historique_s
+    ids_coupes = {str(c["id"]) for c in ((ligues._get(COUPES_PAGES + "clubs/index.json")[0] or {}).get("clubs") or [])}
     annee = run_ligues.saison_de(maintenant.astimezone(ligues._PARIS).date().isoformat())
     lib = run_ligues.libelle_saison(annee)
     base = os.path.join(donnees, "championnats", "clubs")
@@ -209,7 +216,8 @@ def construire(donnees: str, ligues_demandees: List[str], avec_effectifs: bool =
             print(f"[WARN] {lg} : calendrier ou classement ESPN illisible, fiches inchangées")
             index += [c for c in ((_lire(os.path.join(base, "index.json")) or {}).get("clubs") or []) if c.get("ligue") == lg]
             continue
-        journees = ((_lire(os.path.join(dossier, "journees.json")) or {}).get("journees")) or {}
+        journees_doc = _lire(os.path.join(dossier, "journees.json")) or {}
+        journees = journees_doc.get("journees") or {}
         details: Dict[str, Dict[str, Any]] = {}
         jours = set()
         for f in sorted(os.listdir(dossier)) if os.path.isdir(dossier) else []:
@@ -303,6 +311,29 @@ def construire(donnees: str, ligues_demandees: List[str], avec_effectifs: bool =
         # Moyenne du championnat (valeurs par match des clubs ayant joué)
         pms = [f["stats"][lg]["par_match"] for f in fiches.values() if f["stats"]]
         moy = {k: round(sum(p.get(k, 0) for p in pms) / len(pms), 2) for k in {k for p in pms for k in p}} if pms else {}
+        # Encyclopédie (Wikidata / Wikipédia) et historique européen : jamais bloquants (encyclo_ligues.py)
+        anciens = {cid: _lire(os.path.join(base, f"espn-{cid}.json")) or {} for cid in fiches}
+        if avec_encyclo:
+            try:
+                n = encyclo_ligues.enrichir(fiches, anciens, lg, annee, journees_doc, maintenant.strftime("%Y-%m-%dT%H:%M:%SZ"))
+                print(f"[ENCYCLO] {meta['name']} : {n['wikidata']} élément(s) Wikidata, {n['wikipedia']} extrait(s) Wikipédia relus, "
+                      f"{n['non_relies']} club(s) non relié(s)")
+            except Exception as e:
+                print(f"[WARN] {meta['name']} : encyclopédie non mise à jour ({e}), valeurs précédentes conservées")
+                for cid, f in fiches.items():
+                    for k in ("wikidata", "wikipedia"):
+                        if anciens[cid].get(k):
+                            f[k] = anciens[cid][k]
+                    encyclo_ligues.completer_stade(f)
+            try:
+                h = encyclo_ligues.historiques(list(fiches.values()), base, ids_coupes, max(0.0, fin_historique - time.time()))
+                print(f"[HISTOIRE] {meta['name']} : {sum(1 for f in fiches.values() if f.get('histoire'))} club(s) avec historique européen, "
+                      f"{h} fichier(s) produit(s)")
+            except Exception as e:
+                print(f"[WARN] {meta['name']} : historique européen non mis à jour ({e})")
+                for cid, f in fiches.items():
+                    if anciens[cid].get("histoire"):
+                        f["histoire"] = anciens[cid]["histoire"]
         for cid, f in fiches.items():
             if f["stats"]:
                 f["stats"][lg]["moyenne_competition"] = {"valeurs": moy, "clubs": len(pms), "maj": maintenant.date().isoformat()}
@@ -346,9 +377,11 @@ if __name__ == "__main__":
     ap.add_argument("--donnees", default="../donnees-football")
     ap.add_argument("--ligues", default=",".join(ligues.LIGUES))
     ap.add_argument("--sans-effectifs", action="store_true")
+    ap.add_argument("--sans-encyclo", action="store_true", help="ni Wikidata / Wikipédia ni historique européen")
+    ap.add_argument("--budget-historique", type=float, default=8, help="minutes au plus pour l'historique européen (reprenable)")
     ap.add_argument("--test", action="store_true")
     a = ap.parse_args()
     if a.test:
         _test()
         sys.exit(0)
-    construire(a.donnees, a.ligues.split(","), not a.sans_effectifs)
+    construire(a.donnees, a.ligues.split(","), not a.sans_effectifs, not a.sans_encyclo, a.budget_historique * 60)
