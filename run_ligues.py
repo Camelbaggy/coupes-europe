@@ -174,6 +174,9 @@ def collecter(jour: str, donnees: str, ligues_demandees: List[str], avec_wiki: b
         idx = [l for l in (_lire(chemin_idx) or []) if l.get("date") != jour]
         idx.append({"date": jour, "journees": sorted({m["journee"] for m in matchs if m.get("journee")}),
                     "matchs": len(matchs), "termines": termines, "incomplet": incomplet,
+                    "par_journee": {str(n): sum(1 for m in matchs if m.get("journee") == n)
+                                    for n in sorted({m["journee"] for m in matchs if m.get("journee")})},
+                    "sans_journee": sum(1 for m in matchs if not m.get("journee")),
                     "maj": maintenant.strftime("%Y-%m-%dT%H:%M:%SZ"), "fichier": f"{jour}.json"})
         idx.sort(key=lambda l: l["date"], reverse=True)
         ecrire_si_change(chemin_idx, idx)

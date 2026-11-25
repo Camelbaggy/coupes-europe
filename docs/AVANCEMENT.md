@@ -34,13 +34,14 @@ Tout ce qui suit est fusionné sur `main` et en ligne (https://camelbaggy.github
   pour toute la saison 2026-27 des 5 championnats), journée via football-data.org / OpenLigaDB, contrôle croisé football-data.co.uk.
   Décisions du propriétaire reçues le 25/11 (§ 10 de l'étude). **Étape 1 livrée sur la branche** (§ 11) : `ligues.py`, `journees_wiki.py`,
   `run_ligues.py`, essai `[test-ligues]` ; dépôt de données `Camelbaggy/donnees-football` initialisé EN LOCAL seulement (workflow de collecte,
-  README, CLAUDE.md) : push sur son `main` et activation de GitHub Pages à faire avec l'accord du propriétaire.
+  README, CLAUDE.md), poussé sur son `main` et GitHub Pages activé (25/11). **Étape 2 livrée sur la branche** (§ 12) : accueil à la racine,
+  interface des championnats ; aucune donnée publiée tant que la branche n'est pas fusionnée et la collecte lancée.
 
 ## À vérifier à la reprise
 
 0. Championnats : essai Actions réussi (run 45622687373) ; journées L1 300/306, PL 380/380, Liga 371/379, SA 380/380, BL 306/306 ;
-   écart Málaga-Villarreal (Wikipédia 1-2 / ESPN 1-3) à recouper ; push de `donnees-football` (main) et activation de Pages en attente
-   de l'accord du propriétaire.
+   écart Málaga-Villarreal (Wikipédia 1-2 / ESPN 1-3) à recouper. Après fusion : lancer `collecte_championnats.yml` (donnees-football)
+   sur quelques jours pour remplir l'accueil, puis étape 3 (collecte quotidienne, notification commune).
 
 1. `completer_xg.yml` : run terminé en succès, soirées avec xG (ouvrir une fiche de match d'une soirée passée, onglet Stats).
 2. Soirée du 25/11 (LDC) puis du 26/11 (LE + LC) : notification unique reçue, xG présents dès le passage du soir.

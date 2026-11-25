@@ -29,6 +29,7 @@ python run_pipeline.py --reconstituer --dossier-soirees /tmp/soirees --du 2026-1
 python run_pipeline.py --rattraper-ia --max-cartes 10   # remplace par Gemini des résumés déterministes de la phase de ligue (clé requise)
 python run_pipeline.py --completer-xg [--du … --au …] --dossier-soirees DIR   # ajoute les xG (ESPN / Opta) aux soirées existantes (reprenable ; tester sur une COPIE de soirees/ ET lancer depuis le dossier de cette copie : le data.json du dossier COURANT est suivi)
 python espn.py --test                                   # xG : rapprochement strict, valeurs, panne, incohérence (réponses ESPN réelles allégées : tools/fixtures/espn/)
+node tools/test_accueil_ui.js http://localhost:8767 /tmp/caps donnees/   # Playwright 390 x 844 : accueil, championnats, anciens liens des coupes (servir index.html + soirees/ + clubs/ + data.json + donnees/championnats/)
 node tools/test_xg_ui.js http://localhost:8766 /tmp/xg  # Playwright 390 x 844 de l'onglet Stats avec / sans xG (servir un dossier index.html + data.json avec xG)
 python -m http.server 8000                              # voir index.html (il lit data.json et soirees/ via fetch)
 python -m py_compile *.py tools/*.py                    # contrôle statique
@@ -327,7 +328,7 @@ Chaque match : `home_team`/`away_team` (`flag`, `is_french`, `formation`…), `e
 `players` (dictionnaire par id : stats UEFA brutes sélectionnées, `rating`, `factors`, minutes, entrée/sortie,
 nationalité, photo). La compo et le déroulé référencent les joueurs par `id` ; la fiche joueur lit `players[id]`.
 
-## Championnats nationaux (big 5, en cours : étape 1 livrée)
+## Championnats nationaux (big 5, en cours : étapes 1-2 livrées)
 
 Étude, mesures, décisions du propriétaire et plan par étapes : `docs/etude_championnats.md` (§ 10-11). Données dans le dépôt SÉPARÉ
 **Camelbaggy/donnees-football** (`championnats/<ligue>/<saison>/<AAAA-MM-JJ>.json` + `index.json` + `journees.json`, servi par GitHub Pages,
@@ -341,8 +342,13 @@ nationalité, photo). La compo et le déroulé référencent les joueurs par `id
   « un club une fois par journée » ; jamais de journée devinée.
 - `run_ligues.py` : un jour (heure de Paris) par championnat, sans recollecter un match déjà complet ; classement officiel seulement tant
   qu'aucun match postérieur n'a commencé. Essai réel : commit `[test-ligues]` sur une branche `ccr-*` (`test_ligues.yml`).
-- À venir (étude § 8) : accueil et interface (option B : une seule application), collecte quotidienne + notification commune, reconstitution
-  de 2026-27, fiches club / joueur uniques, historique des classements (Wikipédia).
+- **Interface** (étude § 12) : une seule application ; sans paramètre = ACCUEIL (`afficherAccueil` : derniers résultats en date, 8 tuiles) ;
+  `?c=ucl|uel|uecl` / `?soiree=` = coupes (inchangé) ; `?c=fl1|pl|liga|sa|bl&tour=jN` = championnat (mêmes composants, `LIGUE_KEYS`,
+  `buildToursLigue`, `loadJourLigue`, `DONNEES` = Pages de donnees-football ou `?donnees=`). `entrer` (pushState) / `goAccueil` / `route`
+  (popstate). En championnat : pas de focus ni de surlignage français, légende des zones ESPN (`legendeLigue`), sources « ESPN (Opta) »
+  selon `m.source`. Essai : `node tools/test_accueil_ui.js <url> <dossier> [donnees/]` ; les autres essais Playwright ouvrent `index.html?c=ucl`.
+- À venir (étude § 8) : collecte quotidienne + notification commune (étape 3), reconstitution de 2026-27, fiches club / joueur uniques,
+  historique des classements (Wikipédia).
 
 ## API UEFA : pièges vérifiés sur les données réelles
 

@@ -244,3 +244,31 @@ journées présentes), `journees.json` (cache Wikipédia + calendrier ESPN de la
   contraire, candidat unique), puis alias manuels `alias_equipes_wiki.json` (aucun nécessaire à ce jour).
 - Wikipédia répond souvent HTTP 429 depuis le conteneur de développement (attentes de 40 à 50 s respectées) : ~10 révisions par
   championnat au premier calcul, puis une lecture par jour.
+
+## 12. Étape 2 livrée : accueil et interface des championnats (25/11/2026)
+
+Option B (décision du 25/11) : UNE seule application (`index.html`), aucune URL cassée.
+- **Aiguillage** (`route`) : sans paramètre = **accueil** ; `?c=<ucl|uel|uecl>[&tour=]` et `?soiree=AAAA-MM-JJ` = coupes comme avant ;
+  `?c=<fl1|pl|liga|sa|bl>[&tour=jN]` = championnat. Entrer dans une compétition depuis l'accueil ajoute une entrée d'historique
+  (`entrer`, `history.pushState`) : le retour du téléphone, ou le bouton « ‹ Football » de l'en-tête (`goAccueil`), ramène à l'accueil ;
+  les changements de tour / d'onglet restent en `replaceState`.
+- **Accueil** (`afficherAccueil`) : « Derniers résultats » = la date la plus récente ayant au moins un match terminé, toutes compétitions
+  confondues (index des soirées + `index.json` de chaque championnat) ; un bloc par compétition jouée ce jour-là (tous ses matchs ; un match
+  ouvre directement sa fiche, l'en-tête mène à la compétition sur le bon tour), puis une tuile par compétition (3 coupes, 5 championnats :
+  tour par défaut, dates, nombre de matchs ; « Données bientôt disponibles » tant qu'un championnat n'a rien publié).
+- **Championnats** : mêmes composants que les coupes (menu des tours = journées, liste des résultats, fiche de match, compos, stats,
+  momentum, fiche joueur). En-tête « ‹ ⚽ Football · Championnats », 5 onglets (`LIGUE_COURT`), glissement entre championnats
+  (`attachTabSwipe`, onglets de l'espace courant ; aucun sur l'accueil). Journées : `buildToursLigue` depuis `index.json`
+  (`par_journee` {n: matchs} de chaque jour, `sans_journee`) ; un jour qui mêle deux journées (match reporté) est filtré par `journee` ;
+  tour « Autres matchs » pour les matchs sans journée. Pas de focus clubs français ni de surlignage « FRA » (tous les clubs sont du même
+  pays). Classement : légende construite depuis les zones ESPN (`legendeLigue`, `ZONES_FR`, plages de rangs lues), séparateur entre
+  zones ; info-bulle de source. Sources affichées selon le match (`m.source`) : « ESPN (données Opta) » au lieu de « UEFA » (stats,
+  momentum, compos, méthode de la note). Nouvelles stats Opta rangées dans les rubriques (`STAT_GROUPS`, `PLAYER_STAT_GROUPS` : xG / xGOT /
+  xA en 2 décimales, grosses occasions, ballons touchés, interceptions, duels, buts évités…) ; aucune clé dans « Autres ».
+- **Données** : `DONNEES` = `https://camelbaggy.github.io/donnees-football/` (ou `?donnees=<url|dossier>` pour un essai local),
+  `championnats/<clé>/<saison>/` avec la saison calculée (1er juillet -> 30 juin).
+- **Vérifié** (Playwright 390 x 844 tactile, `node tools/test_accueil_ui.js <url> <dossier> [donnees/]`, données réelles des 21-22/11 :
+  48 matchs) : accueil (8 tuiles, derniers résultats, fiche ouverte depuis l'accueil), Ligue 1 J11 (onglets, journée, classement à zones),
+  fiche de match (xG, momentum, 22 titulaires, fiche joueur), menu des journées, retour à l'accueil, anciens liens `?c=ucl&tour=j5` et
+  `?soiree=` ; 0 erreur console, 0 débordement. Tests existants (`test_couleurs_ui.js`, `test_histoire_ui.js`) inchangés et verts
+  (ils ouvrent désormais `index.html?c=ucl`).

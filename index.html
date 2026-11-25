@@ -19,6 +19,17 @@
       --accent-ucl: #38bdf8;
       --accent-uel: #fb923c;
       --accent-uecl: #34d399;
+      /* Championnats (étape 2 des championnats) */
+      --accent-fl1: #facc15;
+      --accent-pl: #c084fc;
+      --accent-liga: #f87171;
+      --accent-sa: #22d3ee;
+      --accent-bl: #a3e635;
+      --zone-ucl: #38bdf8;
+      --zone-uel: #fb923c;
+      --zone-uecl: #34d399;
+      --zone-barrage: #f59e0b;
+      --zone-relegation: #ef4444;
       --french-accent: #60a5fa;
       --zone-top8: #10b981;
       --zone-playoff: #f59e0b;
@@ -122,10 +133,46 @@
       color: var(--accent-uecl);
       border-bottom-color: var(--accent-uecl);
     }
+    .tab-btn.active { color: var(--tab-accent, var(--accent-ucl)); border-bottom-color: var(--tab-accent, var(--accent-ucl)); }
+    .tabs-bar.n5 { grid-template-columns: repeat(5, 1fr); gap: 2px; }
+    .tabs-bar.n5 .tab-btn { font-size: 0.74rem; padding: 10px 1px; }
+    .tabs-bar[hidden] { display: none; }
+    header.accueil { padding-bottom: 12px; }
+    header.accueil .header-top { margin-bottom: 0; }
+    .home-btn { background: none; border: none; color: inherit; font: inherit; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; padding: 4px 0; min-height: 36px; }
+    .home-btn:focus-visible { outline: 2px solid var(--accent-ucl); outline-offset: 2px; border-radius: 6px; }
+    .home-btn .back { font-size: 1.1rem; color: var(--text-muted); }
+    header.accueil .home-btn .back { display: none; }
+    .espace-t { color: var(--text-muted); font-weight: 600; }
+
+    /* Accueil : derniers résultats + tuiles des compétitions */
+    #accueil h2.acc-h { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); margin: 4px 0 10px; font-weight: 700; }
+    .acc-jour { font-size: 1.05rem; font-weight: 700; margin-bottom: 10px; }
+    .acc-bloc { background: var(--bg-card); border: 1px solid var(--border); border-left: 4px solid var(--c-accent, var(--accent-ucl)); border-radius: 14px; margin-bottom: 12px; overflow: hidden; }
+    .acc-bloc-h { width: 100%; display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 12px 14px; background: none; border: none; color: var(--text-main); font: inherit; text-align: left; cursor: pointer; min-height: 48px; }
+    .acc-bloc-h b { font-size: 0.95rem; }
+    .acc-bloc-h small { color: var(--text-muted); font-size: 0.75rem; display: block; font-weight: 500; }
+    .acc-bloc-h .go { color: var(--c-accent, var(--accent-ucl)); font-size: 0.8rem; font-weight: 700; white-space: nowrap; }
+    .acc-m { width: 100%; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 8px; padding: 9px 14px; border: none; border-top: 1px solid var(--border); background: none; color: var(--text-main); font: inherit; cursor: pointer; min-height: 44px; }
+    .acc-m:hover { background: var(--bg-card-hover); }
+    .acc-m .eq { font-size: 0.85rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: flex; align-items: center; gap: 6px; }
+    .acc-m .eq.d { justify-content: flex-end; text-align: right; }
+    .acc-m .sc { font-weight: 800; font-variant-numeric: tabular-nums; background: var(--bg-elevated); border-radius: 8px; padding: 2px 10px; min-width: 52px; text-align: center; }
+    .acc-m .sc.av { font-weight: 600; color: var(--text-muted); font-size: 0.8rem; }
+    .acc-m .is-fr { color: var(--french-accent); font-weight: 700; }
+    .acc-grille { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 18px; }
+    .acc-tuile { background: var(--bg-card); border: 1px solid var(--border); border-top: 3px solid var(--c-accent, var(--accent-ucl)); border-radius: 12px; padding: 12px; text-align: left; color: var(--text-main); font: inherit; cursor: pointer; min-height: 86px; display: flex; flex-direction: column; gap: 4px; }
+    .acc-tuile:hover { background: var(--bg-card-hover); }
+    .acc-tuile:focus-visible, .acc-bloc-h:focus-visible, .acc-m:focus-visible { outline: 2px solid var(--c-accent, var(--accent-ucl)); outline-offset: -2px; }
+    .acc-tuile b { font-size: 0.92rem; }
+    .acc-tuile span { font-size: 0.75rem; color: var(--text-muted); }
+    .acc-tuile .tt { color: var(--c-accent, var(--accent-ucl)); font-weight: 700; font-size: 0.78rem; }
+    .acc-note { color: var(--text-muted); font-size: 0.8rem; padding: 4px 2px 12px; }
 
     /* Menu des journées / tours (propre à chaque coupe) : bouton en tête du contenu + feuille du bas */
     .tour-bar { display: flex; align-items: stretch; gap: 8px; margin-bottom: -8px; }
     .tour-bar[hidden] { display: none; }
+    #comp-view.ligue .tour-bar { margin-bottom: 14px; }
     .tour-btn {
       flex: 1; min-width: 0; min-height: 52px; display: flex; align-items: center; gap: 10px; padding: 8px 12px 8px 14px; text-align: left;
       background: var(--bg-card); color: var(--text-main); font: inherit; cursor: pointer;
@@ -470,6 +517,11 @@
     tr.zone-top8 .rank-cell::before { background: var(--zone-top8); }
     tr.zone-playoff .rank-cell::before { background: var(--zone-playoff); }
     tr.zone-eliminated .rank-cell::before { background: var(--zone-elim); }
+    tr.zone-ucl .rank-cell::before { background: var(--zone-ucl); }
+    tr.zone-uel .rank-cell::before { background: var(--zone-uel); }
+    tr.zone-uecl .rank-cell::before { background: var(--zone-uecl); }
+    tr.zone-barrage .rank-cell::before { background: var(--zone-barrage); }
+    tr.zone-relegation .rank-cell::before { background: var(--zone-relegation); }
 
     /* Délimitation explicite entre les zones (Places 8 et 24) */
     tr.zone-cutoff td {
@@ -1021,14 +1073,16 @@
 </head>
 <body>
 
-  <header>
+  <header id="app-header">
     <div class="header-top">
       <div class="app-title">
-        <span>⚽ Coupes d'Europe</span>
+        <button type="button" class="home-btn" id="home-btn" onclick="goAccueil()" aria-label="Accueil">
+          <span class="back" aria-hidden="true">‹</span><span>⚽ Football</span><span class="espace-t" id="espace-titre"></span>
+        </button>
       </div>
       <span class="badge-live" id="last-updated-badge">Chargement…</span>
     </div>
-    <nav class="tabs-bar">
+    <nav class="tabs-bar" id="tabs-bar">
       <button class="tab-btn active" data-comp="ucl" onclick="switchCompetition('ucl')">Ligue des Champions</button>
       <button class="tab-btn" data-comp="uel" onclick="switchCompetition('uel')">Ligue Europa</button>
       <button class="tab-btn" data-comp="uecl" onclick="switchCompetition('uecl')">Ligue Conférence</button>
@@ -1036,9 +1090,12 @@
   </header>
 
   <main id="main-zone">
+    <!-- ACCUEIL : derniers résultats en date + une tuile par compétition (coupes et championnats) -->
+    <div id="accueil" hidden></div>
+    <div id="comp-view">
     <div class="tour-bar" id="tour-bar" hidden></div>
     <!-- 1. FOCUS CLUBS FRANÇAIS -->
-    <section>
+    <section id="focus-section">
       <div class="section-header">
         <h2 class="section-title">🇫🇷 Focus Clubs Français</h2>
         <span class="section-sub" id="matchday-indicator"></span>
@@ -1067,6 +1124,7 @@
       </div>
       <div id="standings-container" class="standings-card"></div>
     </section>
+    </div>
   </main>
 
   <!-- 3. TIROIR MODAL : FICHE DE MATCH -->
@@ -1199,7 +1257,23 @@
 
     // ---------- Soirées : soirees/index.json (menu) + soirees/<date>.json ; repli sur data.json sans index ----------
     const COMP_KEYS = ['ucl', 'uel', 'uecl'];
-    const COMP_FULL = { ucl: 'Ligue des Champions', uel: 'Ligue Europa', uecl: 'Ligue Conférence' };
+    const COMP_FULL = { ucl: 'Ligue des Champions', uel: 'Ligue Europa', uecl: 'Ligue Conférence',
+      fl1: 'Ligue 1', pl: 'Premier League', liga: 'Liga', sa: 'Serie A', bl: 'Bundesliga' };
+    // Championnats nationaux : données du dépôt Camelbaggy/donnees-football (GitHub Pages) ; ?donnees=<url ou dossier> pour un essai local
+    const LIGUE_KEYS = ['fl1', 'pl', 'liga', 'sa', 'bl'];
+    const LIGUE_COURT = { fl1: 'Ligue 1', pl: 'Premier L.', liga: 'Liga', sa: 'Serie A', bl: 'Bundesliga' };
+    const ESPACES = { coupes: { titre: "Coupes d'Europe", keys: COMP_KEYS }, championnats: { titre: 'Championnats', keys: LIGUE_KEYS } };
+    const estLigue = (k) => LIGUE_KEYS.includes(k);
+    const espaceDe = (k) => estLigue(k) ? 'championnats' : 'coupes';
+    const DONNEES = (() => {
+      const v = new URLSearchParams(location.search).get('donnees');
+      const b = v || 'https://camelbaggy.github.io/donnees-football/';
+      return b.endsWith('/') ? b : b + '/';
+    })();
+    // Saison en cours (1er juillet -> 30 juin) : « 2026-27 »
+    const SAISON_LIGUES = (() => { const d = new Date(); const y = d.getUTCMonth() >= 6 ? d.getUTCFullYear() : d.getUTCFullYear() - 1; return `${y}-${String(y + 1).slice(2)}`; })();
+    const ligueBase = (k) => `${DONNEES}championnats/${k}/${SAISON_LIGUES}/`;
+    const ligueIndex = {};          // clé -> lignes d'index (date décroissante) ; [] = pas encore de données
     let soireeIndex = null;        // lignes de l'index (plus récente d'abord) ; null = pas d'index : pas de menu
     const soireeCache = new Map();
 
@@ -1214,7 +1288,8 @@
     // Un tour (journée de phase de ligue, barrages, tour préliminaire…) peut s'étaler sur plusieurs soirées : il charge
     // et fusionne les soirees/<date>.json concernées (index : competitions.<clé>.{stage, tour}).
     const GROUPES = [   // ordre du menu : du plus récent au plus ancien
-      { k: 'finale', t: 'Phase finale' }, { k: 'ligue', t: 'Phase de ligue' }, { k: 'barrages', t: 'Barrages' }, { k: 'prelim', t: 'Tours préliminaires' }];
+      { k: 'finale', t: 'Phase finale' }, { k: 'ligue', t: 'Phase de ligue' }, { k: 'barrages', t: 'Barrages' }, { k: 'prelim', t: 'Tours préliminaires' },
+      { k: 'journees', t: 'Journées' }, { k: 'autres', t: 'Matchs sans journée' }];
     let toursByComp = {};          // clé de coupe -> tours (groupe, puis date décroissante)
     const tourChoice = {};         // clé de coupe -> id du tour choisi (conservé quand on change de coupe)
     const tourCache = new Map();   // 'coupe|id' -> { comp (fusion des matchs), meta }
@@ -1277,6 +1352,45 @@
       return l.filter(t => t.jouee).sort((a, b) => b.fin.localeCompare(a.fin))[0] || l[0] || null;
     }
 
+    // Championnat : tours = journées (index.json : `par_journee` {n: matchs} de chaque jour ; un match reporté apparaît sous sa
+    // journée d'origine, à la date où il est joué) ; les matchs sans journée connue forment le tour « Autres matchs ».
+    function buildToursLigue(k) {
+      const map = new Map();
+      (ligueIndex[k] || []).forEach(l => {
+        const pj = l.par_journee || {};
+        const ns = Object.keys(pj).length ? Object.keys(pj) : (l.journees || []).map(String);
+        ns.forEach(n => {
+          let t = map.get(n);
+          if (!t) { t = { comp: k, stage: 'league', tour: 'J' + n, n: Number(n), dates: [], matchs: 0, jouee: false, groupe: 'journees', titre: 'Journée ' + n, id: 'j' + n }; map.set(n, t); }
+          t.dates.push(l.date); t.matchs += Number(pj[n] || 0);
+          if ((l.termines || 0) > 0) t.jouee = true;
+        });
+        if ((l.sans_journee || 0) > 0) {
+          let t = map.get('autres');
+          if (!t) { t = { comp: k, stage: 'league', tour: '', n: 0, dates: [], matchs: 0, jouee: false, groupe: 'autres', titre: 'Autres matchs', id: 'autres' }; map.set('autres', t); }
+          t.dates.push(l.date); t.matchs += l.sans_journee;
+          if ((l.termines || 0) > 0) t.jouee = true;
+        }
+      });
+      const list = [...map.values()];
+      list.forEach(t => { t.dates.sort(); t.fin = t.dates[t.dates.length - 1]; });
+      list.sort((a, b) => (a.groupe === 'autres') - (b.groupe === 'autres') || b.n - a.n);
+      toursByComp[k] = list;
+    }
+    async function loadLigueIndex(k) {
+      if (ligueIndex[k]) return ligueIndex[k];
+      const idx = await fetchJson(ligueBase(k) + 'index.json');
+      ligueIndex[k] = Array.isArray(idx) ? idx.filter(l => l && /^\d{4}-\d{2}-\d{2}$/.test(l.date)).sort((a, b) => b.date.localeCompare(a.date)) : [];
+      buildToursLigue(k);
+      return ligueIndex[k];
+    }
+    async function loadJourLigue(k, date) {
+      const cle = k + '@' + date;
+      let data = soireeCache.get(cle);
+      if (!data) { data = await fetchJson(ligueBase(k) + date + '.json'); if (data) soireeCache.set(cle, data); }
+      return data;
+    }
+
     // Une soirée : cache, puis data.json pour la plus récente (copie de sa soirée), sinon soirees/<date>.json
     async function loadSoiree(date) {
       let data = soireeCache.get(date);
@@ -1298,7 +1412,8 @@
     async function loadTour(t) {
       const key = t.comp + '|' + t.id;
       if (tourCache.has(key)) return tourCache.get(key);
-      const datas = await Promise.all(t.dates.map(loadSoiree));
+      const ligue = estLigue(t.comp);
+      const datas = await Promise.all(t.dates.map(d => ligue ? loadJourLigue(t.comp, d) : loadSoiree(d)));
       if (datas.some(d => !d)) return null;
       const matches = [], focus = [], seen = new Set(), seenF = new Set();
       let base = {}, rec = false;
@@ -1308,6 +1423,7 @@
         if (d.reconstituee) rec = true;
         (c.matches || []).map((m, j) => [m, j]).sort((a, b) => minutesKickoff(a[0]) - minutesKickoff(b[0]) || a[1] - b[1]).forEach(([m]) => {
           if (seen.has(m.match_id)) return;
+          if (ligue && (t.groupe === 'autres' ? m.journee : m.journee !== t.n)) return;   // un jour peut mêler deux journées (match reporté)
           seen.add(m.match_id); m._soiree = t.dates[i]; matches.push(m);
         });
         (c.french_clubs_focus || []).forEach(f => {
@@ -1400,10 +1516,15 @@
     }
     function syncUrl() {
       const u = new URL(location.href), id = tourChoice[currentComp];
+      if (vue === 'accueil') {
+        ['c', 'tour', 'soiree'].forEach(x => u.searchParams.delete(x)); u.hash = '';
+        try { history.replaceState(history.state, '', u); } catch (e) { /* aperçu hors page */ }
+        return;
+      }
       u.searchParams.delete('soiree'); u.searchParams.set('c', currentComp);
       if (id) u.searchParams.set('tour', id); else u.searchParams.delete('tour');
       u.hash = '';
-      try { history.replaceState(null, '', u); } catch (e) { /* aperçu hors page : sans effet */ }
+      try { history.replaceState(history.state, '', u); } catch (e) { /* aperçu hors page : sans effet */ }
     }
 
     // Affiche la coupe `compKey` pour le tour `id` (défaut : le plus récent joué) ; `slide` = animation du glissement entre coupes
@@ -1411,13 +1532,19 @@
       const token = ++tourToken;
       const main = document.getElementById('main-zone');
       currentComp = compKey;
-      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.comp === compKey));
+      afficherVue('comp');
+      if (estLigue(compKey) && !ligueIndex[compKey]) {
+        main.classList.add('loading');
+        await loadLigueIndex(compKey);
+        if (token !== tourToken) return;
+        main.classList.remove('loading');
+      }
       const t = (toursByComp[compKey] || []).find(x => x.id === id) || defaultTour(compKey);
       const err = document.getElementById('soiree-err'); if (err) err.remove();
       if (!t) {   // coupe sans aucune soirée conservée
         tourChoice[compKey] = null; renderTourBar(null); syncUrl();
         main.classList.remove('loading');
-        appData.competitions[compKey] = { name: COMP_FULL[compKey], french_clubs_focus: [], matches: [], standings: [], standings_source: 'absent' };
+        appData.competitions[compKey] = { name: COMP_FULL[compKey], type: estLigue(compKey) ? 'championnat' : undefined, french_clubs_focus: [], matches: [], standings: [], standings_source: 'absent' };
         renderCompetition(compKey);
         return;
       }
@@ -1444,10 +1571,22 @@
       const [idx] = await Promise.all([fetchJson('soirees/index.json'), loadClubIndex()]);
       const lignes = Array.isArray(idx) ? idx.filter(l => l && /^\d{4}-\d{2}-\d{2}$/.test(l.date)).sort((a, b) => b.date.localeCompare(a.date)) : [];
       soireeIndex = lignes.length ? lignes : null;
+      appData = { competitions: {} };
+      if (soireeIndex) buildTours();
+      await route();
+    }
+
+    // Aiguillage : sans paramètre = accueil ; ?c=<coupe|championnat>[&tour=] ; ?soiree= (ancien lien) = la coupe de cette soirée
+    async function route() {
+      const u = urlParams();
+      if (estLigue(u.c)) { await showTour(u.c, u.tour); return; }
+      if (!u.c && !u.soiree) { await afficherAccueil(); return; }
+      await ouvrirCoupes(u);
+    }
+    window.addEventListener('popstate', () => { closeInfo(); route(); });
+
+    async function ouvrirCoupes(u) {
       if (soireeIndex) {
-        appData = { competitions: {} };
-        buildTours();
-        const u = urlParams();
         let comp = 'ucl', id = null;
         const row = u.soiree && soireeIndex.find(l => l.date === u.soiree);
         if (row) {   // ancien lien ?soiree= : ouvre la coupe et le tour de cette soirée
@@ -1466,10 +1605,11 @@
         await showTour(comp, id);
         return;
       }
+      afficherVue('comp');
       // Pas d'index (hébergement ancien, première publication) : data.json seul, sans menu
       const latest = await fetchJson('data.json');
       if (!latest) {
-        document.querySelector('main').innerHTML =
+        document.getElementById('comp-view').innerHTML =
           `<div class="empty-state">Impossible de charger data.json.<br>Ouvre la page via GitHub Pages ou un serveur local (python -m http.server).</div>`;
         return;
       }
@@ -1481,9 +1621,115 @@
       renderCompetition(currentComp);
     }
 
+
+    // ---------- Vues : accueil / compétition (une seule application ; les liens ?c=… et ?soiree= restent valables) ----------
+    let vue = 'comp';
+    function renderTabs(espace) {
+      const bar = document.getElementById('tabs-bar'), keys = ESPACES[espace].keys;
+      bar.classList.toggle('n5', keys.length > 3);
+      bar.innerHTML = keys.map(k => `<button class="tab-btn ${k === currentComp ? 'active' : ''}" data-comp="${k}" style="--tab-accent: var(--accent-${k})" onclick="switchCompetition('${k}')">${esc(keys.length > 3 ? LIGUE_COURT[k] : COMP_FULL[k])}</button>`).join('');
+    }
+    function afficherVue(v) {
+      vue = v;
+      const acc = v === 'accueil';
+      document.getElementById('accueil').hidden = !acc;
+      document.getElementById('comp-view').hidden = acc;
+      document.getElementById('tabs-bar').hidden = acc;
+      document.getElementById('app-header').classList.toggle('accueil', acc);
+      document.getElementById('home-btn').setAttribute('aria-label', acc ? 'Accueil' : 'Retour à l\'accueil');
+      document.getElementById('espace-titre').textContent = acc ? '' : '· ' + ESPACES[espaceDe(currentComp)].titre;
+      if (!acc) renderTabs(espaceDe(currentComp));
+      document.title = acc ? 'Football · Coupes d\'Europe et championnats' : COMP_FULL[currentComp] + ' · Football';
+    }
+    // Entrer dans une compétition depuis l'accueil : nouvelle entrée d'historique (le retour du téléphone revient à l'accueil)
+    function entrer(k, tourId) {
+      closeInfo();
+      const u = new URL(location.href);
+      ['soiree', 'tour'].forEach(x => u.searchParams.delete(x));
+      u.searchParams.set('c', k); u.hash = '';
+      if (tourId) u.searchParams.set('tour', tourId);
+      try { history.pushState({ depuisAccueil: 1 }, '', u); } catch (e) { /* aperçu hors page */ }
+      showTour(k, tourId);
+    }
+    function goAccueil() {
+      closeInfo();
+      if (vue === 'accueil') { window.scrollTo({ top: 0, behavior: 'smooth' }); return; }
+      if (history.state && history.state.depuisAccueil) { history.back(); return; }
+      afficherAccueil();
+    }
+
+    // Dernière date jouée (au moins un match terminé) d'une compétition, et le tour qui la contient
+    function derniereDate(k) {
+      if (estLigue(k)) { const l = (ligueIndex[k] || []).find(x => (x.termines || 0) > 0); return l ? l.date : null; }
+      const l = (soireeIndex || []).find(x => x.competitions && x.competitions[k] && (x.termines || 0) > 0);
+      return l ? l.date : null;
+    }
+    function tourDeDate(k, date) {
+      const ts = (toursByComp[k] || []).filter(t => t.dates.includes(date));
+      return ts.sort((a, b) => b.matchs - a.matchs)[0] || null;
+    }
+    const accLigneMatch = (m, k, date) => {
+      const fini = m.status !== 'À venir' && m.status !== 'Reporté' && m.status !== 'Annulé';
+      const sc = fini ? `<span class="sc">${m.home_team.score} - ${m.away_team.score}</span>` : `<span class="sc av">${esc((m.kickoff || '').slice(-5) || m.status)}</span>`;
+      return `<button type="button" class="acc-m" onclick="ouvrirMatchAccueil('${esc(k)}', '${esc(date)}', '${esc(m.match_id)}')">
+        <span class="eq d ${m.home_team.is_french && !estLigue(k) ? 'is-fr' : ''}">${esc(m.home_team.name)} ${flag(m.home_team)}</span>${sc}
+        <span class="eq ${m.away_team.is_french && !estLigue(k) ? 'is-fr' : ''}">${flag(m.away_team)} ${esc(m.away_team.name)}</span></button>`;
+    };
+    async function donneesDuJour(k, date) {
+      return estLigue(k) ? loadJourLigue(k, date) : loadSoiree(date);
+    }
+    async function ouvrirMatchAccueil(k, date, matchId) {
+      const d = await donneesDuJour(k, date);
+      if (d) openMatchModal(matchId, d, k);
+    }
+
+    async function afficherAccueil() {
+      ++tourToken;
+      afficherVue('accueil');
+      syncUrl();
+      const box = document.getElementById('accueil');
+      box.innerHTML = '<div class="acc-note">Chargement…</div>';
+      await Promise.all(LIGUE_KEYS.map(loadLigueIndex));
+      if (vue !== 'accueil') return;
+      const toutes = [...COMP_KEYS, ...LIGUE_KEYS];
+      const dates = Object.fromEntries(toutes.map(k => [k, derniereDate(k)]));
+      const jour = Object.values(dates).filter(Boolean).sort().pop() || null;
+      let html = '';
+      if (jour) {
+        const ks = toutes.filter(k => dates[k] === jour);
+        const datas = await Promise.all(ks.map(k => donneesDuJour(k, jour)));
+        if (vue !== 'accueil') return;
+        html += `<h2 class="acc-h">Derniers résultats</h2><div class="acc-jour">${esc(jourLong(jour).replace(/^./, c => c.toUpperCase()))}</div>`;
+        ks.forEach((k, i) => {
+          const c = ((datas[i] || {}).competitions || {})[k];
+          if (!c) return;
+          const t = tourDeDate(k, jour);
+          const ms = (c.matches || []).slice().sort((a, b) => minutesKickoff(a) - minutesKickoff(b));
+          html += `<div class="acc-bloc" style="--c-accent: var(--accent-${k})">
+            <button type="button" class="acc-bloc-h" onclick="entrer('${k}', ${t ? `'${esc(t.id)}'` : 'null'})">
+              <span><b>${esc(COMP_FULL[k])}</b><small>${esc(t ? t.titre : '')}${t ? ' · ' : ''}${ms.length} match${ms.length > 1 ? 's' : ''}</small></span>
+              <span class="go">Voir tout ›</span></button>
+            ${ms.map(m => accLigneMatch(m, k, jour)).join('')}</div>`;
+        });
+      } else {
+        html += '<div class="acc-note">Aucun résultat disponible pour le moment.</div>';
+      }
+      const tuile = (k) => {
+        const t = defaultTour(k);
+        const desc = t ? `<span class="tt">${esc(t.titre)}</span><span>${esc(tourSousTitre(t))}</span>`
+          : `<span>${estLigue(k) ? 'Données bientôt disponibles' : 'Aucune soirée conservée'}</span>`;
+        return `<button type="button" class="acc-tuile" style="--c-accent: var(--accent-${k})" onclick="entrer('${k}', ${t ? `'${esc(t.id)}'` : 'null'})"><b>${esc(COMP_FULL[k])}</b>${desc}</button>`;
+      };
+      html += `<h2 class="acc-h">Coupes d'Europe</h2><div class="acc-grille">${COMP_KEYS.map(tuile).join('')}</div>`;
+      html += `<h2 class="acc-h">Championnats</h2><div class="acc-grille">${LIGUE_KEYS.map(tuile).join('')}</div>`;
+      box.innerHTML = html;
+      const maj = [soireeIndex && soireeIndex[0] && soireeIndex[0].maj, ...LIGUE_KEYS.map(k => (ligueIndex[k][0] || {}).maj)].filter(Boolean).sort().pop();
+      if (maj) updateBadge({ last_updated: maj });
+    }
+
     function switchCompetition(compKey, slide) {
       closeInfo();
-      if (!soireeIndex) {   // sans index : data.json seul
+      if (!soireeIndex && !estLigue(compKey)) {   // sans index : data.json seul
         currentComp = compKey;
         document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.comp === compKey));
         renderCompetition(compKey);
@@ -1507,6 +1753,10 @@
         { name: '', french_clubs_focus: [], matches: [], standings: [] };
 
       document.getElementById('matchday-indicator').textContent = dateEnToutesLettres(comp.matchday_label || '');
+      const ligue = estLigue(compKey);
+      document.getElementById('focus-section').hidden = ligue;   // championnats : pas de focus clubs français
+      document.getElementById('comp-view').classList.toggle('ligue', ligue);
+      const estFr = (t) => !ligue && t.is_french;   // en championnat, tous les clubs sont du même pays : pas de surlignage
 
       // 1. Focus clubs français
       const frContainer = document.getElementById('french-focus-container');
@@ -1559,11 +1809,11 @@
           <div class="match-tile" onclick="openMatchModal('${esc(m.match_id)}')">
             <div class="tile-teams">
               <div class="tile-team-row">
-                <span class="tile-team-name ${m.home_team.is_french ? 'is-fr' : ''}">${flag(m.home_team)} ${esc(m.home_team.name)}</span>
+                <span class="tile-team-name ${estFr(m.home_team) ? 'is-fr' : ''}">${flag(m.home_team)} ${esc(m.home_team.name)}</span>
                 <span class="tile-team-score">${m.status === 'À venir' ? '' : m.home_team.score}</span>
               </div>
               <div class="tile-team-row">
-                <span class="tile-team-name ${m.away_team.is_french ? 'is-fr' : ''}">${flag(m.away_team)} ${esc(m.away_team.name)}</span>
+                <span class="tile-team-name ${estFr(m.away_team) ? 'is-fr' : ''}">${flag(m.away_team)} ${esc(m.away_team.name)}</span>
                 <span class="tile-team-score">${m.status === 'À venir' ? '' : m.away_team.score}</span>
               </div>
             </div>
@@ -1583,19 +1833,26 @@
       const source = comp.standings_source || 'officiel';
       const hasStandings = comp.standings && comp.standings.length > 0;
       stSection.hidden = source === 'absent' || (!hasStandings && source === 'calcule');
-      document.getElementById('standings-legend').hidden = source === 'calcule';
-      stTitle.innerHTML = source === 'calcule'
+      const legend = document.getElementById('standings-legend');
+      legend.hidden = source === 'calcule';
+      if (!LEGENDE_COUPES) LEGENDE_COUPES = legend.innerHTML;
+      legend.innerHTML = ligue ? legendeLigue(comp.standings || []) : LEGENDE_COUPES;
+      if (ligue && !legend.innerHTML) legend.hidden = true;
+      stTitle.innerHTML = ligue
+        ? `Classement ${infoBtn('<p>Classement officiel (ESPN) relevé à l\'issue de cette journée ; il n\'est conservé que s\'il a été relevé avant le match suivant du championnat. Zones : qualifications européennes et relégation telles que publiées.</p>', 'Source du classement')}`
+        : source === 'calcule'
         ? `Classement Phase de Ligue · calculé ${infoBtn(standingsInfoHtml(comp.standings_at), 'Méthode du classement calculé')}`
         : 'Classement Phase de Ligue (36 équipes)';
       if (!hasStandings) {
         stContainer.innerHTML = `<div class="empty-state">Classement indisponible.</div>`;
       } else {
-        const rowsHtml = comp.standings.map(r => {
-          const isCutoff = r.zone && (r.rank === 8 || r.rank === 24) ? 'zone-cutoff' : '';
+        const rowsHtml = comp.standings.map((r, i, all) => {
+          const isCutoff = ligue ? (i < all.length - 1 && (r.zone || '') !== (all[i + 1].zone || '') ? 'zone-cutoff' : '')
+            : r.zone && (r.rank === 8 || r.rank === 24) ? 'zone-cutoff' : '';
           return `
-            <tr class="${r.zone ? 'zone-' + esc(r.zone) : ''} ${r.is_french ? 'is-fr-row' : ''} ${isCutoff} ${hasClub(r.team_id) ? 'clickable' : ''}"${hasClub(r.team_id) ? ` onclick="openClub('${esc(r.team_id)}')"` : ''}>
+            <tr class="${r.zone ? 'zone-' + esc(r.zone) : ''} ${estFr(r) ? 'is-fr-row' : ''} ${isCutoff} ${hasClub(r.team_id) ? 'clickable' : ''}"${hasClub(r.team_id) ? ` onclick="openClub('${esc(r.team_id)}')"` : ''}>
               <td class="rank-cell">${r.rank}${r.ex_aequo ? '=' : ''}</td>
-              <td class="col-team">${flag(r)} ${clubLink(r.team_id, esc(r.team))}${r.is_french ? '<span class="fr-badge-inline">FRA</span>' : ''}</td>
+              <td class="col-team">${flag(r)} ${clubLink(r.team_id, esc(r.team))}${estFr(r) ? '<span class="fr-badge-inline">FRA</span>' : ''}</td>
               <td>${r.played}</td>
               <td>${esc(r.gd)}</td>
               <td style="font-weight:800">${r.points}</td>
@@ -1607,6 +1864,19 @@
             <tbody>${rowsHtml}</tbody>
           </table>`;
       }
+    }
+
+    // Légende des zones d'un championnat (codes ESPN ; libellé traduit, plage de rangs lue dans le classement)
+    let LEGENDE_COUPES = null;
+    const ZONES_FR = { ucl: 'Ligue des champions', uel: 'Ligue Europa', uecl: 'Ligue Conférence', barrage: 'Barrage de relégation', relegation: 'Relégation', promotion: 'Promotion' };
+    function legendeLigue(rows) {
+      const plages = [];
+      rows.forEach(r => {
+        if (!r.zone) return;
+        const p = plages.find(x => x.z === r.zone);
+        if (p) { p.a = Math.min(p.a, r.rank); p.b = Math.max(p.b, r.rank); } else plages.push({ z: r.zone, a: r.rank, b: r.rank });
+      });
+      return plages.map(p => `<span class="legend-item"><i class="legend-dot" style="background:var(--zone-${esc(p.z)}, var(--text-muted))"></i>${p.a === p.b ? p.a : p.a + '-' + p.b} : ${esc(ZONES_FR[p.z] || p.z)}</span>`).join('');
     }
 
     // Texte de l'info-bulle d'un classement recalculé : ce qui est appliqué, et ce qui ne l'est pas (voir classement.py)
@@ -1712,7 +1982,7 @@
             <div><b style="color:var(--home-ink)">Entrés (${esc(m.home_team.short)})</b> : ${subs(L.home_subs || [])}</div>
             <div><b style="color:var(--away-ink)">Entrés (${esc(m.away_team.short)})</b> : ${subs(L.away_subs || [])}</div>
             ${(L.home_coach || L.away_coach) ? `<div>Entraîneurs : ${esc(L.home_coach || '—')} / ${esc(L.away_coach || '—')}</div>` : ''}
-            <div class="info-row">${infoBtn(`<p>© capitaine · ⭐ homme du match UEFA · ↓ minute de sortie${hasPlayers ? ' · touchez un joueur pour sa fiche' : ''}</p>${hasPlayers ? `<p>Notes sur 10 calculées à partir des statistiques officielles UEFA (méthode : voir la fiche d'un joueur).</p>` : ''}`, 'Légende et méthode des compositions')}</div>
+            <div class="info-row">${infoBtn(`<p>© capitaine · ⭐ homme du match UEFA · ↓ minute de sortie${hasPlayers ? ' · touchez un joueur pour sa fiche' : ''}</p>${hasPlayers ? `<p>Notes sur 10 calculées à partir des statistiques ${m.source ? 'Opta (ESPN)' : 'officielles UEFA'} (méthode : voir la fiche d'un joueur).</p>` : ''}`, 'Légende et méthode des compositions')}</div>
           </div>`;
         layoutPitch(document.getElementById('pitch'), m, hasPlayers);
       }
@@ -1997,7 +2267,7 @@
                 <text x="${x.toFixed(1)}" y="${y}" font-size="9" text-anchor="middle" dominant-baseline="middle">⚽</text>`;
       }).join('');
       return `
-        <h4 class="st-sec">Momentum ${infoBtn(`<p>⚽ but · MT mi-temps · au-dessus de la ligne : pression de ${esc(m.home_team.short)}, en dessous : ${esc(m.away_team.short)}.</p><p>Indice de pression minute par minute (lissé sur environ 5 min), calculé à partir des actions officielles UEFA : buts, tirs, attaques dangereuses, corners, arrêts adverses, hors-jeu et coups francs obtenus.</p>`, 'Comment lire le momentum')}</h4>
+        <h4 class="st-sec">Momentum ${infoBtn(`<p>⚽ but · MT mi-temps · au-dessus de la ligne : pression de ${esc(m.home_team.short)}, en dessous : ${esc(m.away_team.short)}.</p><p>Indice de pression minute par minute (lissé sur environ 5 min), calculé à partir des actions ${m.source ? 'Opta (ESPN) : buts, tirs, passes et centres vers la surface adverse' : 'officielles UEFA : buts, tirs, attaques dangereuses'}, corners, arrêts adverses, hors-jeu et coups francs obtenus.</p>`, 'Comment lire le momentum')}</h4>
         <div class="momentum-box">
           <div class="momentum-legend">
             <span style="color:var(--home-ink)">▲ ${esc(m.home_team.short)}</span>
@@ -2044,10 +2314,10 @@
 
     // ---------- Stats : rubriques, possession en grand, lignes à barre divergente ----------
     const STAT_GROUPS = [
-      ['Tirs', ['xgot', 'xg_sans_penalty', 'attempts', 'attempts_on_target', 'attempts_off_target', 'attempts_blocked', 'shot_in_penalty_area']],
-      ['Construction / passes', ['xa', 'passes_completed', 'passes_accuracy', 'key_passes', 'delivery_into_penalty_area', 'cross_attempted']],
-      ['Attaque', ['attacks', 'counterattack', 'corners', 'offsides']],
-      ['Défense / gardien', ['saves', 'recovered_ball']],
+      ['Tirs', ['xgot', 'xg_sans_penalty', 'attempts', 'attempts_on_target', 'attempts_off_target', 'attempts_blocked', 'shot_in_penalty_area', 'big_chances', 'woodwork']],
+      ['Construction / passes', ['xa', 'passes_attempted', 'passes_completed', 'passes_accuracy', 'key_passes', 'delivery_into_penalty_area', 'box_entries', 'final_third_entries', 'touches_opp_box', 'cross_attempted', 'long_balls']],
+      ['Attaque', ['attacks', 'counterattack', 'dribbles', 'corners', 'offsides']],
+      ['Défense / gardien', ['saves', 'recovered_ball', 'tackles', 'tackles_won', 'interceptions', 'clearances', 'duels_won', 'aerials_won', 'ppda']],
       ['Discipline', ['fouls_committed', 'yellow_cards', 'red_cards']],
       ['Physique', ['distance_covered', 'top_speed', 'sprints']],
     ];
@@ -2117,7 +2387,8 @@
       }).join('');
       const rest = items.filter(s => !used.has(s.key));
       const restHtml = rest.length ? `<h4 class="st-sec">Autres</h4>${rest.map(row).join('')}` : '';
-      const note = period !== 'all' ? 'Par mi-temps : décompte des actions officielles UEFA de la période (pas de buts attendus : ESPN n\'en donne que pour le match complet).' : 'Source : statistiques officielles UEFA' + (m.xg_source ? ' ; buts attendus (xG, xGOT, xA) : ' + m.xg_source + '.' : '.');
+      const srcNom = m.source ? 'ESPN (données Opta)' : 'statistiques officielles UEFA';
+      const note = period !== 'all' ? `Par mi-temps : décompte des actions ${m.source ? 'Opta' : 'officielles UEFA'} de la période (pas de buts attendus : ESPN n'en donne que pour le match complet).` : 'Source : ' + srcNom + (m.xg_source && !m.source ? ' ; buts attendus (xG, xGOT, xA) : ' + m.xg_source + '.' : '.');
       return `<h4 class="st-sec">Statistiques ${infoBtn(`<p>${esc(note)}</p>`, 'Source des statistiques')}</h4>${pills}
         <div class="st-wrap">
           <div class="st-head">
@@ -2230,7 +2501,7 @@
     attachTabSwipe({   // accueil : LDC / LE / LC (la zone s'arrête là où commence une feuille ouverte : elles sont hors de <main>)
       zone: () => document.getElementById('main-zone'),
       stop: () => document.body,
-      tabs: () => COMP_KEYS, current: () => currentComp, go: switchCompetition,
+      tabs: () => vue === 'comp' ? ESPACES[espaceDe(currentComp)].keys : [], current: () => currentComp, go: switchCompetition,
     });
 
     // ---------- Empilement des feuilles : la dernière ouverte est au-dessus (fiche de match, de club, de joueur) ----------
@@ -2702,19 +2973,22 @@
     const PLAYER_STAT_GROUPS = [
       ['Attaque', [
         { k: 'goals', l: 'Buts' }, { k: 'assists', l: 'Passes décisives' }, { k: 'attempts', l: 'Tirs' },
-        { k: 'attempts_on_target', l: 'Tirs cadrés' }, { k: 'key_passes', l: 'Passes clés' },
+        { k: 'attempts_on_target', l: 'Tirs cadrés' }, { k: 'xg', l: 'Buts attendus (xG)', dec: 2 }, { k: 'xgot', l: 'xGOT', dec: 2 }, { k: 'xa', l: 'Passes déc. attendues (xA)', dec: 2 },
+        { k: 'big_chances_created', l: 'Grosses occasions créées' }, { k: 'big_chances_missed', l: 'Grosses occasions manquées' }, { k: 'key_passes', l: 'Passes clés' },
         { k: 'dribbling_successful', l: 'Dribbles réussis', of: 'dribbling' }, { k: 'cross_completed', l: 'Centres réussis', of: 'cross_attempted' },
         { k: 'offsides', l: 'Hors-jeu' }]],
       ['Passes', [
         { k: 'passes_completed', l: 'Passes réussies', of: 'passes_attempted' }, { k: 'passes_accuracy', l: 'Précision', unit: '%' },
-        { k: 'passes_completed_forward', l: "Passes vers l'avant" }, { k: 'delivery_into_penalty_area', l: 'Passes dans la surface' }]],
+        { k: 'passes_completed_forward', l: "Passes vers l'avant" }, { k: 'delivery_into_penalty_area', l: 'Passes dans la surface' },
+        { k: 'touches', l: 'Ballons touchés' }, { k: 'progressive_carries', l: 'Conduites progressives' }]],
       ['Défense', [
         { k: 'recovered_ball', l: 'Ballons récupérés' }, { k: 'tackles_won', l: 'Duels gagnés', of: 'tackles' },
         { k: 'clearance_completed', l: 'Dégagements', of: 'clearance_attempted' }, { k: 'saves_and_blocks', l: 'Arrêts et contres' },
-        { k: 'lost_balls', l: 'Pertes de balle' }]],
+        { k: 'interceptions', l: 'Interceptions' }, { k: 'duels_won', l: 'Duels gagnés (tous)', of: 'duels' },
+        { k: 'aerials_won', l: 'Duels aériens gagnés', of: 'aerials' }, { k: 'lost_balls', l: 'Pertes de balle' }]],
       ['Gardien', [
         { k: 'saves', l: 'Arrêts', always: true }, { k: 'goals_conceded', l: 'Buts encaissés', always: true },
-        { k: 'shots_on_target_suffered', l: 'Tirs cadrés subis' }, { k: 'saves_over_shot_on_target_ratio', l: 'Arrêts / tirs cadrés', unit: '%' }]],
+        { k: 'shots_on_target_suffered', l: 'Tirs cadrés subis' }, { k: 'goals_prevented', l: 'Buts évités (Opta)' }, { k: 'saves_over_shot_on_target_ratio', l: 'Arrêts / tirs cadrés', unit: '%' }]],
       ['Physique', [
         { k: 'distance_covered', l: 'Distance', unit: ' km' }, { k: 'top_speed', l: 'Vitesse max.', unit: ' km/h' }, { k: 'sprints', l: 'Sprints' }]],
       ['Discipline', [
@@ -2733,7 +3007,7 @@
         .filter(([title]) => title !== 'Gardien' || p.pos === 'GOALKEEPER')
         .map(([title, items]) => {
           const cells = items.filter(it => st[it.k] || (it.always && p.pos === 'GOALKEEPER')).map(it => {
-            let val = fmt(st[it.k] || 0) + (it.unit || '');
+            let val = (it.dec ? Number(st[it.k] || 0).toLocaleString('fr-FR', { minimumFractionDigits: it.dec, maximumFractionDigits: it.dec }) : fmt(st[it.k] || 0)) + (it.unit || '');
             if (it.of && st[it.of]) val = `${fmt(st[it.k] || 0)} / ${fmt(st[it.of])}`;
             return `<div class="ps-stat"><span>${esc(it.l)}</span><b>${esc(val)}</b></div>`;
           }).join('');
@@ -2746,7 +3020,7 @@
         p.subbed_out ? `Remplacé à la ${p.subbed_out}` : '', `${p.minutes || 0} min jouées`,
         p.captain ? 'Capitaine' : '', p.potm ? '⭐ Homme du match UEFA' : '',
       ].filter(Boolean).map(t => `<span class="ps-tag">${esc(t)}</span>`).join('');
-      const noteInfo = infoBtn(`<p>Note sur 10 (échelle de 3 à 10, moyenne autour de 6,9) calculée à partir des statistiques officielles UEFA : pondérations issues de l'étude de Ball, Huynh & Varley (2025) sur les notes FotMob, Sofascore et WhoScored, bonus pour les buts et passes décisives, composante « résultat pendant le temps de jeu » (Wolf et al., 2020).</p><p>Les valeurs + / − de « Ce qui fait la note » sont la contribution de chaque facteur à la note.</p>`, 'Méthode de la note');
+      const noteInfo = infoBtn(`<p>Note sur 10 (échelle de 3 à 10, moyenne autour de 6,9) calculée à partir des statistiques ${m.source ? 'Opta (ESPN), standardisées par championnat et par jour' : 'officielles UEFA'} : pondérations issues de l'étude de Ball, Huynh & Varley (2025) sur les notes FotMob, Sofascore et WhoScored, bonus pour les buts et passes décisives, composante « résultat pendant le temps de jeu » (Wolf et al., 2020).</p><p>Les valeurs + / − de « Ce qui fait la note » sont la contribution de chaque facteur à la note.</p>`, 'Méthode de la note');
       const photo = p.photo ? `<img class="ps-photo" src="${esc(p.photo)}" alt="" onerror="this.style.visibility='hidden'">` : `<div class="ps-photo"></div>`;
       document.getElementById('player-body').innerHTML = `
         <div class="modal-close-row">
