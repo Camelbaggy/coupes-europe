@@ -11,7 +11,7 @@ Sources :
   début>`), pénalités de points comprises (mesuré : Serie A 2005-06 = Inter 76 pts) ;
 - saisons antérieures : tableau du classement final de la page Wikipédia FR de la saison (« Championnat de France de football
   1933-1934 »…), modèle `{{Foot classement|rang|club|pts|j|g|n|p|bp|bc…}}` ou tableau `wikitable` à en-têtes ; repli sur la
-  page LOCALE (IT, ES, DE, EN) quand la page FR n'a pas de tableau lisible.
+  page LOCALE (EN, ES, IT, DE) quand la page FR n'a pas de tableau lisible.
 Début de la série (championnat à poule unique) : Ligue 1 1933-34 (1932-33 = deux poules + finale), première division anglaise
 1888-89, Liga 1929, Serie A 1929-30, Bundesliga 1963-64. Saisons sans championnat officiel (guerres) : `SAISONS_ABSENTES`.
 
