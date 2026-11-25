@@ -46,7 +46,7 @@ python classement.py --test && python historique.py --test && python reconstitut
 python run_ligues.py --date 2026-11-22 --donnees /tmp/donnees [--ligues fl1,pl] [--sans-journees]   # championnats : un jour -> dossier de données (ESPN + Wikipédia)
 python ligues.py --date 2026-11-22 --ligues fl1 --max-matchs 1 --sortie /tmp/l1.json   # collecteur ESPN seul (sans écriture dans le dépôt de données)
 python journees_wiki.py --test && python tools/inspect_ligues.py /tmp/donnees    # journées Wikipédia (sans réseau) ; résumé des données de championnats
-python notification_jour.py --test && python veille_ligues.py --test && python classement_ligue.py --test   # notification commune du jour ; veille de la collecte quotidienne des championnats
+python notification_jour.py --test && python veille_ligues.py --test && python classement_ligue.py --test && python fiches_ligues.py --test   # notification commune du jour ; veille de la collecte quotidienne des championnats
 python notification_jour.py --veille                    # jours prêts à notifier d'après les fichiers PUBLIÉS (lecture seule)
 python run_ligues.py --date J --donnees DIR --etat      # + etat_championnats.json (collecte quotidienne) ; --alerte J --cause X : alerte d'échec
 ```
@@ -342,7 +342,7 @@ Chaque match : `home_team`/`away_team` (`flag`, `is_french`, `formation`…), `e
 `players` (dictionnaire par id : stats UEFA brutes sélectionnées, `rating`, `factors`, minutes, entrée/sortie,
 nationalité, photo). La compo et le déroulé référencent les joueurs par `id` ; la fiche joueur lit `players[id]`.
 
-## Championnats nationaux (big 5, en cours : étapes 1-4 livrées)
+## Championnats nationaux (big 5, en cours : étapes 1-5 livrées)
 
 Étude, mesures, décisions du propriétaire et plan par étapes : `docs/etude_championnats.md` (§ 10-11). Données dans le dépôt SÉPARÉ
 **Camelbaggy/donnees-football** (`championnats/<ligue>/<saison>/<AAAA-MM-JJ>.json` + `index.json` + `journees.json`, servi par GitHub Pages,
@@ -370,7 +370,10 @@ nationalité, photo). La compo et le déroulé référencent les joueurs par `id
   `--test`, `--valider`) ; `run_ligues.py --reconstituer --budget-min 40` (jours passés sans fichier, `reconstituee: true`, classement `calcule`,
   jamais d'état ni de notification) lancé par `reconstitution_championnats.yml` (donnees-football, auto-relance). Liga : journées manquantes lues sur
   Wikipédia ES (`journees_wiki.SECOURS`, `calendrier_es`), adoptées seulement si elles concordent avec la page FR.
-- À venir (étude § 8) : fiches club / joueur uniques, historique des classements (Wikipédia).
+- **Fiches de club et de joueur communes** (étape 5, étude § 15) : `fiches_ligues.py` (donnees-football `championnats/clubs/`, schéma des fiches
+  UEFA ; correspondance ESPN <-> UEFA prouvée par un match de coupe) ; page : index commun, `fusionnerFiches` (une fiche pour un club des deux
+  mondes ; joueurs rapprochés par date de naissance + nom), `ficheJoueurSaison`. Tests : `python fiches_ligues.py --test`.
+- À venir : historique des classements (Wikipédia, en cours).
 
 ## API UEFA : pièges vérifiés sur les données réelles
 
