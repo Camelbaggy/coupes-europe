@@ -41,8 +41,10 @@ DEPOT_DONNEES = "https://camelbaggy.github.io/donnees-football/"
 RAW_DONNEES = "https://raw.githubusercontent.com/Camelbaggy/donnees-football/main/"
 RAW_COUPES = "https://raw.githubusercontent.com/Camelbaggy/coupes-europe/main/"
 COUPES = ["ucl", "uel", "uecl"]
-LIGUES = ["fl1", "pl", "liga", "sa", "bl"]
-COURT = {"ucl": "LDC", "uel": "Ligue Europa", "uecl": "Ligue Conférence", "fl1": "Ligue 1", "pl": "Premier League",
+# Championnats notifiés (= ligues.PRINCIPAUX, ordre du message ; module non importé : la veille du battement ne lit que ce
+# fichier) : big 5 + Ligue 2 (décision du 26/11/2026). Un championnat ajouté ensuite est secondaire : jamais dans le message.
+LIGUES = ["fl1", "fl2", "pl", "liga", "sa", "bl"]
+COURT = {"ucl": "LDC", "uel": "Ligue Europa", "uecl": "Ligue Conférence", "fl1": "Ligue 1", "fl2": "Ligue 2", "pl": "Premier League",
          "liga": "Liga", "sa": "Serie A", "bl": "Bundesliga"}
 
 
@@ -278,6 +280,10 @@ def _test() -> None:
                                       "pl": {"statut": "complet", "matchs": 7, "termines": 7}}}})
     assert a == "notifier" and c == ["fl1", "pl"], (a, c)
     assert titre_message(["fl1", "pl", "bl"]) == "Nouveaux résultats disponibles en Ligue 1, Premier League et Bundesliga"
+    assert titre_message(["fl2", "ucl", "fl1"]) == "Nouveaux résultats disponibles en LDC, Ligue 1 et Ligue 2"
+    assert titre_message(["fl1", "xx"]) == "Nouveaux résultats disponibles en Ligue 1"      # secondaire : jamais nommé
+    import ligues as _lg
+    assert sorted(LIGUES) == sorted(_lg.PRINCIPAUX), "notification_jour.LIGUES doit égaler ligues.PRINCIPAUX"
     # aucun match nulle part : rien ; déjà notifié : rien
     assert decider(S, dt.datetime(2026, 11, 21, 23, 0, tzinfo=dt.timezone.utc), {}, [], {S: {"ligues": {}}})[0] == "rien"
     assert decider(J, soir, coupe_ok, idx, ch_vide, None, {J: {"notifie": True}})[0] == "rien"

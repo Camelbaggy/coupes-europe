@@ -28,7 +28,7 @@ jobs:
           python-version: '3.11'
       - name: Tests locaux
         run: python journees_wiki.py --test && python -m py_compile ligues.py run_ligues.py journees_wiki.py
-      - name: Collecte réelle d'un jour (5 championnats)
+      - name: Collecte réelle d'un jour (tous les championnats)
         env:
           PYTHONUNBUFFERED: "1"
           JOUR: ${{ inputs.date || '2026-11-22' }}
@@ -37,6 +37,12 @@ jobs:
           python run_ligues.py --date "$JOUR" --donnees /tmp/donnees --sans-journees   # 2e passage : aucune recollecte
           python tools/inspect_ligues.py /tmp/donnees
           du -sh /tmp/donnees/championnats/*
+      - name: Historique des classements de la Ligue 2 (deuxième division)
+        env:
+          PYTHONUNBUFFERED: "1"
+        run: |
+          python historique_classements.py --donnees /tmp/donnees --ligues fl2 --budget-min 10
+          python -c "import json; d=json.load(open('/tmp/donnees/championnats/historique/fl2.json')); s=d['saisons']; print({k: (v['statut'], v['source'], len(v['rows'])) for k, v in sorted(s.items())})"
       - uses: actions/upload-artifact@v4
         if: always()
         with:

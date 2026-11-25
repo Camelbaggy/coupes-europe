@@ -25,11 +25,14 @@
       --accent-liga: #f87171;
       --accent-sa: #22d3ee;
       --accent-bl: #a3e635;
+      --accent-fl2: #fb7185;
       --zone-ucl: #38bdf8;
       --zone-uel: #fb923c;
       --zone-uecl: #34d399;
       --zone-barrage: #f59e0b;
       --zone-relegation: #ef4444;
+      --zone-promotion: #10b981;
+      --zone-barrage_promo: #a78bfa;
       --french-accent: #60a5fa;
       --zone-top8: #10b981;
       --zone-playoff: #f59e0b;
@@ -137,6 +140,8 @@
     .tab-btn.active { color: var(--tab-accent, var(--accent-ucl)); border-bottom-color: var(--tab-accent, var(--accent-ucl)); }
     .tabs-bar.n5 { grid-template-columns: repeat(5, 1fr); gap: 2px; }
     .tabs-bar.n5 .tab-btn { font-size: 0.74rem; padding: 10px 1px; }
+    .tabs-bar.n6 { grid-template-columns: repeat(6, 1fr); gap: 1px; }
+    .tabs-bar.n6 .tab-btn { font-size: 0.7rem; padding: 10px 0; letter-spacing: -0.01em; }
     .tabs-bar[hidden] { display: none; }
     header.accueil { padding-bottom: 12px; }
     header.accueil .header-top { margin-bottom: 0; }
@@ -528,6 +533,8 @@
     tr.zone-uecl .rank-cell::before { background: var(--zone-uecl); }
     tr.zone-barrage .rank-cell::before { background: var(--zone-barrage); }
     tr.zone-relegation .rank-cell::before { background: var(--zone-relegation); }
+    tr.zone-promotion .rank-cell::before { background: var(--zone-promotion); }
+    tr.zone-barrage_promo .rank-cell::before { background: var(--zone-barrage_promo); }
 
     /* Délimitation explicite entre les zones (Places 8 et 24) */
     tr.zone-cutoff td {
@@ -1302,10 +1309,10 @@
     // ---------- Soirées : soirees/index.json (menu) + soirees/<date>.json ; repli sur data.json sans index ----------
     const COMP_KEYS = ['ucl', 'uel', 'uecl'];
     const COMP_FULL = { ucl: 'Ligue des Champions', uel: 'Ligue Europa', uecl: 'Ligue Conférence',
-      fl1: 'Ligue 1', pl: 'Premier League', liga: 'Liga', sa: 'Serie A', bl: 'Bundesliga' };
+      fl1: 'Ligue 1', fl2: 'Ligue 2', pl: 'Premier League', liga: 'Liga', sa: 'Serie A', bl: 'Bundesliga' };
     // Championnats nationaux : données du dépôt Camelbaggy/donnees-football (GitHub Pages) ; ?donnees=<url ou dossier> pour un essai local
-    const LIGUE_KEYS = ['fl1', 'pl', 'liga', 'sa', 'bl'];
-    const LIGUE_COURT = { fl1: 'Ligue 1', pl: 'Premier L.', liga: 'Liga', sa: 'Serie A', bl: 'Bundesliga' };
+    const LIGUE_KEYS = ['fl1', 'fl2', 'pl', 'liga', 'sa', 'bl'];
+    const LIGUE_COURT = { fl1: 'Ligue 1', fl2: 'Ligue 2', pl: 'Premier L.', liga: 'Liga', sa: 'Serie A', bl: 'Bundesliga' };
     const ESPACES = { coupes: { titre: "Coupes d'Europe", keys: COMP_KEYS }, championnats: { titre: 'Championnats', keys: LIGUE_KEYS } };
     const estLigue = (k) => LIGUE_KEYS.includes(k);
     const espaceDe = (k) => estLigue(k) ? 'championnats' : 'coupes';
@@ -1672,7 +1679,8 @@
     let vue = 'comp';
     function renderTabs(espace) {
       const bar = document.getElementById('tabs-bar'), keys = ESPACES[espace].keys;
-      bar.classList.toggle('n5', keys.length > 3);
+      bar.classList.toggle('n5', keys.length === 5 || keys.length === 4);
+      bar.classList.toggle('n6', keys.length >= 6);
       bar.innerHTML = keys.map(k => `<button class="tab-btn ${k === currentComp ? 'active' : ''}" data-comp="${k}" style="--tab-accent: var(--accent-${k})" onclick="switchCompetition('${k}')">${esc(keys.length > 3 ? LIGUE_COURT[k] : COMP_FULL[k])}</button>`).join('');
     }
     function afficherVue(v) {
@@ -1976,7 +1984,7 @@
 
     // Classement d'un championnat recalculé depuis les scores (classement_ligue.py) : critères appliqués selon le championnat
     const CRITERES_LIGUE = {
-      pl: 'points, différence de buts, buts marqués', bl: 'points, différence de buts, buts marqués', fl1: 'points, différence de buts, buts marqués',
+      fl2: 'points, différence de buts, buts marqués', pl: 'points, différence de buts, buts marqués', bl: 'points, différence de buts, buts marqués', fl1: 'points, différence de buts, buts marqués',
       liga: 'points, confrontations directes (points puis différence de buts, seulement si l\'aller et le retour ont été joués), différence de buts, buts marqués',
       sa: 'points, confrontations directes (points puis différence de buts, seulement si l\'aller et le retour ont été joués), différence de buts, buts marqués',
     };
@@ -1989,7 +1997,7 @@
 
     // Légende des zones d'un championnat (codes ESPN ; libellé traduit, plage de rangs lue dans le classement)
     let LEGENDE_COUPES = null;
-    const ZONES_FR = { ucl: 'Ligue des champions', uel: 'Ligue Europa', uecl: 'Ligue Conférence', barrage: 'Barrage de relégation', relegation: 'Relégation', promotion: 'Promotion' };
+    const ZONES_FR = { ucl: 'Ligue des champions', uel: 'Ligue Europa', uecl: 'Ligue Conférence', barrage: 'Barrage de relégation', relegation: 'Relégation', promotion: 'Montée directe', barrage_promo: "Barrages d'accession" };
     function legendeLigue(rows) {
       const plages = [];
       rows.forEach(r => {
@@ -2359,6 +2367,7 @@
     function momentumHtml(m) {
       const pts = m.momentum || [];
       if (pts.length === 0) {
+        if (m.flux === 'reduit') return `<h4 class="st-sec">Momentum</h4><div class="empty-state">ESPN ne publie pour ce championnat que les actions clés (buts, cartons, remplacements) : pas de graphique de pression, pas de stats par mi-temps, pas de note des joueurs ni de buts attendus (xG). Les statistiques ci-dessous sont celles du match entier.</div>`;
         return `<h4 class="st-sec">Momentum</h4><div class="empty-state">Actions du match indisponibles : pas de graphique de pression pour cette rencontre.</div>`;
       }
       const { W, X0, MID, AMP, BOTTOM } = MO;

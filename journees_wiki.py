@@ -43,6 +43,7 @@ PAGES = {
     "pl": ("fr", "Championnat d'Angleterre de football {a}-{b}"),
     "liga": ("fr", "Championnat d'Espagne de football {a}-{b}"),
     "bl": ("fr", "Championnat d'Allemagne de football {a}-{b}"),
+    "fl2": ("fr", "Championnat de France de football de deuxième division {a}-{b}"),
     "sa": ("it", "Serie A {a}-{b}"),
 }
 # Pages LOCALES de secours (demande du propriétaire du 25/11/2026 : « prendre les pages locales si les données FR ne sont pas
