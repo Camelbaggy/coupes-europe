@@ -12,6 +12,9 @@ Reconstitution de l'historique des soirées et rattrapage des résumés IA (déc
 `rattraper_ia` : remplace, par lots, les résumés déterministes des matchs de clubs français de PHASE DE LIGUE par un
   résumé Gemini contrôlé (rédacteur + contrôleur, comme en direct). Jamais les tours préliminaires de cette saison.
   Chaque carte est enregistrée dès qu'elle est réussie (reprenable) ; quota Gemini épuisé (HTTP 429) = arrêt propre.
+
+`completer_xg` : ajoute les xG (ESPN / Opta) aux matchs terminés des soirées déjà publiées (reconstituées sans ESPN), sans
+  toucher au reste ; reprenable ; aucun Gemini, aucune notification.
 """
 
 import datetime as dt
@@ -94,6 +97,73 @@ def reconstituer(dossier: str = historique.DOSSIER, du: Optional[str] = None, au
         return 1
     restantes = len(dates) - traitees
     print(f"[RECONSTITUTION] restantes={restantes} traitees={traitees} echecs={len(echecs)}")
+    _sortie_github(restantes=restantes, traitees=traitees)
+    return 0
+
+
+def _empreinte_xg(m: Dict[str, Any]):
+    return ({(s["key"], s["home"], s["away"]) for s in (m.get("stats") or {}).get("all", []) if s["key"] in espn.XG_CLES},
+            m.get("xg_statut"), m.get("xg_essai"))
+
+
+def completer_xg(dossier: str = historique.DOSSIER, du: Optional[str] = None, au: Optional[str] = None,
+                 budget_min: float = 40, publier_tous: int = 0, data_path: str = "data.json",
+                 aujourdhui: Optional[dt.date] = None) -> int:
+    """Ajoute les xG (ESPN / Opta) aux matchs terminés des soirées existantes, sans toucher au reste. Reprenable :
+    un match qui a déjà son xG (ou dont l'essai tardif est resté sans résultat) n'est plus demandé ; une panne ESPN
+    n'écrit rien pour le match concerné. Imprime `restantes=N traitees=N` (N = matchs). Code 1 si un push échoue."""
+    debut = time.monotonic()
+    espn.REQUETES.update(scoreboard=0, stats=0)
+    jours = sorted((l["date"] for l in historique.lire_index(dossier) if (not du or l["date"] >= du) and (not au or l["date"] <= au)),
+                   reverse=True)
+    traitees = restantes = introuvables = depuis_publication = 0
+    stop = False
+    for jour in jours:
+        doc = historique.lire_json(historique.chemin_soiree(dossier, jour))
+        if not isinstance(doc, dict):
+            continue
+        cibles = [(k, m) for k, c in doc.get("competitions", {}).items() for m in c.get("matches", []) if espn.xg_a_faire(m)]
+        if not cibles:
+            continue
+        if stop or time.monotonic() - debut > budget_min * 60:
+            if not stop:
+                print(f"[xG] budget de {budget_min} min atteint : arrêt propre, reprise au passage suivant.")
+            stop = True
+            restantes += len(cibles)
+            continue
+        print(f"\n=== xG {jour} : {len(cibles)} match(s) ===")
+        modifie = False
+        for k, m in cibles:
+            avant = _empreinte_xg(m)
+            try:
+                r = espn.ajouter_xg(k, m, aujourdhui)
+            except Exception as e:
+                print(f"[WARN] xG impossible pour {m.get('match_id')} : {e}")
+                r = "erreur"
+            if r == "erreur":
+                restantes += 1
+                continue
+            if r == "ok":
+                traitees += 1
+            else:
+                introuvables += 1
+            apres = _empreinte_xg(m)
+            modifie = modifie or avant != apres
+        if modifie:
+            historique.ecrire_soiree(doc, jour, dossier)
+            historique.synchroniser_data_json(doc, jour, data_path)
+            depuis_publication += 1
+            if publier_tous and depuis_publication >= publier_tous:
+                depuis_publication = 0
+                if not publier_git():
+                    return 1
+        if espn._ERREURS_DE_SUITE >= espn.MAX_ERREURS_DE_SUITE:
+            print("[xG] ESPN injoignable : arrêt propre, reprise au passage suivant.")
+            stop = True
+    if depuis_publication and publier_tous and not publier_git():
+        return 1
+    print(f"[xG] restantes={restantes} traitees={traitees} introuvables={introuvables} ; "
+          f"{espn.REQUETES['scoreboard']} + {espn.REQUETES['stats']} requête(s) ESPN")
     _sortie_github(restantes=restantes, traitees=traitees)
     return 0
 
@@ -259,6 +329,40 @@ def _test():
         finally:
             agents_flash.GEMINI_API_KEY, agents_flash.summarize_card = gem, summ
             globals()["_contexte_ia"] = ctx
+
+        # --- complément xG : matchs terminés sans xG seulement, reprenable, panne = rien d'écrit, data.json suivi, reste intact
+        espn_ajout = espn.ajouter_xg
+        sorts = {"1": "ok", "2": "erreur", "3": "non_trouve"}
+
+        def faux_ajout(comp, m, aujourdhui=None):
+            r = sorts[m["match_id"]]
+            if r == "ok":
+                m["stats"]["all"].append({"key": "xg", "label": "Buts attendus (xG)", "home": 1.5, "away": 0.5})
+                m["xg_source"] = "ESPN (Opta)"
+            elif r == "non_trouve":
+                m["xg_statut"], m["xg_essai"] = r, "2026-11-25"
+            return r
+        espn.ajouter_xg = faux_ajout
+        try:
+            ms = [dict(mk(i, "H", "A", 1, 0), date="2026-11-24") for i in ("1", "2", "3")]
+            for m in ms:
+                m["stats"] = {"all": [], "1st": [], "2nd": []}
+            historique.ecrire_soiree(historique._soiree("2026-11-24", "2026-11-25T00:00:00Z", {"ucl": {"name": "LDC", "stage_type": "league", "french_clubs_focus": [], "matches": ms}}), "2026-11-24", dos, reconstituee=True)
+            with open("data.json", "w") as f:
+                json.dump({"target_dates": ["2026-11-24"], "marque": "ancienne"}, f)
+            assert completer_xg(dos, aujourdhui=dt.date(2026, 11, 25)) == 0
+            doc = historique.lire_json(historique.chemin_soiree(dos, "2026-11-24"))
+            par = {m["match_id"]: m for m in doc["competitions"]["ucl"]["matches"]}
+            assert par["1"]["xg_source"] == "ESPN (Opta)" and par["2"]["stats"]["all"] == [] and "xg_statut" not in par["2"]
+            assert par["3"]["xg_statut"] == "non_trouve" and doc["reconstituee"] is True
+            assert historique.lire_json("data.json")["competitions"]["ucl"]["matches"][0]["xg_source"] == "ESPN (Opta)"   # data.json suit
+            sorts["2"] = "ok"
+            assert completer_xg(dos, aujourdhui=dt.date(2026, 11, 25)) == 0   # reprise : « 1 » n'est plus demandé, « 2 » réussit, « 3 » retenté (< 3 jours)
+            par = {m["match_id"]: m for m in historique.lire_json(historique.chemin_soiree(dos, "2026-11-24"))["competitions"]["ucl"]["matches"]}
+            assert par["2"]["xg_source"] == "ESPN (Opta)" and [m["match_id"] for m in par.values() if espn.xg_a_faire(m)] == ["3"]
+            assert completer_xg(dos, du="2026-12-01") == 0   # hors plage : rien
+        finally:
+            espn.ajouter_xg = espn_ajout
         os.chdir("/")
     print("[OK] reconstitution.py : tests réussis")
 

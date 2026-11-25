@@ -139,9 +139,11 @@ def build_match(comp_key: str, m: Dict[str, Any], detailed: bool) -> Dict[str, A
 
 def collect_dates_data(target_dates: List[str], label_prefix: str = "Soirée",
                        output_path: str = "data_raw.json", classement_mode: str = "auto",
-                       avec_espn: bool = True, maintenant: Optional[datetime] = None) -> Dict[str, Any]:
+                       avec_espn: bool = True, maintenant: Optional[datetime] = None,
+                       avec_xg: bool = True) -> Dict[str, Any]:
     """`classement_mode` : voir `choisir_classement` (une soirée = une date ; plusieurs dates = officiel).
-    `avec_espn=False` : pas de fil de commentaires (reconstitution : résumés déterministes, ESPN inutile)."""
+    `avec_espn=False` : pas de fil de commentaires (reconstitution : résumés déterministes, ESPN inutile).
+    `avec_xg` : xG (ESPN / Opta) des matchs terminés de TOUTES les coupes, y compris en reconstitution ; jamais bloquant."""
     maintenant = maintenant or datetime.now(timezone.utc)
     jour = target_dates[0] if len(target_dates) == 1 else None
     print("[INFO] Collecte UEFA" + (" (+ fil ESPN)" if avec_espn else "") + f" pour {target_dates}")
@@ -156,6 +158,8 @@ def collect_dates_data(target_dates: List[str], label_prefix: str = "Soirée",
     finished_total = 0
     matches_total = 0
     erreurs_uefa: List[str] = []
+    bilan_xg: Dict[str, int] = {"ok": 0, "non_trouve": 0, "absent": 0, "erreur": 0, "non_termine": 0}
+    espn.REQUETES.update(scoreboard=0, stats=0)
 
     for comp_key, meta in TOURNAMENTS.items():
         raw_matches = uefa.fetch_matches(comp_key, target_dates, erreurs_uefa)
@@ -174,6 +178,12 @@ def collect_dates_data(target_dates: List[str], label_prefix: str = "Soirée",
             matches_total += 1
             if match["finished"]:
                 finished_total += 1
+                if avec_xg:
+                    try:
+                        bilan_xg[espn.ajouter_xg(comp_key, match)] += 1
+                    except Exception as e:   # l'xG est un bonus : rien ne doit arrêter la collecte
+                        bilan_xg["erreur"] += 1
+                        print(f"[WARN] xG ignoré pour {match['home_team']['name']}-{match['away_team']['name']} : {e}")
             if not match["is_french_match"] or not match["finished"]:
                 continue
 
@@ -212,6 +222,10 @@ def collect_dates_data(target_dates: List[str], label_prefix: str = "Soirée",
         print(f"[INFO] {meta['name']} : {len(matches)} match(s), {len(standings)} équipes au classement ({standings_source}), "
               f"{len(focus)} fiche(s) club français.")
 
+    if avec_xg:
+        print(f"[xG] {bilan_xg['ok']}/{finished_total} match(s) terminé(s) avec xG (ESPN / Opta) ; "
+              f"{bilan_xg['non_trouve']} non rapproché(s), {bilan_xg['absent']} sans xG, {bilan_xg['erreur']} en erreur ; "
+              f"{espn.REQUETES['scoreboard']} + {espn.REQUETES['stats']} requête(s) ESPN (scoreboard + statistiques d'équipe).")
     # Notes : standardisation et calibrage par compétition (niveaux différents entre LDC, EL et ECL)
     output["ratings"] = {}
     for comp_key, comp in output["competitions"].items():

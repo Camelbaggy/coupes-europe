@@ -1,0 +1,62 @@
+name: Complément des xG (soirées passées, sans notification)
+
+# Ajoute les buts attendus (xG, modèle Opta via ESPN) aux matchs terminés des soirées déjà publiées dans soirees/ (reconstituées
+# sans ESPN) sans toucher au reste. Reprenable : un match qui a son xG n'est plus demandé ; panne ESPN = arrêt propre. Publication
+# toutes les 8 soirées modifiées (publier.sh --soirees : jamais etat_soirees.json, aucune notification ; data.json suit la soirée
+# s'il en est la copie). Se relance tant qu'il reste des matchs ET que le passage a progressé.
+# À lancer sur main : gh workflow run completer_xg.yml --ref main
+on:
+  workflow_dispatch:
+    inputs:
+      du:
+        description: 'Première date (AAAA-MM-JJ, vide = toutes)'
+        required: false
+        type: string
+      au:
+        description: 'Dernière date (AAAA-MM-JJ, vide = toutes)'
+        required: false
+        type: string
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: completer-xg
+  cancel-in-progress: false
+
+jobs:
+  completer:
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Ajout des xG aux soirées existantes
+        id: xg
+        env:
+          PYTHONUNBUFFERED: "1"
+          DU: ${{ inputs.du }}
+          AU: ${{ inputs.au }}
+        run: |
+          OPTS=""
+          [ -n "$DU" ] && OPTS="$OPTS --du $DU"
+          [ -n "$AU" ] && OPTS="$OPTS --au $AU"
+          python run_pipeline.py --completer-xg --budget-min 40 --publier-tous 8 $OPTS
+
+      - name: Relance tant qu'il reste des matchs (et que ce passage a progressé)
+        if: success() && steps.xg.outputs.restantes != '' && steps.xg.outputs.restantes != '0' && steps.xg.outputs.traitees != '' && steps.xg.outputs.traitees != '0'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          DU: ${{ inputs.du }}
+          AU: ${{ inputs.au }}
+        run: |
+          OPTS=""
+          [ -n "$DU" ] && OPTS="$OPTS -f du=$DU"
+          [ -n "$AU" ] && OPTS="$OPTS -f au=$AU"
+          echo "Il reste ${{ steps.xg.outputs.restantes }} match(s) : relance."
+          gh workflow run completer_xg.yml --repo "${{ github.repository }}" --ref "${{ github.ref_name }}" $OPTS

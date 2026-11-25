@@ -758,6 +758,7 @@
     .st-team.home .sw { background: var(--home-color); box-shadow: 0 0 0 1px var(--home-bord); } .st-team.away .sw { background: var(--away-color); box-shadow: 0 0 0 1px var(--away-bord); }
     .st-team.home { color: var(--home-ink); } .st-team.away { color: var(--away-ink); }
     .poss { background: var(--bg-main); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px 14px; margin-bottom: 4px; }
+    .poss.xg { margin-top: 8px; }
     .poss-lbl { text-align: center; font-size: 0.72rem; font-weight: 700; color: var(--text-muted); letter-spacing: 0.05em; text-transform: uppercase; }
     .poss-vals { display: flex; justify-content: space-between; align-items: baseline; margin: 2px 0 8px; font-variant-numeric: tabular-nums; }
     .poss-v { font-size: 1.9rem; font-weight: 800; line-height: 1.1; }
@@ -2043,16 +2044,20 @@
 
     // ---------- Stats : rubriques, possession en grand, lignes à barre divergente ----------
     const STAT_GROUPS = [
-      ['Tirs', ['attempts', 'attempts_on_target', 'attempts_off_target', 'attempts_blocked', 'shot_in_penalty_area']],
-      ['Construction / passes', ['passes_completed', 'passes_accuracy', 'key_passes', 'delivery_into_penalty_area', 'cross_attempted']],
+      ['Tirs', ['xgot', 'xg_sans_penalty', 'attempts', 'attempts_on_target', 'attempts_off_target', 'attempts_blocked', 'shot_in_penalty_area']],
+      ['Construction / passes', ['xa', 'passes_completed', 'passes_accuracy', 'key_passes', 'delivery_into_penalty_area', 'cross_attempted']],
       ['Attaque', ['attacks', 'counterattack', 'corners', 'offsides']],
       ['Défense / gardien', ['saves', 'recovered_ball']],
       ['Discipline', ['fouls_committed', 'yellow_cards', 'red_cards']],
       ['Physique', ['distance_covered', 'top_speed', 'sprints']],
     ];
-    const fmtStat = (v, pct) => {
+    // Buts attendus (ESPN / Opta) : 2 décimales, virgule française ; absents des mi-temps (ESPN n'en donne pas)
+    const XG_KEYS = ['xg', 'xgot', 'xg_sans_penalty', 'xa'];
+    const fmtStat = (v, pct, dec) => {
       const n = Number(v);
-      const t = Number.isFinite(n) ? n.toLocaleString('fr-FR', { maximumFractionDigits: 1 }) : String(v ?? '—');
+      const t = Number.isFinite(n)
+        ? n.toLocaleString('fr-FR', dec ? { minimumFractionDigits: 2, maximumFractionDigits: 2 } : { maximumFractionDigits: 1 })
+        : String(v ?? '—');
       return pct ? t + ' %' : t;
     };
 
@@ -2072,15 +2077,16 @@
         const h = Number(s.home), a = Number(s.away);
         const pct = /\(%\)/.test(s.label || '');
         const label = String(s.label || '').replace(/\s*\(%\)/, '');
+        const dec = XG_KEYS.includes(s.key);
         const total = (Number.isFinite(h) ? h : 0) + (Number.isFinite(a) ? a : 0);
         const hp = total > 0 ? Math.round(h / total * 100) : 0, ap = total > 0 ? 100 - hp : 0;
         const dh = h > a ? 'dom' : h === a ? 'eq' : '', da = a > h ? 'dom' : h === a ? 'eq' : '';
         return `
           <div class="st-row">
             <div class="st-top">
-              <span class="st-v home ${dh}">${esc(fmtStat(s.home, pct))}</span>
+              <span class="st-v home ${dh}">${esc(fmtStat(s.home, pct, dec))}</span>
               <span class="st-l">${esc(label)}</span>
-              <span class="st-v away ${da}">${esc(fmtStat(s.away, pct))}</span>
+              <span class="st-v away ${da}">${esc(fmtStat(s.away, pct, dec))}</span>
             </div>
             <div class="st-bar">
               <span class="st-half l"><i class="${a > h ? 'dim' : ''}" style="width:${hp}%"></i></span>
@@ -2095,7 +2101,15 @@
           <div class="poss-vals"><span class="poss-v home">${esc(fmtStat(poss.home, true))}</span><span class="poss-v away">${esc(fmtStat(poss.away, true))}</span></div>
           <div class="poss-bar"><i class="h" style="width:${hp.toFixed(1)}%"></i><i class="a" style="width:${(100 - hp).toFixed(1)}%"></i></div></div>`;
       })() : '';
-      const used = new Set(poss ? ['ball_possession'] : []);
+      const xg = period === 'all' ? items.find(s => s.key === 'xg' && Number.isFinite(Number(s.home)) && Number.isFinite(Number(s.away))) : null;
+      const xgHtml = xg ? (() => {
+        const t = Number(xg.home) + Number(xg.away), hp = t > 0 ? Number(xg.home) / t * 100 : 50;
+        const info = infoBtn(`<p><b>Buts attendus (xG)</b> : somme, tir par tir, de la probabilité estimée qu'il devienne un but. C'est une <b>estimation statistique</b> de la qualité des occasions, pas un fait du match.</p><p>Source : ${esc(m.xg_source || 'ESPN (Opta)')} — le modèle d'Opta, relayé par ESPN ; l'UEFA ne publie pas d'xG. Valeur du match complet seulement (pas de décompte par mi-temps). xGOT : xG des tirs cadrés ; xA : passes décisives attendues.</p>${m.xg_note ? `<p>${esc(m.xg_note)}</p>` : ''}`, 'Définition et source des buts attendus');
+        return `<div class="poss xg"><div class="poss-lbl">Buts attendus <span style="text-transform:none">(xG)</span> ${info}</div>
+          <div class="poss-vals"><span class="poss-v home">${esc(fmtStat(xg.home, false, true))}</span><span class="poss-v away">${esc(fmtStat(xg.away, false, true))}</span></div>
+          <div class="poss-bar"><i class="h" style="width:${hp.toFixed(1)}%"></i><i class="a" style="width:${(100 - hp).toFixed(1)}%"></i></div></div>`;
+      })() : '';
+      const used = new Set([...(poss ? ['ball_possession'] : []), ...(xg ? ['xg'] : [])]);
       const groups = STAT_GROUPS.map(([title, keys]) => {
         const rows = items.filter(s => keys.includes(s.key));
         rows.forEach(s => used.add(s.key));
@@ -2103,14 +2117,14 @@
       }).join('');
       const rest = items.filter(s => !used.has(s.key));
       const restHtml = rest.length ? `<h4 class="st-sec">Autres</h4>${rest.map(row).join('')}` : '';
-      const note = period !== 'all' ? 'Par mi-temps : décompte des actions officielles UEFA de la période.' : 'Source : statistiques officielles UEFA.';
+      const note = period !== 'all' ? 'Par mi-temps : décompte des actions officielles UEFA de la période (pas de buts attendus : ESPN n\'en donne que pour le match complet).' : 'Source : statistiques officielles UEFA' + (m.xg_source ? ' ; buts attendus (xG, xGOT, xA) : ' + m.xg_source + '.' : '.');
       return `<h4 class="st-sec">Statistiques ${infoBtn(`<p>${esc(note)}</p>`, 'Source des statistiques')}</h4>${pills}
         <div class="st-wrap">
           <div class="st-head">
             <span class="st-team home"><i class="sw"></i>${flag(m.home_team)}<span>${esc(m.home_team.short || m.home_team.name)}</span></span>
             <span class="st-team away"><span>${esc(m.away_team.short || m.away_team.name)}</span>${flag(m.away_team)}<i class="sw"></i></span>
           </div>
-          ${possHtml}${groups}${restHtml}
+          ${possHtml}${xgHtml}${groups}${restHtml}
         </div>`;
     }
 

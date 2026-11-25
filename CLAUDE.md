@@ -27,6 +27,9 @@ python agents_flash.py                                  # résumés seuls : data
 python tools/inspect_data.py data.json                  # résumé lisible (notes, momentum, drapeaux manquants…)
 python run_pipeline.py --reconstituer --dossier-soirees /tmp/soirees --du 2026-11-04 --au 2026-11-04   # reconstitution locale d'une soirée passée (sans Gemini)
 python run_pipeline.py --rattraper-ia --max-cartes 10   # remplace par Gemini des résumés déterministes de la phase de ligue (clé requise)
+python run_pipeline.py --completer-xg [--du … --au …] --dossier-soirees DIR   # ajoute les xG (ESPN / Opta) aux soirées existantes (reprenable ; tester sur une COPIE de soirees/)
+python espn.py --test                                   # xG : rapprochement strict, valeurs, panne, incohérence (réponses ESPN réelles allégées : tools/fixtures/espn/)
+node tools/test_xg_ui.js http://localhost:8766 /tmp/xg  # Playwright 390 x 844 de l'onglet Stats avec / sans xG (servir un dossier index.html + data.json avec xG)
 python -m http.server 8000                              # voir index.html (il lit data.json et soirees/ via fetch)
 python -m py_compile *.py tools/*.py                    # contrôle statique
 python soirees.py --test && python publication.py --test && bash tools/test_veille.sh && python tools/verifier_workflows.py   # tests locaux : état / notification unique, veille.sh (faux gh), `bash -n` de chaque bloc `run:` des workflows
@@ -57,7 +60,7 @@ un workflow temporaire déclenché sur la branche, puis les supprimer.
 
 ```
 run_pipeline.py ─┬─ collector.py ── uefa.py   (source principale, officielle)
-                 │                ├ espn.py   (fil de commentaires texte, pour l'IA uniquement)
+                 │                ├ espn.py   (fil de commentaires texte pour l'IA ; xG de tous les matchs terminés)
                  │                ├ ratings.py (notes des joueurs, appelée après la collecte, par compétition)
                  │                └ netutil.py (fetch_json avec reprises, normalize, fr(), to_number, FLAG_CODES)
                  ├─ agents_flash.py (dossier factuel → Gemini rédacteur → Gemini contrôleur, repli déterministe)
@@ -256,6 +259,7 @@ et `ia_tentatives` pour le rattrapage). Niveau soirée : `reconstituee` / `recon
 Chaque match porte aussi `stage` (`league` / `qualifying` / `knockout`), `round` (`name`, `type` UEFA), `matchday_short`, `leg`, et, dans
 `home_team` / `away_team`, `shirt_color` (hex du maillot PORTÉ dans ce match, compositions UEFA) et `kit_image` quand l'UEFA les donne
 (utilisés par la règle des couleurs, § Couleurs des équipes ; absents = absents).
+Chaque match terminé peut porter `xg_source` / `xg_espn_id` / `xg_note` / `xg_statut` / `xg_essai` et des clés `xg`, `xgot`, `xg_sans_penalty`, `xa` dans `stats.all` seulement (§ Buts attendus).
 Chaque match : `home_team`/`away_team` (`flag`, `is_french`, `formation`…), `events[]` et `goals[]` (avec
 `player_id`, `scorer_id`, `assist_id`), `momentum[]` (un point par minute : `minute`, `label`, `phase`, `home`,
 `away`, `value` ∈ [-100, 100]), `stats.{all,1st,2nd}`, `lineups` (positions x/y en %, `id` des joueurs) et
@@ -279,8 +283,30 @@ de saison, ex. 2027 pour 2026-27).
   d'interceptions ni de duels aériens au niveau joueur.
 - Clubs français = `countryCode == "FRA"` (Monaco inclus) ; aucune liste de noms.
 
-ESPN ne sert qu'au fil de commentaires (anglais, Opta) des matchs de clubs français, rapproché du match UEFA par
-date + score + recouvrement de mots du nom d'équipe (`espn.find_espn_event`).
+ESPN sert (1) au fil de commentaires (anglais, Opta) des matchs de clubs français, rapproché du match UEFA par
+date + score + recouvrement de mots du nom d'équipe (`espn.find_espn_event`) ; (2) aux **buts attendus (xG)** de TOUS les matchs
+terminés (l'UEFA n'en publie aucun : 430 clés `team-statistics`, rien dans `player-statistics`).
+
+### Buts attendus (xG, `espn.py`)
+
+- **Source** : ESPN (modèle Opta), API core `sports.core.api.espn.com/v2/sports/soccer/leagues/<uefa.champions|uefa.europa|uefa.europa.conf>/events/<ev>/competitions/<ev>/competitors/<équipe ESPN>/statistics`
+  (une requête par équipe ; la réponse porte directement `splits.categories[].stats[]`, pas de `$ref` à suivre). Les identifiants viennent du scoreboard
+  `site.api.espn.com/apis/site/v2/sports/soccer/<ligue>/scoreboard?dates=AAAAMMJJ` (ligue principale, puis `uefa.champions_qual` / `uefa.europa_qual` / `uefa.europa.conf_qual` pour les tours préliminaires et barrages : mêmes statistiques ; `xg_espn_ligue` garde la ligue retenue) (le `summary` ne contient PAS l'xG). Stats lues : `expectedGoals` (xG),
+  `expectedGoalsOnTarget` (xGOT), `expectedGoalsNonPenalty` (gardé seulement s'il diffère de l'xG), `expectedAssists` (xA) ; `expectedGoalsConceded` ne sert qu'au contrôle.
+- **Rapprochement STRICT** (`trouver_evenement_strict`) : événement terminé, jour UTC à ±1, score identique, les DEUX équipes reconnues (mot distinctif commun, noms
+  normalisés égaux, translittération ø æ ł ß…, alias courts `_ALIAS_MOTS` : Crvena Zvezda / Red Star, Copenhagen / København), UN SEUL candidat ; domicile / extérieur
+  inversé géré (terrain neutre). Sinon pas d'xG (jamais de rapprochement douteux). xG des deux équipes obligatoires.
+- **Stockage** : `stats.all` gagne les entrées `xg`, `xgot`, `xg_sans_penalty`, `xa` (`{key, label, home, away}`, 3 décimales de la source) ; `1st` / `2nd` n'en ont JAMAIS (ESPN n'en donne
+  pas). Au niveau du match : `xg_source: "ESPN (Opta)"`, `xg_espn_id`, `xg_note` si l'xG d'une équipe diffère de l'xG encaissé de l'adversaire de plus de 0,05 (valeurs propres conservées).
+  Rapprochement ou xG impossible : `xg_statut` (`non_trouve` / `absent`) + `xg_essai` (jour) ; retenté par le rattrapage tant que l'essai date de moins de 3 jours après le match, puis définitif.
+  Panne réseau : rien n'est écrit (jamais bloquant, un xG déjà enregistré n'est jamais détruit) ; 6 erreurs de suite = plus aucune requête xG pendant le passage.
+- **Collecte** : `collector.collect_dates_data(avec_xg=True)` appelle `espn.ajouter_xg` pour chaque match terminé (passage du soir ET reconstitution, indépendamment de `avec_espn`) ;
+  journal `[xG] n/m match(s)… + requêtes`. Coût mesuré : 1 requête scoreboard par coupe et par jour (déjà faite pour le fil des clubs français) + 2 par match terminé (0,3 s de pause).
+- **Rattrapage** : `run_pipeline.py --completer-xg [--du --au --budget-min --publier-tous N]` (`reconstitution.completer_xg`) ajoute les xG aux matchs terminés des soirées de `soirees/` sans toucher
+  au reste (data.json suivi si c'est la même soirée) ; reprenable ; workflow `completer_xg.yml` (dispatch seul, groupe `completer-xg`, publie par `publier.sh --soirees`, jamais d'état ni de ntfy, se relance tant
+  que des matchs restent ET que le passage a progressé). Premier lancement : `gh workflow run completer_xg.yml --ref main`.
+- **Interface** : bloc « Buts attendus (xG) » juste sous la possession (grand, 2 décimales, virgule, couleurs `--home-ink` / `--away-ink`, `infoBtn` définition + source) ; xGOT / xG hors penalty dans Tirs,
+  xA dans Construction ; masqué sur 1re / 2e mi-temps. **IA** : `agents_flash.build_match_dossier` donne `buts_attendus_xg` comme ESTIMATION (avertissement dans le dossier, une incise au plus) ; les clés xG sortent de `statistiques`.
 
 FotMob et SofaScore ont été écartés : leurs protections anti-robots bloquent GitHub Actions et ne doivent pas être
 contournées (pas d'usurpation d'empreinte TLS, pas de reconstitution d'en-tête signé).
@@ -346,5 +372,5 @@ Chromium/Playwright préinstallé et un `data.json` de test servi en local.
 - Onglets **Déroulé · Compos · Stats** (le momentum est le premier bloc de Stats, `momentumHtml` / `bindMomentum`). Les DEUX feuilles (match et joueur) ont la même hauteur fixe quel que soit l'onglet : `calc(var(--app-h) - var(--sheet-gap))`, `--sheet-gap` = 10 px + `env(safe-area-inset-top)` (mince espace laissant deviner la feuille), `.modal-body` / `.player-body` défilent. `--app-h` = `100vh` puis `100dvh` (`@supports`), recalée en px par `syncAppHeight` à chaque `resize` / `visualViewport.resize` (hauteur réellement visible, barre d'adresse mobile comprise) ; les fonds (`.modal-backdrop`, `.player-backdrop`) utilisent aussi `--app-h`, jamais `inset: 0` / `vh`.
 - **Info-bulle unique** (`infoBtn(html, label)` + `#info-pop`, `openInfo` / `closeInfo`) : tout texte d'aide, de légende, de méthode ou de source passe par ce composant, jamais par un paragraphe permanent (momentum : légende + méthode ; compos : légende © ⭐ ↓ + méthode des notes ; stats : source UEFA / note par mi-temps ; fiche joueur : méthode de la note et facteurs ; source du résumé des cartes de club ; aide de la grille). `infoBtn` rend un bouton ⓘ 32 px (`aria-label`, `aria-expanded`, `aria-haspopup`) ; le HTML du texte (déjà échappé par l'appelant) est gardé dans `INFO_TEXTS`, le bouton ne porte que l'indice. Bulle `position: fixed` bornée à l'écran (largeur <= 320 px, 8 px de marge, au-dessous du bouton sinon au-dessus) ; fermeture : re-toucher le bouton, toucher ailleurs, Échap (avant la fermeture d'une feuille), début d'un glissement de feuille, resize. Écouteur de clic en capture : le bouton ne déclenche pas la carte qui le contient. Les crédits / sources de données obligatoires y restent affichés : ne jamais les supprimer, seulement les y ranger.
 - **Compos** (`lineupRows` + `layoutPitch`) : une ligne par nombre de la formation UEFA (gardien d'abord) ; les joueurs sont triés par profondeur `y` UEFA puis découpés selon la formation (si la somme ne colle pas aux 10 joueurs de champ : regroupement par écart de `y`), répartis régulièrement dans la ligne dans l'ordre de leur `x` UEFA (un joueur seul garde son `x`). Pas de joueur déplacé d'une ligne à l'autre. Positions en px, puis passe anti-collision sur les boîtes mesurées dans le DOM (pastille, nom, note, minute de sortie) ; si un chevauchement subsiste, la hauteur du terrain augmente. Nom : nom court, puis initiale + nom, puis réduction de police, ellipse en dernier recours. Note = badge accroché au coin haut-droit de la pastille, minute de sortie en pastille sous le nom.
-- **Stats** (`statsHtml`) : bascule Match complet / 1re / 2e mi-temps, en-tête collant des deux équipes, possession en grand (barre partagée), puis rubriques `STAT_GROUPS` (Tirs, Construction / passes, Attaque, Défense / gardien, Discipline, Physique, « Autres » pour toute clé inconnue : aucune donnée perdue). Ligne : valeurs aux extrémités, libellé centré, valeur dominante en gras et couleur `--home-ink` / `--away-ink`, barre divergente depuis le centre (part de chaque équipe dans le total de la ligne, côté minoritaire atténué). `(%)` du libellé devient un « % » sur les valeurs.
+- **Stats** (`statsHtml`) : bascule Match complet / 1re / 2e mi-temps, en-tête collant des deux équipes, possession en grand (barre partagée), puis bloc xG (même style, sous la possession, absent sans xG et sur les mi-temps), puis rubriques `STAT_GROUPS` (Tirs, Construction / passes, Attaque, Défense / gardien, Discipline, Physique, « Autres » pour toute clé inconnue : aucune donnée perdue). Ligne : valeurs aux extrémités, libellé centré, valeur dominante en gras et couleur `--home-ink` / `--away-ink`, barre divergente depuis le centre (part de chaque équipe dans le total de la ligne, côté minoritaire atténué). `(%)` du libellé devient un « % » sur les valeurs.
 - **Gestes** (écouteurs passifs, sauf `touchmove` de `attachSheetDrag`) : glissement horizontal entre onglets par `attachTabSwipe` (règles ci-dessus ; `data-noswipe` sur le graphique momentum) ; fermeture des feuilles par glissement vers le bas via `attachSheetDrag` (fiche de match et fiche joueur, poignée `.sheet-handle` ou en-tête, ou contenu à `scrollTop = 0` ; suit le doigt, ferme au-delà de 25 % de la hauteur ou geste rapide, sinon retour animé ; la fiche joueur, au-dessus, se ferme seule). **Propriété du geste** : dès que le geste est reconnu comme un glissement de feuille, il le possède jusqu'au relâchement : `touchmove` non passif avec `preventDefault()` (seulement pendant un glissement actif), `overflow-y: hidden` posé sur le conteneur et `scrollTop` rétabli à chaque mouvement, translateY bornée à >= 0 ; remonter le doigt pour annuler ne fait donc pas défiler le contenu. Un geste qui ne devient pas un glissement (défilement vers le haut, horizontal) reste natif. `prefers-reduced-motion` désactive les transitions.

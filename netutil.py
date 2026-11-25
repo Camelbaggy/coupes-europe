@@ -9,7 +9,7 @@ import time
 import unicodedata
 import urllib.error
 import urllib.request
-from typing import Any, Optional
+from typing import Any, Optional, Tuple
 
 HEADERS = {
     "User-Agent": "coupes-europe-dashboard/1.0 (+https://github.com/Camelbaggy/coupes-europe)",
@@ -27,7 +27,9 @@ def set_raw_dir(path: Optional[str]) -> None:
     _RAW_DIR = path
 
 
-def fetch_json(url: str, retries: int = 3, raw_name: str = "") -> Optional[Any]:
+def fetch_json_ex(url: str, retries: int = 3, raw_name: str = "") -> Tuple[Optional[Any], str]:
+    """Comme `fetch_json`, mais distingue l'absence définitive de la panne : retourne (données, statut) avec
+    statut = "ok" | "absent" (HTTP 400 / 404 : la ressource n'existe pas) | "erreur" (réseau, 5xx, JSON illisible)."""
     for attempt in range(retries):
         try:
             req = urllib.request.Request(url, headers=HEADERS)
@@ -39,15 +41,19 @@ def fetch_json(url: str, retries: int = 3, raw_name: str = "") -> Optional[Any]:
             if _RAW_DIR and raw_name:
                 with open(os.path.join(_RAW_DIR, raw_name), "w", encoding="utf-8") as f:
                     json.dump(data, f, ensure_ascii=False)
-            return data
+            return data, "ok"
         except urllib.error.HTTPError as e:
             print(f"[WARN] HTTP {e.code} sur {url}")
             if e.code in (400, 404):
-                return None
+                return None, "absent"
         except Exception as e:
             print(f"[WARN] Erreur réseau sur {url} : {e}")
         time.sleep(2 ** attempt)
-    return None
+    return None, "erreur"
+
+
+def fetch_json(url: str, retries: int = 3, raw_name: str = "") -> Optional[Any]:
+    return fetch_json_ex(url, retries, raw_name)[0]
 
 
 def normalize(name: str) -> str:

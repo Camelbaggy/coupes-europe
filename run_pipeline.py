@@ -6,7 +6,7 @@ Chef d'orchestre : run_pipeline.py
 2. Rédaction/contrôle des résumés par les agents Gemini Flash (repli déterministe sinon).
 3. Historique : la soirée est rangée dans soirees/<date>.json + soirees/index.json ; data.json en est la copie de la
    soirée la plus récente (jamais remplacé par une plus ancienne) : voir historique.py.
-   `--reconstituer` / `--rattraper-ia` : reconstitution des soirées passées et rattrapage des résumés IA (reconstitution.py).
+   `--reconstituer` / `--rattraper-ia` / `--completer-xg` : reconstitution des soirées passées et rattrapage des résumés IA (reconstitution.py).
 4. Fiches de club : `clubs.apres_soiree` met à jour `clubs/<id>.json` des clubs qui ont joué (sans bloquer la notification).
 5. État par soirée (etat_soirees.json). Ce script NE NOTIFIE PLUS (sauf --week) : le push ntfy est envoyé par
    `--notifier` (publication.py), appelé par le workflow après un push réussi, une fois la page publique vérifiée
@@ -73,8 +73,8 @@ def main():
                         help="Dossier de l'historique des soirées (défaut : soirees)")
     parser.add_argument("--reconstituer", action="store_true",
                         help="Pas de passage normal : reconstitue les soirées passées manquantes (jamais de ntfy ni d'état)")
-    parser.add_argument("--du", help="Avec --reconstituer : première date (AAAA-MM-JJ)")
-    parser.add_argument("--au", help="Avec --reconstituer : dernière date (AAAA-MM-JJ)")
+    parser.add_argument("--du", help="Avec --reconstituer ou --completer-xg : première date (AAAA-MM-JJ)")
+    parser.add_argument("--au", help="Avec --reconstituer ou --completer-xg : dernière date (AAAA-MM-JJ)")
     parser.add_argument("--budget-min", type=float, default=40, help="Avec --reconstituer : durée maximale (minutes)")
     parser.add_argument("--max-soirees", type=int, default=0, help="Avec --reconstituer : nombre maximal de soirées (0 = sans limite)")
     parser.add_argument("--publier-tous", type=int, default=0,
@@ -82,6 +82,9 @@ def main():
     parser.add_argument("--rattraper-ia", action="store_true",
                         help="Pas de passage normal : remplace par Gemini des résumés déterministes de la PHASE DE LIGUE")
     parser.add_argument("--max-cartes", type=int, default=10, help="Avec --rattraper-ia : cartes par passage")
+    parser.add_argument("--completer-xg", action="store_true",
+                        help="Pas de passage normal : ajoute les xG (ESPN / Opta) aux matchs des soirées existantes (--du / --au, "
+                             "--budget-min, --publier-tous)")
     parser.add_argument("--alerte", metavar="SOIREE",
                         help="Pas de collecte : envoie l'alerte ntfy d'échec de publication de la soirée (avec --cause)")
     parser.add_argument("--cause", default="inconnue", help="Cause de l'alerte : collecte, push, page_non_a_jour")
@@ -92,6 +95,8 @@ def main():
     if args.reconstituer:
         sys.exit(reconstitution.reconstituer(args.dossier_soirees, args.du, args.au, args.budget_min,
                                              args.max_soirees, args.publier_tous))
+    if args.completer_xg:
+        sys.exit(reconstitution.completer_xg(args.dossier_soirees, args.du, args.au, args.budget_min, args.publier_tous))
     if args.rattraper_ia:
         sys.exit(reconstitution.rattraper_ia(args.dossier_soirees, args.max_cartes))
     if args.notifier:
