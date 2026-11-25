@@ -133,6 +133,30 @@ def fetch_matches(comp_key: str, dates: List[str], erreurs: Optional[List[str]] 
     return [m for m in (data or []) if ((m.get("kickOffTime") or {}).get("date") or "")[:10] in wanted]
 
 
+_SAISONS: Dict[Tuple[str, int], List[Dict[str, Any]]] = {}
+
+
+def fetch_season_matches(comp_key: str, season_year: int) -> Optional[List[Dict[str, Any]]]:
+    """Tous les matchs d'une compétition pour une saison (liste de compétition, pagination par 500).
+
+    Sert à lister les soirées à reconstituer et à recalculer un classement passé (voir classement.py). Une seule
+    lecture par processus (cache) ; `None` si une page est illisible : jamais une liste tronquée présentée comme complète."""
+    cle = (comp_key, season_year)
+    if cle in _SAISONS:
+        return _SAISONS[cle]
+    out: List[Dict[str, Any]] = []
+    for offset in range(0, 5000, 500):
+        data = fetch_json(f"https://match.uefa.com/v5/matches?competitionId={COMPETITION_IDS[comp_key]}"
+                          f"&seasonYear={season_year}&offset={offset}&limit=500&order=ASC&language=FR")
+        if not isinstance(data, list):
+            return None
+        out.extend(data)
+        if len(data) < 500:
+            break
+    _SAISONS[cle] = out
+    return out
+
+
 def fetch_events(match_id: str) -> List[Dict[str, Any]]:
     evs: List[Dict[str, Any]] = []
     page = 500  # au-delà, l'API répond HTTP 400
@@ -200,6 +224,39 @@ def fetch_standings(comp_key: str, season_year: int) -> List[Dict[str, Any]]:
         })
     rows.sort(key=lambda r: r["rank"])
     return rows
+
+
+def stage_info(m: Dict[str, Any]) -> Dict[str, Any]:
+    """Phase d'un match UEFA : `stage` = league (phase de ligue, round.mode GROUP) / qualifying (tours préliminaires et
+    barrages) / knockout (le reste), plus le tour (nom FR et type UEFA), le sigle de journée et l'aller / retour."""
+    r = m.get("round") or {}
+    md = m.get("matchday") or {}
+    stage = "league" if (r.get("mode") or "") == "GROUP" else \
+        "qualifying" if (r.get("phase") or "") == "QUALIFYING" else "knockout"
+    return {"stage": stage,
+            "round": {"name": fr(r.get("translations"), "name") or (r.get("metaData") or {}).get("name", ""),
+                      "type": (r.get("metaData") or {}).get("type", "")},
+            "matchday_short": fr(md.get("translations"), "name"), "leg": md.get("type", "")}
+
+
+HEX_COULEUR = re.compile(r"^#[0-9a-fA-F]{6}$")
+
+
+def kit_info(lineups: Dict[str, Any]) -> Dict[str, Dict[str, str]]:
+    """Maillot porté par chaque équipe dans CE match (compositions UEFA) : `shirt_color` (hex #rrggbb) et `kit_image`
+    (image UEFA du maillot). Une valeur absente ou invalide reste absente (rien n'est déduit)."""
+    out: Dict[str, Dict[str, str]] = {}
+    for side, key in (("home", "homeTeam"), ("away", "awayTeam")):
+        block = (lineups or {}).get(key) or {}
+        info: Dict[str, str] = {}
+        color = block.get("shirtColor")
+        if isinstance(color, str) and HEX_COULEUR.match(color):
+            info["shirt_color"] = color.lower()
+        img = block.get("kitImageUrl")
+        if isinstance(img, str) and img.startswith("https://img.uefa.com/"):
+            info["kit_image"] = img
+        out[side] = info
+    return out
 
 
 # ------------------------------------------------------------------------------

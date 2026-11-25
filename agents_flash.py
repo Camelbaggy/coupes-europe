@@ -261,7 +261,8 @@ def build_match_dossier(comp_name: str, card: Dict[str, Any], match: Dict[str, A
             "2e": named_stats(match.get("stats", {}).get("2nd", []), names),
         },
         "fil_commentaires_espn_en_anglais": key_moments(comments),
-        "classement_apres_match": {k: standings_row.get(k) for k in ("rank", "points", "played", "won", "drawn", "lost", "gd", "zone")}
+        "classement_apres_match": {k: standings_row.get(k) for k in ("rank", "points", "played", "won", "drawn", "lost", "gd", "zone")
+                                  if standings_row.get(k) is not None}
         if standings_row else None,
     }
 
@@ -397,13 +398,15 @@ def build_deterministic_fallback_summary(card: Dict[str, Any], match: Dict[str, 
     s4 = ""
     rank = card.get("club_rank") or (standings_row or {}).get("rank")
     if rank:
-        zone = card.get("club_zone") or standings_row.get("zone")
+        zone = card.get("club_zone") or (standings_row or {}).get("zone")
+        # zone absente (classement recalculé d'une soirée passée) : on ne la devine pas, on n'en parle pas
         zone_txt = {"top8": "dans le top 8 qualificatif pour les 8es de finale",
-                    "playoff": "en zone de barrages (9e-24e)"}.get(zone, "en zone d'élimination (25e-36e)")
+                    "playoff": "en zone de barrages (9e-24e)",
+                    "eliminated": "en zone d'élimination (25e-36e)"}.get(zone)
         rank_txt = "1er" if rank == 1 else f"{rank}e"
         pts = (standings_row or {}).get("points")
         pts_txt = f" avec {_pl(pts, 'point')}" if pts is not None else ""
-        s4 = f"Au classement, {club} est {rank_txt}{pts_txt}, {zone_txt}."
+        s4 = f"Au classement, {club} est {rank_txt}{pts_txt}" + (f", {zone_txt}." if zone_txt else ".")
     return " ".join(x for x in (s1, s2, s3, s4) if x)
 
 
@@ -451,7 +454,7 @@ def summarize_card(comp_name: str, card: Dict[str, Any], match: Dict[str, Any],
     return None
 
 
-def orchestrate_flash_agents(input_path: str = "data_raw.json", output_path: str = "data.json") -> Dict[str, Any]:
+def orchestrate_flash_agents(input_path: str = "data_raw.json", output_path: Optional[str] = "data.json") -> Dict[str, Any]:
     with open(input_path, "r", encoding="utf-8") as f:
         data = json.load(f)
 
@@ -495,9 +498,12 @@ def orchestrate_flash_agents(input_path: str = "data_raw.json", output_path: str
         for m in comp.get("matches", []):
             m.pop("actions", None)  # matière première de l'IA, inutile côté dashboard
     data["notification"]["summary"] = run_notif_agent(recap)
-    with open(output_path, "w", encoding="utf-8") as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
-    print(f"[OK] Résumés terminés -> {output_path}")
+    if output_path:  # None : l'appelant (run_pipeline) range lui-même le résultat (soirees/<date>.json + data.json)
+        with open(output_path, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+        print(f"[OK] Résumés terminés -> {output_path}")
+    else:
+        print("[OK] Résumés terminés")
     return data
 
 

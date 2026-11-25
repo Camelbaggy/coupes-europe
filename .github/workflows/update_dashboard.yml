@@ -97,7 +97,7 @@ jobs:
           retention-days: 7
           if-no-files-found: ignore
 
-      - name: Publication de data.json et etat_soirees.json (si modifiés)
+      - name: Publication de data.json, soirees/ et etat_soirees.json (si modifiés)
         # échec du push = job en échec : pas de notification de résultats, alerte d'échec plus bas
         id: publier
         if: success()

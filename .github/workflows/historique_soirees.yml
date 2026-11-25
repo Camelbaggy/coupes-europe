@@ -1,0 +1,66 @@
+name: Historique des soirées (reconstitution, sans notification)
+
+# Reconstitue les soirées passées de la saison (phase de ligue ET tours préliminaires) dans soirees/<date>.json avec le même
+# pipeline que le passage du soir (notes, momentum, statistiques ; classement de la phase de ligue RECALCULÉ ; résumés
+# DÉTERMINISTES : aucun Gemini, voir rattrapage_ia.yml). La liste des dates vient de l'API UEFA. Reprenable : une soirée dont
+# le fichier existe est sautée. Ne notifie jamais, ne touche pas à etat_soirees.json ni (sauf soirée plus récente) à data.json.
+# Publication toutes les 4 soirées (publier.sh --soirees, push robuste). Se relance tant qu'il reste des soirées ET que le
+# passage a progressé (pas de boucle sans progrès). À lancer sur main : gh workflow run historique_soirees.yml --ref main
+on:
+  workflow_dispatch:
+    inputs:
+      du:
+        description: 'Première date à reconstituer (AAAA-MM-JJ, vide = depuis le début de la saison)'
+        required: false
+        type: string
+      au:
+        description: 'Dernière date à reconstituer (AAAA-MM-JJ, vide = jusqu''à la dernière soirée dont le créneau normal est passé)'
+        required: false
+        type: string
+
+permissions:
+  contents: write
+  actions: write
+
+# groupe distinct de update-dashboard (une file d'attente commune annulerait un passage en attente) : l'historique et le
+# passage du soir écrivent des fichiers différents, publier.sh réconcilie soirees/index.json après un rebase.
+concurrency:
+  group: historique-soirees
+  cancel-in-progress: false
+
+jobs:
+  reconstituer:
+    runs-on: ubuntu-latest
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Reconstitution des soirées passées (résumés déterministes, aucune notification)
+        id: recons
+        env:
+          PYTHONUNBUFFERED: "1"
+          AI_BUDGET_SECONDS: "0"
+          DU: ${{ inputs.du }}
+          AU: ${{ inputs.au }}
+        run: |
+          OPTS=""
+          [ -n "$DU" ] && OPTS="$OPTS --du $DU"
+          [ -n "$AU" ] && OPTS="$OPTS --au $AU"
+          python run_pipeline.py --reconstituer --budget-min 40 --publier-tous 4 $OPTS
+
+      - name: Relance tant qu'il reste des soirées (et que ce passage a progressé)
+        if: success() && steps.recons.outputs.restantes != '' && steps.recons.outputs.restantes != '0' && steps.recons.outputs.traitees != '' && steps.recons.outputs.traitees != '0'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          DU: ${{ inputs.du }}
+          AU: ${{ inputs.au }}
+        run: |
+          OPTS=""
+          [ -n "$DU" ] && OPTS="$OPTS -f du=$DU"
+          [ -n "$AU" ] && OPTS="$OPTS -f au=$AU"
+          echo "Il reste ${{ steps.recons.outputs.restantes }} soirée(s) : relance."
+          gh workflow run historique_soirees.yml --repo "${{ github.repository }}" --ref "${{ github.ref_name }}" $OPTS

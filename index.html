@@ -30,6 +30,10 @@
       --away-ink: color-mix(in srgb, var(--away-color) 55%, var(--text-main));
     }
 
+    [hidden] { display: none !important; }
+    /* Un balayage horizontal sert aux onglets (attachTabSwipe) : pas de retour arrière du navigateur par-dessus */
+    html, body { overscroll-behavior-x: none; }
+
     * {
       box-sizing: border-box;
       margin: 0;
@@ -114,8 +118,25 @@
       border-bottom-color: var(--accent-uecl);
     }
 
+    /* Soirées : menu déroulant (soirees/index.json) */
+    .soiree-bar { margin: -4px 0 8px; }
+    .soiree-bar[hidden] { display: none; }
+    #soiree-select {
+      width: 100%; min-height: 40px; padding: 8px 34px 8px 12px; border-radius: 10px; border: 1px solid var(--border);
+      background: var(--bg-card) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") no-repeat right 12px center;
+      color: var(--text-main); font: inherit; font-size: 0.88rem; font-weight: 600; text-overflow: ellipsis;
+      -webkit-appearance: none; appearance: none; cursor: pointer;
+    }
+    #soiree-select:disabled { opacity: 0.6; }
+    #soiree-select option { background: var(--bg-card); color: var(--text-main); }
+    .soiree-note { font-size: 0.76rem; color: var(--text-muted); line-height: 1.5; }
+    .soiree-note[hidden] { display: none; }
+    main.loading { opacity: 0.45; pointer-events: none; transition: opacity 0.15s ease; }
+    .sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); border: 0; }
+
     /* CONTENEUR PRINCIPAL */
     main {
+      min-height: calc(var(--app-h) - 150px); /* zone de glissement entre coupes : toute la hauteur visible */
       max-width: 680px;
       margin: 0 auto;
       padding: 16px;
@@ -197,6 +218,9 @@
       background: rgba(245, 158, 11, 0.16);
       color: #fbbf24;
       border: 1px solid rgba(245, 158, 11, 0.35);
+    }
+    .rank-pill.none {
+      background: var(--bg-elevated); color: var(--text-muted); border: 1px solid var(--border);
     }
     .rank-pill.eliminated {
       background: rgba(239, 68, 68, 0.16);
@@ -710,12 +734,12 @@
     .st-half.l i { background: var(--home-color); } .st-half.r i { background: var(--away-color); }
     .st-half i.dim { opacity: 0.4; }
 
-    /* Glissement entre onglets */
-    .modal-body.slide-l { animation: slideInL 0.2s ease-out; }
-    .modal-body.slide-r { animation: slideInR 0.2s ease-out; }
+    /* Glissement entre onglets (composant attachTabSwipe / slideIn : accueil, fiche de match, futures feuilles) */
+    .slide-l { animation: slideInL 0.2s ease-out; }
+    .slide-r { animation: slideInR 0.2s ease-out; }
     @keyframes slideInL { from { transform: translateX(28px); opacity: 0.4; } to { transform: none; opacity: 1; } }
     @keyframes slideInR { from { transform: translateX(-28px); opacity: 0.4; } to { transform: none; opacity: 1; } }
-    @media (prefers-reduced-motion: reduce) { .modal-body.slide-l, .modal-body.slide-r { animation: none; } }
+    @media (prefers-reduced-motion: reduce) { .slide-l, .slide-r { animation: none; } }
 
     img.flag {
       width: 18px;
@@ -824,6 +848,10 @@
       </div>
       <span class="badge-live" id="last-updated-badge">Chargement…</span>
     </div>
+    <div class="soiree-bar" id="soiree-bar" hidden>
+      <label class="sr-only" for="soiree-select">Soirée affichée</label>
+      <select id="soiree-select" onchange="chooseSoiree(this.value)"></select>
+    </div>
     <nav class="tabs-bar">
       <button class="tab-btn active" data-comp="ucl" onclick="switchCompetition('ucl')">Ligue des Champions</button>
       <button class="tab-btn" data-comp="uel" onclick="switchCompetition('uel')">Ligue Europa</button>
@@ -831,7 +859,8 @@
     </nav>
   </header>
 
-  <main>
+  <main id="main-zone">
+    <div class="soiree-note" id="soiree-note" hidden></div>
     <!-- 1. FOCUS CLUBS FRANÇAIS -->
     <section>
       <div class="section-header">
@@ -851,7 +880,7 @@
     </section>
 
     <!-- 4. CLASSEMENT GÉNÉRAL DES 36 ÉQUIPES OU BRACKET -->
-    <section>
+    <section id="standings-section">
       <div class="section-header">
         <h2 class="section-title" id="standings-title">Classement Phase de Ligue (36 équipes)</h2>
       </div>
@@ -965,33 +994,148 @@
     const esc = (v) => String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
     document.getElementById('grid-hint').innerHTML = infoBtn('Toucher un match pour ouvrir sa fiche détaillée.', 'Aide');
 
-    async function initDashboard() {
+    // ---------- Soirées : soirees/index.json (menu) + soirees/<date>.json ; repli sur data.json sans index ----------
+    const COMP_KEYS = ['ucl', 'uel', 'uecl'];
+    const COMP_SHORT = { ucl: 'LDC', uel: 'LE', uecl: 'LC' };
+    let soireeIndex = null;        // lignes de l'index (plus récente d'abord) ; null = pas d'index : menu masqué
+    let currentSoiree = null;
+    let soireeToken = 0;
+    const soireeCache = new Map();
+
+    async function fetchJson(url) {
       try {
-        const response = await fetch('data.json?t=' + Date.now());
-        if (!response.ok) throw new Error('HTTP ' + response.status);
-        appData = await response.json();
-      } catch (e) {
-        document.querySelector('main').innerHTML =
-          `<div class="empty-state">Impossible de charger data.json (${esc(e.message)}).<br>Ouvre la page via GitHub Pages ou un serveur local (python -m http.server).</div>`;
-        return;
-      }
+        const r = await fetch(url + (url.includes('?') ? '&' : '?') + 't=' + Date.now());
+        return r.ok ? await r.json() : null;
+      } catch (e) { return null; }
+    }
+
+    // Soirée demandée par l'URL : ?soiree=AAAA-MM-JJ, #soiree=AAAA-MM-JJ ou #AAAA-MM-JJ
+    function soireeFromUrl() {
+      const q = new URLSearchParams(location.search).get('soiree');
+      const h = location.hash.replace(/^#(soiree=)?/, '');
+      return [q, h].find(v => v && /^\d{4}-\d{2}-\d{2}$/.test(v)) || null;
+    }
+
+    // « mardi 24 novembre 2026 · LDC J5 » ; coupes de même tour regroupées : « LDC/LE/LC J5 · … »
+    function soireeLabel(l) {
+      const date = new Date(l.date + 'T12:00:00Z').toLocaleDateString('fr-FR',
+        { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
+      const groups = [];
+      COMP_KEYS.forEach(k => {
+        const c = l.competitions && l.competitions[k];
+        if (!c) return;
+        const g = groups.find(x => x.tour === c.tour);
+        if (g) g.k.push(COMP_SHORT[k]); else groups.push({ tour: c.tour, k: [COMP_SHORT[k]] });
+      });
+      const comps = groups.map(g => g.k.join('/') + (g.tour ? ' ' + g.tour : '')).join(' · ');
+      return date + (comps ? ' · ' + comps : '') + (l.statut === 'partiel' ? ' (partielle)' : '');
+    }
+
+    function renderSoireeMenu() {
+      const bar = document.getElementById('soiree-bar');
+      bar.hidden = !soireeIndex;
+      if (!soireeIndex) return;
+      const sel = document.getElementById('soiree-select');
+      sel.innerHTML = soireeIndex.map(l => `<option value="${esc(l.date)}">${esc(soireeLabel(l))}</option>`).join('');
+      sel.value = currentSoiree;
+    }
+
+    function updateBadgeAndNote() {
+      const badge = document.getElementById('last-updated-badge'), note = document.getElementById('soiree-note');
       if (appData.last_updated) {
         const d = new Date(appData.last_updated);
-        document.getElementById('last-updated-badge').textContent =
-          'MàJ ' + d.toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Paris' });
+        badge.textContent = (appData.reconstituee ? 'Reconstituée ' : 'MàJ ') +
+          d.toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Paris' });
       }
+      if (appData.reconstituee) {
+        const le = appData.reconstituee_le ? new Date(appData.reconstituee_le).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Europe/Paris' }) : '';
+        note.innerHTML = 'Soirée reconstituée' + (le ? ' le ' + esc(le) : '') + ' à partir des données officielles UEFA ' +
+          infoBtn('<p>Cette soirée a été rejouée après coup avec le même pipeline que les soirées du jour : scores, buteurs, statistiques, momentum et notes des joueurs viennent de l\'UEFA.</p><p>Le classement de la phase de ligue est recalculé d\'après les scores (voir son info-bulle). Les résumés sont d\'abord générés sans IA à partir des données officielles ; ceux de la phase de ligue sont ensuite remplacés par des résumés IA contrôlés.</p>', 'Soirée reconstituée');
+        note.hidden = false;
+      } else { note.hidden = true; note.innerHTML = ''; }
+    }
+
+    // Choisit la coupe affichée : celle demandée si elle a des matchs, sinon la première qui en a (évite un écran vide)
+    function pickCompetition() {
+      const has = (k) => ((appData.competitions || {})[k] || {}).matches && appData.competitions[k].matches.length > 0;
+      if (!has(currentComp)) { const k = COMP_KEYS.find(has); if (k) currentComp = k; }
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.comp === currentComp));
+    }
+
+    // Charge (cache, puis data.json pour la plus récente, sinon soirees/<date>.json) et affiche une soirée.
+    async function showSoiree(date) {
+      const token = ++soireeToken;
+      const main = document.getElementById('main-zone'), sel = document.getElementById('soiree-select');
+      main.classList.add('loading'); sel.disabled = true;
+      let data = soireeCache.get(date);
+      if (!data) {
+        if (soireeIndex && date === soireeIndex[0].date) {
+          const latest = await fetchJson('data.json');   // data.json = copie de la soirée la plus récente
+          if (latest && (latest.target_dates || []).length === 1 && latest.target_dates[0] === date) data = latest;
+        }
+        if (!data) data = await fetchJson('soirees/' + date + '.json');
+        if (data) soireeCache.set(date, data);
+      }
+      if (token !== soireeToken) return;   // une autre soirée a été demandée entre-temps
+      main.classList.remove('loading'); sel.disabled = false;
+      if (!data) {
+        main.insertAdjacentHTML('afterbegin', `<div class="empty-state" id="soiree-err">Impossible de charger la soirée du ${esc(date)}.</div>`);
+        return;
+      }
+      const err = document.getElementById('soiree-err'); if (err) err.remove();
+      appData = data;
+      currentSoiree = date;
+      if (soireeIndex) document.getElementById('soiree-select').value = date;
+      updateBadgeAndNote();
+      pickCompetition();
       renderCompetition(currentComp);
     }
 
-    function switchCompetition(compKey) {
+    // Menu : change de soirée et rend l'URL partageable (?soiree=AAAA-MM-JJ, sans nouvelle entrée d'historique)
+    function chooseSoiree(date) {
+      if (!date || date === currentSoiree) return;
+      const u = new URL(location.href);
+      u.searchParams.set('soiree', date);
+      u.hash = '';
+      try { history.replaceState(null, '', u); } catch (e) { /* aperçu hors page : sans effet */ }
+      showSoiree(date);
+    }
+
+    async function initDashboard() {
+      const idx = await fetchJson('soirees/index.json');
+      const lignes = Array.isArray(idx) ? idx.filter(l => l && /^\d{4}-\d{2}-\d{2}$/.test(l.date)).sort((a, b) => b.date.localeCompare(a.date)) : [];
+      soireeIndex = lignes.length ? lignes : null;
+      if (soireeIndex) {
+        const wanted = soireeFromUrl();
+        currentSoiree = soireeIndex.some(l => l.date === wanted) ? wanted : soireeIndex[0].date;
+        renderSoireeMenu();
+        await showSoiree(currentSoiree);
+        return;
+      }
+      // Pas d'index (hébergement ancien, première publication) : data.json seul, sans menu
+      const latest = await fetchJson('data.json');
+      if (!latest) {
+        document.querySelector('main').innerHTML =
+          `<div class="empty-state">Impossible de charger data.json.<br>Ouvre la page via GitHub Pages ou un serveur local (python -m http.server).</div>`;
+        return;
+      }
+      appData = latest;
+      updateBadgeAndNote();
+      pickCompetition();
+      renderCompetition(currentComp);
+    }
+
+    function switchCompetition(compKey, slide) {
       currentComp = compKey;
       document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.comp === compKey));
       renderCompetition(compKey);
+      if (slide) slideIn(document.getElementById('main-zone'), slide);
     }
 
     function getZoneLabel(zone, rank) {
       if (!rank) return 'Classement n.d.';
       const r = rank === 1 ? '1er' : `${rank}e`;
+      if (!zone) return r;   // classement recalculé d'une soirée passée : pas de zone (n'a de sens qu'à la dernière journée)
       if (zone === 'top8') return `${r} • Top 8 (8es)`;
       if (zone === 'playoff') return `${r} • Barrages`;
       return `${r} • Zone élim.`;
@@ -1020,7 +1164,7 @@
             <article class="fr-card" onclick="openMatchModal('${esc(fc.match_id)}')">
               <div class="fr-card-top">
                 <span class="fr-club-tag">${flag(fc.home_team.name === fc.club_name ? fc.home_team : fc.away_team) || '🇫🇷'} ${esc(fc.club_name)}</span>
-                <span class="rank-pill ${esc(fc.club_zone || 'playoff')}">${getZoneLabel(fc.club_zone, fc.club_rank)}</span>
+                <span class="rank-pill ${esc(fc.club_zone || 'none')}">${getZoneLabel(fc.club_zone, fc.club_rank)}</span>
               </div>
               <div class="fr-scoreline">
                 <div class="team-name home ${fc.home_team.is_french ? 'is-fr' : ''}">${esc(fc.home_team.name)} ${flag(fc.home_team)}</div>
@@ -1062,16 +1206,25 @@
           </div>`).join('');
       }
 
-      // 4. Classement
+      // 4. Classement : officiel UEFA (soirée récente) ou recalculé depuis les scores (soirée passée) ; rien pour les préliminaires
+      const stSection = document.getElementById('standings-section');
       const stContainer = document.getElementById('standings-container');
-      if (!comp.standings || comp.standings.length === 0) {
+      const stTitle = document.getElementById('standings-title');
+      const source = comp.standings_source || 'officiel';
+      const hasStandings = comp.standings && comp.standings.length > 0;
+      stSection.hidden = source === 'absent' || (!hasStandings && source === 'calcule');
+      document.getElementById('standings-legend').hidden = source === 'calcule';
+      stTitle.innerHTML = source === 'calcule'
+        ? `Classement Phase de Ligue · calculé ${infoBtn(standingsInfoHtml(comp.standings_at), 'Méthode du classement calculé')}`
+        : 'Classement Phase de Ligue (36 équipes)';
+      if (!hasStandings) {
         stContainer.innerHTML = `<div class="empty-state">Classement indisponible.</div>`;
       } else {
         const rowsHtml = comp.standings.map(r => {
-          const isCutoff = (r.rank === 8 || r.rank === 24) ? 'zone-cutoff' : '';
+          const isCutoff = r.zone && (r.rank === 8 || r.rank === 24) ? 'zone-cutoff' : '';
           return `
-            <tr class="zone-${esc(r.zone)} ${r.is_french ? 'is-fr-row' : ''} ${isCutoff}">
-              <td class="rank-cell">${r.rank}</td>
+            <tr class="${r.zone ? 'zone-' + esc(r.zone) : ''} ${r.is_french ? 'is-fr-row' : ''} ${isCutoff}">
+              <td class="rank-cell">${r.rank}${r.ex_aequo ? '=' : ''}</td>
               <td class="col-team">${flag(r)} ${esc(r.team)}${r.is_french ? '<span class="fr-badge-inline">FRA</span>' : ''}</td>
               <td>${r.played}</td>
               <td>${esc(r.gd)}</td>
@@ -1084,6 +1237,15 @@
             <tbody>${rowsHtml}</tbody>
           </table>`;
       }
+    }
+
+    // Texte de l'info-bulle d'un classement recalculé : ce qui est appliqué, et ce qui ne l'est pas (voir classement.py)
+    function standingsInfoHtml(at) {
+      const d = at ? new Date(at + 'T12:00:00Z').toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' }) : '';
+      return `<p><b>Classement calculé</b> d'après les scores des matchs de phase de ligue terminés${d ? ' jusqu\'au ' + esc(d) + ' inclus' : ''} : l'UEFA ne fournit que le classement actuel, jamais celui d'une date passée.</p>
+        <p>Départage appliqué, dans l'ordre : points, différence de buts, buts marqués, buts marqués à l'extérieur, victoires, victoires à l'extérieur, puis points, différence de buts et buts marqués de l'ensemble des adversaires affrontés.</p>
+        <p>Non appliqués faute de données à cette date : points disciplinaires et coefficient UEFA. Les clubs encore à égalité portent le même rang, suivi de =.</p>
+        <p>Les zones (8es directs, barrages, élimination) ne sont pas indiquées : elles n'ont de sens qu'après la dernière journée.</p>`;
     }
 
     // 3. Tiroir modal (4 vues)
@@ -1115,10 +1277,9 @@
       currentModalView = viewName;
       document.querySelectorAll('.subtab-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.view === viewName));
       const body = document.getElementById('modal-body-content');
-      body.classList.remove('slide-l', 'slide-r');
       body.scrollTop = 0;
       renderModalContent();
-      if (slide) { void body.offsetWidth; body.classList.add(slide); }
+      slideIn(body, slide);
     }
 
     let statsScrollKeep = false;
@@ -1514,13 +1675,23 @@
     attachSheetDrag(document.getElementById('modal-sheet'), document.getElementById('modal-body-content'), '.sheet-handle, .modal-header', () => closeMatchModal());
     attachSheetDrag(document.getElementById('player-sheet'), document.getElementById('player-body'), '.sheet-handle, .ps-head', () => closePlayer());
 
-    // ---------- Glissement horizontal entre onglets ----------
-    const MODAL_VIEWS = ['events', 'lineups', 'stats'];
-    (function initSwipe() {
+    // ---------- Glissement horizontal entre onglets : COMPOSANT UNIQUE ----------
+    // slideIn(el, 'slide-l' | 'slide-r') : transition d'arrivée du nouveau contenu (désactivée si prefers-reduced-motion).
+    function slideIn(el, cls) {
+      el.classList.remove('slide-l', 'slide-r');
+      if (cls) { void el.offsetWidth; el.classList.add(cls); }
+    }
+    // attachTabSwipe({ zone, stop, tabs, current, go }) : un geste horizontal dans `zone()` passe à l'onglet voisin.
+    //   zone()    élément sensible (null = désactivé) ; stop() borne de la remontée DOM pour détecter un défilement en X
+    //   tabs()    identifiants des onglets dans l'ordre ; current() onglet actif ; go(id, 'slide-l' | 'slide-r') change d'onglet
+    // Règles communes à tous les usages : seuil 56 px, |dx| >= 1,5 |dy| (le défilement vertical n'est jamais gêné), pas de
+    // boucle (aucun effet au premier / dernier onglet), ignoré sur un élément défilant en X ou marqué data-noswipe, et sur les
+    // champs de saisie. Écoute en fin de geste seulement (aucun preventDefault) : le défilement vertical reste natif.
+    // Réutilisé par l'accueil (coupes), la fiche de match (Déroulé / Compos / Stats) et toute future feuille (fiche club).
+    function attachTabSwipe({ zone, stop, tabs, current, go, min = 56 }) {
       let sx = 0, sy = 0, ok = false;
-      const zone = () => document.getElementById('modal-body-content');
-      const scrollsX = (el, stop) => {
-        for (; el && el !== stop; el = el.parentElement) {
+      const scrollsX = (el, limit) => {
+        for (; el && el !== limit; el = el.parentElement) {
           if (el.dataset && el.dataset.noswipe) return true;
           if (el.scrollWidth > el.clientWidth + 1 && /(auto|scroll)/.test(getComputedStyle(el).overflowX)) return true;
         }
@@ -1528,19 +1699,33 @@
       };
       document.addEventListener('touchstart', (e) => {
         const z = zone();
-        ok = !!(z && e.touches.length === 1 && z.contains(e.target) && !scrollsX(e.target, z.parentElement));
+        ok = !!(z && e.touches.length === 1 && z.contains(e.target) && !e.target.closest('input, select, textarea') &&
+                !scrollsX(e.target, stop ? stop() : z.parentElement));
         if (ok) { sx = e.touches[0].clientX; sy = e.touches[0].clientY; }
       }, { passive: true });
+      document.addEventListener('touchcancel', () => { ok = false; }, { passive: true });
       document.addEventListener('touchend', (e) => {
         if (!ok) return;
         ok = false;
         const t = e.changedTouches[0], dx = t.clientX - sx, dy = t.clientY - sy;
-        if (Math.abs(dx) < 56 || Math.abs(dx) < 1.5 * Math.abs(dy)) return;
-        const i = MODAL_VIEWS.indexOf(currentModalView), j = i + (dx < 0 ? 1 : -1);
-        if (j < 0 || j >= MODAL_VIEWS.length) return;
-        switchModalView(MODAL_VIEWS[j], dx < 0 ? 'slide-l' : 'slide-r');
+        if (Math.abs(dx) < min || Math.abs(dx) < 1.5 * Math.abs(dy)) return;
+        const list = tabs(), i = list.indexOf(current()), j = i + (dx < 0 ? 1 : -1);
+        if (i < 0 || j < 0 || j >= list.length) return;
+        closeInfo();
+        go(list[j], dx < 0 ? 'slide-l' : 'slide-r');
       }, { passive: true });
-    })();
+    }
+    const MODAL_VIEWS = ['events', 'lineups', 'stats'];
+    attachTabSwipe({   // fiche de match
+      zone: () => document.getElementById('modal-body-content'),
+      stop: () => document.getElementById('modal-sheet'),
+      tabs: () => MODAL_VIEWS, current: () => currentModalView, go: switchModalView,
+    });
+    attachTabSwipe({   // accueil : LDC / LE / LC (la zone s'arrête là où commence une feuille ouverte : elles sont hors de <main>)
+      zone: () => document.getElementById('main-zone'),
+      stop: () => document.body,
+      tabs: () => COMP_KEYS, current: () => currentComp, go: switchCompetition,
+    });
 
     // ---------- Joueurs : liens, notes, fiche individuelle ----------
     function ratingClass(r) {

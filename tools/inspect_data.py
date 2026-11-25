@@ -6,7 +6,7 @@ d = json.load(open(sys.argv[1] if len(sys.argv) > 1 else "data.json", encoding="
 print("notification:", d["notification"])
 print("notes:", d.get("ratings"))
 for k, c in d["competitions"].items():
-    print(f"\n===== {k} — {c['matchday_label']} — {len(c['matches'])} matchs — {len(c['standings'])} au classement — {c['stage_type']}")
+    print(f"\n===== {k} — {c['matchday_label']} — {len(c['matches'])} matchs — {len(c['standings'])} au classement ({c.get('standings_source', 'officiel')}) — {c['stage_type']}")
     print("Français au classement:", [(r["rank"], r["team"], r["points"]) for r in c["standings"] if r["is_french"]])
     print("Drapeaux manquants:", [(r["team"], r.get("country")) for r in c["standings"] if not r.get("flag")])
     for f in c["french_clubs_focus"]:
