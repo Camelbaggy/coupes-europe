@@ -30,6 +30,9 @@ python run_pipeline.py --rattraper-ia --max-cartes 10   # remplace par Gemini de
 python -m http.server 8000                              # voir index.html (il lit data.json et soirees/ via fetch)
 python -m py_compile *.py tools/*.py                    # contrôle statique
 python soirees.py --test && python publication.py --test && bash tools/test_veille.sh && python tools/verifier_workflows.py   # tests locaux : état / notification unique, veille.sh (faux gh), `bash -n` de chaque bloc `run:` des workflows
+python clubs.py --test                                  # fiches de club : extraction, agrégats, alias, valeur absente = absente (sans réseau)
+python clubs.py --tous                                  # mise à jour complète de clubs/ (UEFA + Wikidata + Wikipédia, ~10 min)
+python clubs.py --clubs 52747,52277                     # certains clubs seulement (identifiants UEFA)
 python classement.py --test && python historique.py --test && python reconstitution.py --test   # classement recalculé (cas réel LDC), soirees/ + index + data.json, reconstitution et rattrapage IA (doublures, sans réseau)
 ```
 
@@ -55,14 +58,15 @@ run_pipeline.py ─┬─ collector.py ── uefa.py   (source principale, offi
                  ├─ agents_flash.py (dossier factuel → Gemini rédacteur → Gemini contrôleur, repli déterministe)
                  ├─ historique.py (soirees/<date>.json + soirees/index.json ; data.json = soirée la plus récente)
                  ├─ classement.py (classement de phase de ligue RECALCULÉ depuis les scores, pour une soirée passée)
+                 ├─ clubs.py (fiches de club clubs/<id UEFA>.json + clubs/index.json : UEFA, Wikidata, Wikipédia FR)
                  ├─ reconstitution.py (--reconstituer : soirées passées ; --rattraper-ia : résumés Gemini par lots)
                  └─ notify.py (publication JSON ntfy)
-index.html  : page unique (CSS + JS inline), lit soirees/index.json + soirees/<date>.json (repli : data.json) ; aucune étape de build
+index.html  : page unique (CSS + JS inline), lit soirees/index.json + soirees/<date>.json (repli : data.json) + clubs/ ; aucune étape de build
 ```
 
 - `update_dashboard.yml` tourne mardi/mercredi/jeudi à 22h30 UTC (et le samedi en mai-juin pour la finale de LDC) et **commit `data.json` directement sur `main`** (GitHub retarde ce cron de plusieurs heures, passages réels vers 2 h-4 h UTC : sans `--date`, `run_pipeline.date_soiree_par_defaut` vise la soirée de la VEILLE avant 12 h UTC)
   (commits « chore: mise à jour automatique… »). Une branche de travail se retrouve donc vite derrière `main` ;
-  ne pas committer `data.json` ni `soirees/` à la main.
+  ne pas committer `data.json`, `soirees/` ni `clubs/` à la main.
 - `data_raw.json` (sortie collecteur, avec `raw_comments_for_llm` et `matches[].actions`) n'est pas versionné ;
   `agents_flash` retire ces champs avant d'écrire `data.json`.
 
@@ -143,6 +147,51 @@ fiches club, couleurs, historique européen.
 - **Premier lancement après fusion** : (1) `gh workflow run historique_soirees.yml --ref main` (puis il se relance seul), (2) `gh workflow run
   rattrapage_ia.yml --ref main` (puis le cron, 2 passages par jour), (3) relancer `battement.yml` seulement si `.github/scripts/veille.sh` a changé
   (ce n'est pas le cas ici).
+
+### Fiches de club (`clubs.py`, `clubs/`, étape 3)
+
+Décisions du propriétaire du 25/11/2026 (`docs/etude_fiches_clubs.md`) : entraîneur non affiché ; historique européen complet = plus tard (étape 5) ;
+couleurs = étape 4 séparée ; 5 alias Wikidata validés. Règle cardinale inchangée : valeur absente = absente (pas d'extrait, pas de stade : rien n'est affiché).
+- **Fichiers** (JSON compact, jamais édités à la main) : `clubs/index.json` `{saison, maj, clubs[]}` (108 clubs = les 36 du classement de chaque coupe : `id` UEFA, `nom`,
+  `nom_officiel`, `nom_court`, `pays`, `code_pays`, `drapeau`, `francais`, `logos{70,240,700}` (liens UEFA, rien n'est copié dans le dépôt), `competitions[]`, `qid` si
+  rapproché, `fichier`) et `clubs/<id UEFA>.json` : `stade` (le plus fréquent à domicile : nom, ville, capacité, ouverture, coordonnées, `source: "UEFA"`), `wikidata`
+  (`qid`, `preuve` = `P7361` ou `alias`, `fondation_annee`, `ville_siege`, `site`, `surnom`, `titre_wikipedia`, `maj`), `wikipedia` (`extrait`, `titre`, `url`, licence CC BY-SA 4.0,
+  `maj`), `saison.matchs[]` (tous les matchs UEFA de la saison, tours préliminaires compris : `match_id`, `date`, `heure_utc`, `comp`, `stage`, `tour`, `journee`, `manche`,
+  `domicile`, `adversaire{id,nom,logo,pays,drapeau}`, `pour` / `contre` (point de vue du club), `tab`, `resultat` V/N/D calculé, `statut`, `stade`, et `soiree` = date si
+  `soirees/<date>.json` existe) + `saison.forme` (5 derniers résultats) + `saison.prochain`, `rang[]` (classement UEFA actuel par coupe, `rang_precedent`, `tendance`),
+  `stats{comp}` (`matchs`, `cumul` = cumuls officiels `compstats`, `par_match` CALCULÉ = cumul / matchs (la possession, la précision et la vitesse ne sont pas divisées),
+  `vnd` calculé, `moyenne_competition{valeurs, clubs, maj}` CALCULÉE = moyenne simple des valeurs par match des clubs du classement), `effectif[]` (inscrits UEFA : `id`
+  = celui des `players` des soirées, numéro, âge, nationalité, photo, poste ; `joue` et `stats{comp}` (matchs, minutes, buts, passes, cartons, gardiens : arrêts / clean sheets)
+  seulement pour qui a des minutes), `maj`. `alias_clubs_wikidata.json` (racine, MANUEL) : `{id UEFA: {qid, valide_le, note}}` pour les clubs sans P7361 (Como, Sunderland,
+  Torreense, Mjällby, Sint-Truidense, validés le 25/11/2026) ; jamais de rapprochement automatique sans P7361 ni alias.
+- **Collecte** (`python clubs.py --tous | --clubs id,id | --test`, Python stdlib) : listes de saison UEFA (3 requêtes, `uefa.fetch_season_matches`, cache vidé avant lecture),
+  classements, cumuls d'équipe (`compstats team-statistics`, tous les clubs d'une coupe en 1-2 requêtes), effectif inscrit (`comp.uefa.com/v2/players` : le filtre par club est
+  IGNORÉ, on lit toute la compétition puis on filtre `clubId` ; seulement en mise à jour complète, sinon l'effectif précédent est gardé), stats des joueurs (`player-statistics`
+  par lots de 50). Wikidata : UNE requête SPARQL (P7361 + alias) pour tous les clubs à rafraîchir ; Wikipédia FR : API MediaWiki `action=query&prop=extracts|info|pageprops&exintro&explaintext` par LOTS DE 20 titres (titres lus dans le
+  lien Wikidata, redirections suivies, pages d'homonymie écartées ; extrait = paragraphes entiers jusqu'à 250 caractères, 900 au plus). **Ne pas utiliser `rest_v1/page/summary`
+  page par page** : mesuré le 25/11/2026, l'API REST répond HTTP 429 quasi systématiquement (4 résumés en 15 min, `Retry-After` qui s'allonge si on redemande trop tôt) alors que
+  le lot MediaWiki passe (6 requêtes pour 108 clubs). 2,2 s entre requêtes, `Retry-After` respecté, **3 échecs de suite = on laisse le reste au passage suivant** ;
+  fichiers écrits au fur et à mesure (l'index aussi, même si Wikipédia échoue). Cache : `wikidata` / `wikipedia` relus seulement après 30 jours ou s'ils manquent ; un échec ne remplace JAMAIS une valeur obtenue ;
+  un fichier n'est réécrit que si son contenu change (hors horodatage `maj`, sauf ceux des blocs Wikidata / Wikipédia qui servent de cache). La fondation = année seulement
+  (la précision d'une date Wikidata n'est pas lue : un 1er janvier peut être un défaut). Surnom : 1 club sur 108 en français (rien n'est inventé).
+- **Mise à jour** : (1) chaque passage de soirée (`run_pipeline.py`, après `historique.publier_soiree`) appelle `clubs.apres_soiree` : fiches des clubs qui ont joué +
+  ceux de `clubs/etat.json` `{a_refaire}` (clubs d'un passage précédent dont la mise à jour a échoué) ; **jamais bloquant** (exception, UEFA illisible : journal, les clubs restent
+  « à refaire », la notification part quand même) ; sans `clubs/index.json` (premier remplissage pas encore fait) : ignoré. Les fichiers partent dans le même commit que `data.json`
+  (`publier.sh` ajoute `clubs/`). (2) `clubs.yml` : cron lundi 5 h 17 UTC + dispatch, groupe `clubs`, 40 min, `python clubs.py --tous` puis `publier.sh --clubs` (clubs/ seul : jamais
+  `data.json`, `soirees/` ni `etat_soirees.json`, donc aucun effet sur le battement / la notification). Sert à rattraper effectifs, prochains matchs, soirées reconstituées depuis
+  (champ `soiree`), Wikidata / Wikipédia. La moyenne de compétition d'une fiche date de sa dernière mise à jour (affichée dans l'info-bulle).
+- **Interface** (`index.html`) : feuille `#club-sheet` (même tiroir que match / joueur : `attachSheetDrag`, pleine hauteur, fermeture vers le bas) à 4 onglets Aperçu · Matchs · Stats ·
+  Effectif, glissement par `attachTabSwipe` (3e usage du composant) ; textes de méthode / sources / crédits dans des `infoBtn` (le crédit Wikipédia CC BY-SA reste visible en une
+  ligne). **Empilement dynamique** : `bringToFront(el)` donne un z-index croissant à l'ouverture (club au-dessus du match qui l'ouvre, match ouvert depuis un club au-dessus du club,
+  joueur au-dessus de tout), chaque fermeture (bouton, glissement, fond, Échap = `closeTopSheet`) ne ferme que la feuille du dessus ; `syncBodyLock` gère le blocage du défilement
+  de la page ; `#info-pop` est à 100000. Points d'entrée (`clubLink(id, html)` : bouton seulement si le club est dans `clubIndex`, sinon texte simple) : noms de l'en-tête de la
+  fiche de match, lignes du classement (`tr.clickable`), étiquette de club des cartes françaises, en-têtes des compos, nom du club dans la fiche joueur, adversaires dans l'onglet
+  Matchs. **Matchs** : groupés par tour ; un score encadré (`soiree` renseignée) appelle `openMatchFromClub` : charge `soirees/<date>.json` (`soireeCache`) et ouvre
+  `openMatchModal(id, data, compKey)` (la soirée affichée en arrière-plan ne change pas). **Effectif** par poste (inscrits avec numéro ou minutes seulement, le reste compté dans
+  l'info-bulle) ; un joueur ouvre la fiche complète (`openPlayer(pid, match)`) s'il figure dans la soirée chargée, sinon une fiche RÉDUITE bâtie sur `clubs/<id>.json` (sans note :
+  elle se calcule match par match). `dateEnToutesLettres` : « Soirée du 2026-11-04 » devient « Soirée du mercredi 4 novembre » à l'affichage (libellés enregistrés inchangés).
+- **Poids mesuré** : voir la section « Mesures » de `docs/etude_fiches_clubs.md` (étape 3).
+- **Premier lancement après fusion** : `gh workflow run clubs.yml --ref main` seulement si `clubs/` n'a pas été commité (il l'est avec cette étape ; le cron du lundi suit).
 
 ### Schéma de `data.json` (ce que lit `index.html`)
 

@@ -814,7 +814,7 @@
     .info-btn[aria-expanded="true"] { color: var(--accent-ucl); }
     .info-row { display: flex; justify-content: flex-end; margin-top: 4px; }
     #info-pop {
-      position: fixed; z-index: 90; display: none; box-sizing: border-box; padding: 10px 12px;
+      position: fixed; z-index: 100000; display: none; box-sizing: border-box; padding: 10px 12px;
       background: var(--bg-elevated); color: var(--text-main, #e2e8f0); border: 1px solid var(--border); border-radius: 10px;
       box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5); font-size: 0.78rem; line-height: 1.5; max-height: 60vh; overflow-y: auto;
       overscroll-behavior: contain;
@@ -837,6 +837,84 @@
       color: var(--text-muted);
       font-size: 0.88rem;
     }
+
+    /* Fiche de club (feuille à onglets : Aperçu · Matchs · Stats · Effectif) ; empilement par z-index dynamique (bringToFront) */
+    .club-backdrop {
+      position: fixed; top: 0; left: 0; right: 0; height: var(--app-h); z-index: 55; display: none; align-items: flex-end; justify-content: center;
+      background: rgba(0, 0, 0, 0.6);
+    }
+    .club-backdrop.open { display: flex; }
+    .club-sheet {
+      background: var(--bg-card); width: 100%; max-width: 680px; height: calc(var(--app-h) - var(--sheet-gap)); display: flex; flex-direction: column;
+      border-radius: 20px 20px 0 0; border-top: 1px solid var(--border); overflow: hidden; animation: slideUp 0.22s ease-out; will-change: transform;
+    }
+    .club-sheet.settle { transition: transform 0.22s ease-out; }
+    @media (prefers-reduced-motion: reduce) { .club-sheet.settle { transition: none; } }
+    .club-head { touch-action: none; padding: 4px 16px 12px; background: var(--bg-elevated); border-bottom: 1px solid var(--border); }
+    .club-id { display: flex; align-items: center; gap: 12px; }
+    .club-logo { width: 52px; height: 52px; object-fit: contain; flex-shrink: 0; }
+    .club-logo.vide { display: inline-block; }
+    .club-name { font-size: 1.1rem; font-weight: 800; line-height: 1.2; }
+    .club-sub { font-size: 0.78rem; color: var(--text-muted); display: flex; flex-wrap: wrap; gap: 2px 8px; align-items: center; }
+    #club-tabs { grid-template-columns: repeat(4, 1fr); }
+    .club-body { padding: 14px 16px 24px; overflow-y: auto; flex: 1; min-height: 0; overscroll-behavior: contain; }
+    .club-link { background: none; border: 0; padding: 0; margin: 0; color: inherit; font: inherit; font-weight: inherit; text-align: inherit;
+      cursor: pointer; text-decoration: underline dotted rgba(148, 163, 184, 0.7); text-underline-offset: 3px; display: inline; }
+    .club-link:focus-visible, .plink:focus-visible { outline: 2px solid var(--accent-ucl); outline-offset: 2px; }
+    .team-name .club-link { display: inline-flex; align-items: center; gap: 6px; }
+    .standings-table tr.clickable { cursor: pointer; }
+    .cl-sec { margin-top: 16px; } .cl-sec:first-child { margin-top: 0; }
+    .cl-sec h4 { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); margin: 0 0 6px;
+      display: flex; align-items: center; gap: 4px; }
+    .cl-rank { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; background: var(--bg-main); border: 1px solid var(--border);
+      border-radius: 12px; padding: 10px 12px; margin-bottom: 6px; }
+    .cl-rank b { font-size: 1.5rem; line-height: 1; }
+    .cl-rank span { font-size: 0.8rem; color: var(--text-muted); }
+    .cl-trend-UP { color: var(--zone-top8); } .cl-trend-DOWN { color: var(--zone-elim); } .cl-trend-STABLE { color: var(--text-muted); }
+    .cl-form { display: flex; gap: 6px; }
+    .form-dot { width: 26px; height: 26px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center;
+      font-size: 0.74rem; font-weight: 800; color: #0b0f17; }
+    .form-V { background: #22c55e; } .form-N { background: #eab308; } .form-D { background: #ef4444; color: #fff; }
+    .cl-facts { display: grid; grid-template-columns: auto 1fr; gap: 6px 12px; font-size: 0.84rem; }
+    .cl-facts dt { color: var(--text-muted); } .cl-facts dd { margin: 0; text-align: right; overflow-wrap: anywhere; }
+    .cl-facts a, .cl-credit a { color: var(--accent-ucl); }
+    .cl-extract { font-size: 0.86rem; line-height: 1.55; white-space: pre-line; }
+    .cl-credit { font-size: 0.7rem; color: var(--text-muted); margin-top: 6px; display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+    .cl-next { background: var(--bg-main); border: 1px solid var(--border); border-radius: 12px; padding: 10px 12px; font-size: 0.86rem; }
+    .cl-round { font-size: 0.74rem; font-weight: 700; color: var(--text-muted); margin: 14px 0 6px; text-transform: uppercase; letter-spacing: 0.04em; }
+    .cl-round:first-child { margin-top: 0; }
+    .cl-match { display: grid; grid-template-columns: 64px 1fr auto 26px; align-items: center; gap: 8px; padding: 8px 6px; min-height: 44px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05); font-size: 0.84rem; }
+    .cl-date { font-size: 0.72rem; color: var(--text-muted); line-height: 1.25; }
+    .cl-opp { display: flex; align-items: center; gap: 6px; min-width: 0; }
+    .cl-opp img { width: 20px; height: 20px; object-fit: contain; flex-shrink: 0; }
+    .cl-opp .nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .cl-loc { font-size: 0.66rem; color: var(--text-muted); border: 1px solid var(--border); border-radius: 4px; padding: 0 4px; flex-shrink: 0; }
+    .cl-score { font-weight: 800; white-space: nowrap; text-align: right; }
+    button.cl-score { background: var(--bg-elevated); border: 1px solid var(--border); border-radius: 8px; color: var(--accent-ucl);
+      padding: 6px 10px; min-height: 36px; font: inherit; font-weight: 800; cursor: pointer; }
+    .cl-score small { display: block; font-size: 0.64rem; font-weight: 600; color: var(--text-muted); }
+    .cl-res { width: 22px; height: 22px; border-radius: 50%; font-size: 0.68rem; font-weight: 800; display: inline-flex; align-items: center;
+      justify-content: center; color: #0b0f17; }
+    .cl-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; font-variant-numeric: tabular-nums; }
+    .cl-table th { text-align: right; font-size: 0.68rem; color: var(--text-muted); font-weight: 600; padding: 4px 4px 6px; }
+    .cl-table th:first-child, .cl-table td:first-child { text-align: left; }
+    .cl-table td { text-align: right; padding: 7px 4px; border-top: 1px solid rgba(255, 255, 255, 0.05); }
+    .cl-table td.dim { color: var(--text-muted); }
+    .cl-table tr.grp td { text-align: left; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted);
+      border-top: 0; padding-top: 12px; }
+    .cl-eff-row { display: flex; align-items: center; gap: 8px; width: 100%; background: none; border: 0; border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      color: inherit; font: inherit; font-size: 0.84rem; text-align: left; padding: 6px 2px; min-height: 44px; cursor: pointer; }
+    .cl-eff-row .num { width: 26px; text-align: center; color: var(--text-muted); font-weight: 700; flex-shrink: 0; }
+    .cl-eff-row .who { flex: 1; min-width: 0; }
+    .cl-eff-row .who .nm { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+    .cl-eff-row .who small { color: var(--text-muted); font-size: 0.7rem; display: flex; align-items: center; gap: 4px; }
+    .cl-eff-row .st { font-size: 0.72rem; color: var(--text-muted); text-align: right; white-space: nowrap; }
+    .cl-eff-row img.ph { width: 34px; height: 34px; border-radius: 50%; object-fit: cover; background: var(--bg-elevated); flex-shrink: 0; }
+    .cl-eff-row.sans-minute .nm { font-weight: 500; color: var(--text-muted); }
+    #toast { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); z-index: 100001; background: var(--bg-elevated); color: var(--text-main);
+      border: 1px solid var(--border); border-radius: 10px; padding: 9px 14px; font-size: 0.82rem; box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+      max-width: calc(100vw - 32px); }
   </style>
 </head>
 <body>
@@ -924,6 +1002,22 @@
     <div class="player-sheet" id="player-sheet">
       <div class="sheet-handle" aria-hidden="true"></div>
       <div class="player-body" id="player-body"></div>
+    </div>
+  </div>
+
+
+  <!-- FICHE DE CLUB (empilée selon l'ordre d'ouverture : bringToFront) -->
+  <div class="club-backdrop" id="club-modal" onclick="if (event.target.id === 'club-modal') closeClub()">
+    <div class="club-sheet" id="club-sheet" role="dialog" aria-label="Fiche de club">
+      <div class="sheet-handle" aria-hidden="true"></div>
+      <div class="club-head" id="club-head"></div>
+      <div class="modal-subtabs" id="club-tabs">
+        <button class="subtab-btn active" data-cview="apercu" onclick="switchClubView('apercu')">Aperçu</button>
+        <button class="subtab-btn" data-cview="matchs" onclick="switchClubView('matchs')">Matchs</button>
+        <button class="subtab-btn" data-cview="stats" onclick="switchClubView('stats')">Stats</button>
+        <button class="subtab-btn" data-cview="effectif" onclick="switchClubView('effectif')">Effectif</button>
+      </div>
+      <div class="club-body" id="club-body"></div>
     </div>
   </div>
 
@@ -1102,7 +1196,7 @@
     }
 
     async function initDashboard() {
-      const idx = await fetchJson('soirees/index.json');
+      const [idx] = await Promise.all([fetchJson('soirees/index.json'), loadClubIndex()]);
       const lignes = Array.isArray(idx) ? idx.filter(l => l && /^\d{4}-\d{2}-\d{2}$/.test(l.date)).sort((a, b) => b.date.localeCompare(a.date)) : [];
       soireeIndex = lignes.length ? lignes : null;
       if (soireeIndex) {
@@ -1145,7 +1239,7 @@
       const comp = (appData && appData.competitions && appData.competitions[compKey]) ||
         { name: '', french_clubs_focus: [], matches: [], standings: [] };
 
-      document.getElementById('matchday-indicator').textContent = comp.matchday_label || '';
+      document.getElementById('matchday-indicator').textContent = dateEnToutesLettres(comp.matchday_label || '');
 
       // 1. Focus clubs français
       const frContainer = document.getElementById('french-focus-container');
@@ -1163,7 +1257,7 @@
           return `
             <article class="fr-card" onclick="openMatchModal('${esc(fc.match_id)}')">
               <div class="fr-card-top">
-                <span class="fr-club-tag">${flag(fc.home_team.name === fc.club_name ? fc.home_team : fc.away_team) || '🇫🇷'} ${esc(fc.club_name)}</span>
+                <span class="fr-club-tag">${clubLink(fc.club_id, `${flag(fc.home_team.name === fc.club_name ? fc.home_team : fc.away_team) || '🇫🇷'} ${esc(fc.club_name)}`)}</span>
                 <span class="rank-pill ${esc(fc.club_zone || 'none')}">${getZoneLabel(fc.club_zone, fc.club_rank)}</span>
               </div>
               <div class="fr-scoreline">
@@ -1223,9 +1317,9 @@
         const rowsHtml = comp.standings.map(r => {
           const isCutoff = r.zone && (r.rank === 8 || r.rank === 24) ? 'zone-cutoff' : '';
           return `
-            <tr class="${r.zone ? 'zone-' + esc(r.zone) : ''} ${r.is_french ? 'is-fr-row' : ''} ${isCutoff}">
+            <tr class="${r.zone ? 'zone-' + esc(r.zone) : ''} ${r.is_french ? 'is-fr-row' : ''} ${isCutoff} ${hasClub(r.team_id) ? 'clickable' : ''}"${hasClub(r.team_id) ? ` onclick="openClub('${esc(r.team_id)}')"` : ''}>
               <td class="rank-cell">${r.rank}${r.ex_aequo ? '=' : ''}</td>
-              <td class="col-team">${flag(r)} ${esc(r.team)}${r.is_french ? '<span class="fr-badge-inline">FRA</span>' : ''}</td>
+              <td class="col-team">${flag(r)} ${clubLink(r.team_id, esc(r.team))}${r.is_french ? '<span class="fr-badge-inline">FRA</span>' : ''}</td>
               <td>${r.played}</td>
               <td>${esc(r.gd)}</td>
               <td style="font-weight:800">${r.points}</td>
@@ -1249,24 +1343,28 @@
     }
 
     // 3. Tiroir modal (4 vues)
-    function openMatchModal(matchId) {
-      const comp = appData.competitions[currentComp];
-      activeMatch = (comp.matches || []).find(m => m.match_id === matchId);
-      if (!activeMatch) return;
+    // `data` / `compKey` : match d'une AUTRE soirée (ouvert depuis une fiche de club) ; par défaut la soirée affichée
+    function openMatchModal(matchId, data, compKey) {
+      const comp = ((data || appData).competitions || {})[compKey || currentComp] || {};
+      const found = (comp.matches || []).find(m => m.match_id === matchId);
+      if (!found) return false;
+      activeMatch = found;
       currentStatsPeriod = 'all';
       const meta = [comp.name, activeMatch.matchday, activeMatch.kickoff, activeMatch.status].filter(Boolean).join(' • ');
       document.getElementById('modal-comp-label').textContent = meta;
-      document.getElementById('modal-home-name').innerHTML = `${esc(activeMatch.home_team.name)} ${flag(activeMatch.home_team)}`;
-      document.getElementById('modal-away-name').innerHTML = `${flag(activeMatch.away_team)} ${esc(activeMatch.away_team.name)}`;
+      document.getElementById('modal-home-name').innerHTML = clubLink(activeMatch.home_team.id, `${esc(activeMatch.home_team.name)} ${flag(activeMatch.home_team)}`);
+      document.getElementById('modal-away-name').innerHTML = clubLink(activeMatch.away_team.id, `${flag(activeMatch.away_team)} ${esc(activeMatch.away_team.name)}`);
       document.getElementById('modal-score').textContent = `${activeMatch.home_team.score} - ${activeMatch.away_team.score}`;
       document.getElementById('match-modal').classList.add('open');
-      document.body.style.overflow = 'hidden';
+      bringToFront(document.getElementById('match-modal'));
+      syncBodyLock();
       switchModalView('events');
+      return true;
     }
 
     function closeMatchModal() {
       document.getElementById('match-modal').classList.remove('open');
-      document.body.style.overflow = '';
+      syncBodyLock();
     }
 
     function closeModalOnBackdrop(e) {
@@ -1275,7 +1373,7 @@
 
     function switchModalView(viewName, slide) {
       currentModalView = viewName;
-      document.querySelectorAll('.subtab-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.view === viewName));
+      document.querySelectorAll('#match-modal .subtab-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.view === viewName));
       const body = document.getElementById('modal-body-content');
       body.scrollTop = 0;
       renderModalContent();
@@ -1326,8 +1424,8 @@
         const subs = (list) => list.length ? list.map(p => `${esc(p.number)} ${p.potm ? '⭐ ' : ''}${plink(p.id, p.name)}${p.minute ? ' (' + esc(p.minute) + ')' : ''}${p.rating ? ` <span class="rating-badge ${ratingClass(p.rating)}" style="font-size:0.68rem">${esc(Number(p.rating).toFixed(1))}</span>` : ''}`).join(', ') : '—';
         container.innerHTML = `
           <div style="display:flex;justify-content:space-between;font-size:0.78rem;color:var(--text-muted);margin-bottom:8px">
-            <span>🔵 ${esc(m.home_team.short)} ${esc(m.home_team.formation || '')}</span>
-            <span>🔴 ${esc(m.away_team.short)} ${esc(m.away_team.formation || '')}</span>
+            <span>🔵 ${clubLink(m.home_team.id, esc(m.home_team.short))} ${esc(m.home_team.formation || '')}</span>
+            <span>🔴 ${clubLink(m.away_team.id, esc(m.away_team.short))} ${esc(m.away_team.formation || '')}</span>
           </div>
           <div class="pitch-container" id="pitch">
             <div class="pitch-midline"></div>
@@ -1674,6 +1772,7 @@
     }
     attachSheetDrag(document.getElementById('modal-sheet'), document.getElementById('modal-body-content'), '.sheet-handle, .modal-header', () => closeMatchModal());
     attachSheetDrag(document.getElementById('player-sheet'), document.getElementById('player-body'), '.sheet-handle, .ps-head', () => closePlayer());
+    attachSheetDrag(document.getElementById('club-sheet'), document.getElementById('club-body'), '.sheet-handle, .club-head', () => closeClub());
 
     // ---------- Glissement horizontal entre onglets : COMPOSANT UNIQUE ----------
     // slideIn(el, 'slide-l' | 'slide-r') : transition d'arrivée du nouveau contenu (désactivée si prefers-reduced-motion).
@@ -1727,6 +1826,310 @@
       tabs: () => COMP_KEYS, current: () => currentComp, go: switchCompetition,
     });
 
+    // ---------- Empilement des feuilles : la dernière ouverte est au-dessus (fiche de match, de club, de joueur) ----------
+    // Chaque feuille (backdrop) reçoit un z-index croissant à l'ouverture : une fiche club ouverte depuis un match est au-dessus
+    // du match, un match ouvert depuis une fiche club au-dessus du club, un joueur au-dessus de ce qui l'ouvre. La fermeture
+    // (bouton, glissement vers le bas, fond, Échap) ne ferme que la feuille du dessus.
+    let zTop = 100;
+    function bringToFront(el) { el.style.zIndex = String(++zTop); }
+    const SHEET_IDS = ['match-modal', 'club-modal', 'player-modal'];
+    function syncBodyLock() {
+      document.body.style.overflow = SHEET_IDS.some(id => document.getElementById(id).classList.contains('open')) ? 'hidden' : '';
+    }
+    function closeTopSheet() {
+      const ouvertes = SHEET_IDS.map(id => document.getElementById(id)).filter(el => el.classList.contains('open'));
+      if (!ouvertes.length) return;
+      const haut = ouvertes.reduce((a, b) => Number(b.style.zIndex || 0) > Number(a.style.zIndex || 0) ? b : a);
+      if (haut.id === 'player-modal') closePlayer(); else if (haut.id === 'club-modal') closeClub(); else closeMatchModal();
+    }
+    let toastTimer = null;
+    function toast(msg) {
+      let t = document.getElementById('toast');
+      if (!t) { t = document.createElement('div'); t.id = 'toast'; t.setAttribute('role', 'status'); document.body.appendChild(t); }
+      t.textContent = msg; t.hidden = false;
+      clearTimeout(toastTimer); toastTimer = setTimeout(() => { t.hidden = true; }, 2800);
+    }
+
+    // « Soirée du 2026-11-04 » -> « Soirée du mercredi 4 novembre » (les libellés enregistrés portent une date ISO)
+    function dateEnToutesLettres(txt) {
+      return String(txt).replace(/\b(\d{4})-(\d{2})-(\d{2})\b/g, (m, a, b, c) => {
+        const d = new Date(`${a}-${b}-${c}T12:00:00Z`);
+        return isNaN(d) ? m : d.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' });
+      });
+    }
+
+    // ---------- Fiches de club : clubs/index.json (108 clubs) + clubs/<id UEFA>.json ----------
+    const CLUB_VIEWS = ['apercu', 'matchs', 'stats', 'effectif'];
+    const COMP_FULL = { ucl: 'Ligue des Champions', uel: 'Ligue Europa', uecl: 'Ligue Conférence' };
+    let clubIndex = null;            // Map id -> entrée de l'index ; null = pas d'index (aucun lien vers une fiche)
+    const clubCache = new Map();
+    let activeClub = null, currentClubView = 'apercu', clubToken = 0;
+
+    async function loadClubIndex() {
+      const d = await fetchJson('clubs/index.json');
+      clubIndex = d && Array.isArray(d.clubs) ? new Map(d.clubs.map(c => [String(c.id), c])) : null;
+    }
+    const hasClub = (id) => !!(clubIndex && id != null && clubIndex.has(String(id)));
+    // Lien vers la fiche d'un club (texte simple si le club n'a pas de fiche) ; `html` est déjà échappé par l'appelant
+    function clubLink(id, html) {
+      return hasClub(id) ? `<button type="button" class="club-link" onclick="event.stopPropagation(); openClub('${esc(id)}')">${html}</button>` : html;
+    }
+
+    const jourCourt = (iso) => iso ? new Date(iso + 'T12:00:00Z').toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' }) : '';
+    const jourLong = (iso) => iso ? new Date(iso + 'T12:00:00Z').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' }) : '';
+    const heureParis = (isoUtc) => isoUtc ? new Date(isoUtc).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Paris' }) : '';
+    const nf = (v) => (typeof v === 'number') ? v.toLocaleString('fr-FR', { maximumFractionDigits: 1 }) : v;
+    const lienSur = (u) => /^https?:\/\//i.test(u || '') ? u : '';
+
+    async function loadClub(id) {
+      if (clubCache.has(id)) return clubCache.get(id);
+      const f = await fetchJson('clubs/' + encodeURIComponent(id) + '.json');
+      if (f) clubCache.set(id, f);
+      return f;
+    }
+
+    async function openClub(id, view) {
+      id = String(id);
+      const token = ++clubToken;
+      const modal = document.getElementById('club-modal'), body = document.getElementById('club-body');
+      modal.classList.add('open'); bringToFront(modal); syncBodyLock();
+      const entree = clubIndex && clubIndex.get(id);
+      if (!activeClub || activeClub.id !== id) {
+        activeClub = null;
+        document.getElementById('club-head').innerHTML = clubHeadHtml(entree ? { id, nom: entree.nom, pays: entree.pays, drapeau: entree.drapeau, logos: entree.logos } : { id, nom: '…' });
+        body.innerHTML = '<div class="empty-state">Chargement de la fiche…</div>';
+      }
+      const f = await loadClub(id);
+      if (token !== clubToken) return;
+      if (!f) {
+        body.innerHTML = `<div class="empty-state">La fiche de ce club est indisponible pour le moment.</div>`;
+        return;
+      }
+      activeClub = f;
+      document.getElementById('club-head').innerHTML = clubHeadHtml(f);
+      switchClubView(view || 'apercu');
+    }
+
+    function closeClub() {
+      document.getElementById('club-modal').classList.remove('open');
+      syncBodyLock();
+    }
+
+    function clubHeadHtml(f) {
+      const logo = f.logos && (f.logos['240'] || f.logos['70']);
+      const comps = (f.competitions || []).map(c => COMP_FULL[c] || c).join(' · ');
+      return `<div class="modal-close-row">
+          <span class="section-sub">${esc(comps)}</span>
+          <button class="btn-close" onclick="closeClub()" aria-label="Fermer">✕</button>
+        </div>
+        <div class="club-id">
+          ${logo ? `<img class="club-logo" src="${esc(logo)}" alt="" onerror="this.style.visibility='hidden'">` : '<span class="club-logo vide"></span>'}
+          <div>
+            <div class="club-name">${esc(f.nom)}</div>
+            <div class="club-sub">${flag({ flag: f.drapeau, country_name: f.pays })} ${esc(f.pays || '')}${f.nom_officiel && f.nom_officiel !== f.nom ? ` · ${esc(f.nom_officiel)}` : ''}</div>
+          </div>
+        </div>`;
+    }
+
+    function switchClubView(view, slide) {
+      currentClubView = view;
+      document.querySelectorAll('#club-tabs .subtab-btn').forEach(b => b.classList.toggle('active', b.dataset.cview === view));
+      const body = document.getElementById('club-body');
+      body.scrollTop = 0;
+      if (!activeClub) return;
+      body.innerHTML = view === 'matchs' ? clubMatchsHtml(activeClub) : view === 'stats' ? clubStatsHtml(activeClub)
+        : view === 'effectif' ? clubEffectifHtml(activeClub) : clubApercuHtml(activeClub);
+      slideIn(body, slide);
+    }
+    attachTabSwipe({   // fiche de club : Aperçu / Matchs / Stats / Effectif
+      zone: () => document.getElementById('club-body'),
+      stop: () => document.getElementById('club-sheet'),
+      tabs: () => CLUB_VIEWS, current: () => currentClubView, go: switchClubView,
+    });
+
+    // --- Aperçu
+    function clubApercuHtml(f) {
+      const wd = f.wikidata || {}, wp = f.wikipedia || null, st = f.stade || null;
+      const sections = [];
+      const rangs = (f.rang || []).map(r => {
+        const fl = { UP: '▲', DOWN: '▼', STABLE: '=' }[r.tendance] || '';
+        const prec = r.rang_precedent != null ? ` · avant : ${r.rang_precedent}${r.rang_precedent === 1 ? 'er' : 'e'}` : '';
+        return `<div class="cl-rank"><b>${esc(r.rang)}${r.rang === 1 ? 'er' : 'e'}</b>
+          ${fl ? `<span class="cl-trend-${esc(r.tendance)}" title="Évolution depuis la journée précédente">${fl}</span>` : ''}
+          <span>${esc(COMP_FULL[r.comp] || r.comp)} · phase de ligue · ${esc(r.points ?? '–')} pts · ${esc(r.joues ?? '–')} match${r.joues > 1 ? 's' : ''}${esc(prec)}</span></div>`;
+      }).join('');
+      if (rangs) sections.push(`<div class="cl-sec"><h4>Classement actuel ${infoBtn('<p>Classement officiel UEFA à la date de la dernière mise à jour de la fiche (il ne dit rien du classement d\'une soirée passée : voir la page d\'accueil).</p>', 'Source du classement')}</h4>${rangs}</div>`);
+      const formeHtml = (f.saison && f.saison.forme || []).map(r => `<span class="form-dot form-${esc(r)}" title="${{ V: 'Victoire', N: 'Nul', D: 'Défaite' }[r]}">${esc(r)}</span>`).join('');
+      if (formeHtml) sections.push(`<div class="cl-sec"><h4>Forme (5 derniers matchs) ${infoBtn('<p>Victoire / nul / défaite <b>calculés</b> d\'après les scores des matchs terminés (tirs au but : nul). Du plus ancien au plus récent.</p>', 'Méthode de la forme')}</h4><div class="cl-form">${formeHtml}</div></div>`);
+      const prochain = (f.saison && f.saison.matchs || []).find(x => x.match_id === (f.saison || {}).prochain);
+      if (prochain) {
+        sections.push(`<div class="cl-sec"><h4>Prochain match</h4><div class="cl-next">
+          <b>${esc(jourLong(prochain.date))}</b>${prochain.heure_utc ? ` · ${esc(heureParis(prochain.heure_utc))}` : ''}<br>
+          ${prochain.domicile ? 'À domicile' : 'À l\'extérieur'} · ${clubLink(prochain.adversaire.id, esc(prochain.adversaire.nom))}<br>
+          <span style="color:var(--text-muted);font-size:0.78rem">${esc(COMP_FULL[prochain.comp] || prochain.comp)} · ${esc(prochain.tour)}${prochain.journee ? ' · ' + esc(prochain.journee) : ''}${prochain.stade ? ' · ' + esc(prochain.stade) : ''}</span></div></div>`);
+      }
+      const faits = [];
+      if (st && st.nom) faits.push(['Stade', esc(st.nom) + (st.capacite ? ` (${esc(st.capacite.toLocaleString('fr-FR'))} places)` : '')]);
+      if (st && st.ville) faits.push(['Ville', esc(st.ville)]);
+      if (st && st.ouverture) faits.push(['Stade ouvert en', esc(st.ouverture.slice(0, 4))]);
+      if (wd.fondation_annee) faits.push(['Fondation', esc(wd.fondation_annee)]);
+      if (wd.ville_siege && wd.ville_siege !== (st && st.ville)) faits.push(['Siège', esc(wd.ville_siege)]);
+      if (wd.surnom) faits.push(['Surnom', esc(wd.surnom)]);
+      if (lienSur(wd.site)) faits.push(['Site officiel', `<a href="${esc(lienSur(wd.site))}" target="_blank" rel="noopener noreferrer">${esc(wd.site.replace(/^https?:\/\/(www\.)?/i, '').replace(/\/$/, ''))}</a>`]);
+      const infoSrc = infoBtn(`<p><b>Sources.</b> Stade, ville, capacité et ouverture : UEFA (stade le plus utilisé par le club à domicile cette saison${st && st.autres_stades ? ' ; autres stades : ' + esc(st.autres_stades.join(', ')) : ''}). Fondation, surnom, siège, site officiel : <b>Wikidata</b>${wd.qid ? ` (<a href="https://www.wikidata.org/wiki/${esc(wd.qid)}" target="_blank" rel="noopener noreferrer">${esc(wd.qid)}</a>, rapproché par ${wd.preuve === 'alias' ? 'un rapprochement validé à la main' : 'l\'identifiant d\'équipe UEFA (P7361)'})` : ' (club non rapproché)'}, CC0. Une information absente n'est pas affichée.</p><p>Le logo est celui de l'UEFA (lien direct vers son image).</p>`, 'Sources de la fiche');
+      if (faits.length) sections.push(`<div class="cl-sec"><h4>Le club ${infoSrc}</h4><dl class="cl-facts">${faits.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${v}</dd>`).join('')}</dl></div>`);
+      else sections.push(`<div class="cl-sec"><h4>Le club ${infoSrc}</h4><div class="empty-state">Informations générales indisponibles.</div></div>`);
+      if (wp && wp.extrait) {
+        sections.push(`<div class="cl-sec"><h4>Présentation</h4><p class="cl-extract">${esc(wp.extrait)}</p>
+          <div class="cl-credit">Source : ${lienSur(wp.url) ? `<a href="${esc(wp.url)}" target="_blank" rel="noopener noreferrer">Wikipédia</a>` : 'Wikipédia'} (${esc(wp.licence || 'CC BY-SA 4.0')})
+          ${infoBtn(`<p>Extrait de l'article « ${esc(wp.titre || '')} » de Wikipédia en français, sous licence <a href="${esc(wp.licence_url || 'https://creativecommons.org/licenses/by-sa/4.0/deed.fr')}" target="_blank" rel="noopener noreferrer">${esc(wp.licence || 'CC BY-SA 4.0')}</a>. Auteurs : voir l'historique de l'article. Relu au plus une fois par mois.</p>`, 'Crédit Wikipédia')}</div></div>`);
+      }
+      return sections.join('') + (f.maj ? `<p class="momentum-note">Fiche mise à jour le ${esc(new Date(f.maj).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Europe/Paris' }))}.</p>` : '');
+    }
+
+    // --- Matchs : tous les matchs de la saison dans les compétitions UEFA, groupés par tour
+    function clubMatchsHtml(f) {
+      const matchs = (f.saison && f.saison.matchs) || [];
+      if (!matchs.length) return `<div class="empty-state">Aucun match cette saison dans les compétitions UEFA.</div>`;
+      const groupes = [];
+      matchs.forEach(x => {
+        const cle = x.comp + '|' + (x.stage === 'league' ? 'league' : x.tour);
+        let g = groupes.find(k => k.cle === cle);
+        if (!g) { g = { cle, comp: x.comp, titre: x.stage === 'league' ? 'Phase de ligue' : (x.tour || 'Tour'), liste: [] }; groupes.push(g); }
+        g.liste.push(x);
+      });
+      const comps = new Set(groupes.map(g => g.comp));
+      const info = infoBtn('<p>Tous les matchs du club cette saison dans les compétitions UEFA (tours préliminaires compris). Le score est donné <b>du point de vue du club</b> ; D = à domicile, E = à l\'extérieur ; tab = tirs au but (le résultat V/N/D est calculé sur le score hors tirs au but).</p><p>Un score encadré ouvre la fiche du match de la soirée conservée par le dashboard.</p>', 'Aide des matchs');
+      return `<div class="cl-round" style="display:flex;justify-content:space-between;align-items:center">Saison ${esc(f.saison_uefa ? (f.saison_uefa - 1) + '-' + String(f.saison_uefa).slice(2) : '')} ${info}</div>` + groupes.map(g => `
+        <div class="cl-round">${comps.size > 1 ? esc(COMP_FULL[g.comp] || g.comp) + ' · ' : ''}${esc(g.titre)}</div>
+        ${g.liste.map(x => {
+          const res = x.resultat ? `<span class="cl-res form-${esc(x.resultat)}">${esc(x.resultat)}</span>` : '<span></span>';
+          const score = x.pour != null ? `${esc(x.pour)} - ${esc(x.contre)}${x.tab ? `<small>tab ${esc(x.tab.pour)}-${esc(x.tab.contre)}</small>` : ''}`
+            : `<small style="font-size:0.74rem">${esc(heureParis(x.heure_utc) || x.statut)}</small>`;
+          const cible = x.soiree && x.pour != null
+            ? `<button type="button" class="cl-score" onclick="openMatchFromClub('${esc(x.match_id)}', '${esc(x.soiree)}', '${esc(x.comp)}')" aria-label="Ouvrir la fiche du match">${score}</button>`
+            : `<span class="cl-score">${score}</span>`;
+          return `<div class="cl-match">
+            <span class="cl-date">${esc(jourCourt(x.date))}${x.journee ? '<br>' + esc(x.journee) : ''}</span>
+            <span class="cl-opp"><span class="cl-loc">${x.domicile ? 'D' : 'E'}</span>${x.adversaire.logo ? `<img src="${esc(x.adversaire.logo)}" alt="" loading="lazy" onerror="this.style.visibility='hidden'">` : ''}<span class="nm">${clubLink(x.adversaire.id, esc(x.adversaire.nom))}</span></span>
+            ${cible}${res}</div>`;
+        }).join('')}`).join('');
+    }
+
+    // Ouvre la fiche du match d'une soirée conservée (charge soirees/<date>.json si besoin)
+    async function openMatchFromClub(matchId, date, comp) {
+      let data = soireeCache.get(date);
+      if (!data) {
+        data = await fetchJson('soirees/' + date + '.json');
+        if (data) soireeCache.set(date, data);
+      }
+      if (!data) { toast('La soirée du ' + date + ' est indisponible.'); return; }
+      const cles = [comp, ...COMP_KEYS.filter(k => k !== comp)];
+      for (const k of cles) {
+        if (openMatchModal(matchId, data, k)) return;
+      }
+      toast('Ce match n\'est pas dans la soirée conservée.');
+    }
+
+    // --- Stats : cumuls officiels UEFA, moyennes par match calculées, moyenne de la compétition calculée
+    const STAT_META = {   // l'ordre des clés = l'ordre d'affichage, un groupe après l'autre
+      goals: ['Buts marqués', 'somme', 'Attaque'], assists: ['Passes décisives', 'somme', 'Attaque'], attempts: ['Tirs', 'somme', 'Attaque'],
+      attempts_on_target: ['Tirs cadrés', 'somme', 'Attaque'], corners: ['Corners', 'somme', 'Attaque'], offsides: ['Hors-jeu', 'somme', 'Attaque'],
+      ball_possession: ['Possession (%)', 'moyenne', 'Construction'], passes_completed: ['Passes réussies', 'somme', 'Construction'],
+      passes_accuracy: ['Précision des passes (%)', 'moyenne', 'Construction'],
+      goals_conceded: ['Buts encaissés', 'somme', 'Défense'], saves: ['Arrêts du gardien', 'somme', 'Défense'],
+      clean_sheet: ['Matchs sans encaisser', 'somme', 'Défense'], tackles: ['Tacles', 'somme', 'Défense'],
+      fouls_committed: ['Fautes commises', 'somme', 'Discipline'], yellow_cards: ['Cartons jaunes', 'somme', 'Discipline'], red_cards: ['Cartons rouges', 'somme', 'Discipline'],
+      distance_covered: ['Distance parcourue (km)', 'somme', 'Physique'], top_speed: ['Vitesse max. (km/h)', 'max', 'Physique'],
+    };
+    function clubStatsHtml(f) {
+      const comps = Object.keys(f.stats || {});
+      if (!comps.length) return `<div class="empty-state">Statistiques d'équipe indisponibles (aucun match joué).</div>`;
+      return comps.map(comp => {
+        const s = f.stats[comp], cum = s.cumul || {}, pm = s.par_match || {}, moy = (s.moyenne_competition || {});
+        const mv = moy.valeurs || {};
+        const n = s.matchs || 0;
+        const info = infoBtn(`<p><b>Cumuls</b> : statistiques officielles UEFA (compétition, saison en cours). <b>Par match</b> : calculé = cumul ÷ nombre de matchs (la possession et la précision sont déjà des moyennes ; la vitesse est un maximum). <b>Moy. comp.</b> : moyenne simple, sur les ${esc(moy.clubs || '')} clubs de la compétition, de la valeur par match — <b>calculée</b> par le dashboard${moy.maj ? ', au ' + esc(jourLong(moy.maj)) : ''}.</p><p>V / N / D calculés d'après les scores. Le suivi physique de l'UEFA est parfois incomplet sur certains matchs : ces valeurs sont indicatives.</p>`, 'Méthode des statistiques');
+        const v = s.vnd || {};
+        let rows = '', groupe = '';
+        Object.keys(STAT_META).forEach(k => {
+          if (cum[k] == null) return;
+          const [lib, type, grp] = STAT_META[k];
+          if (grp !== groupe) { groupe = grp; rows += `<tr class="grp"><td colspan="4">${esc(grp)}</td></tr>`; }
+          const phys = grp === 'Physique' ? ` <span style="color:var(--text-muted);font-size:0.68rem">(sur ${esc(n)} m.)</span>` : '';
+          const total = type === 'somme' ? nf(cum[k]) : '–';
+          const pmv = pm[k] != null ? nf(pm[k]) : '–';
+          rows += `<tr><td>${esc(lib)}${phys}</td><td>${esc(total)}</td><td><b>${esc(pmv)}</b></td><td class="dim">${mv[k] != null ? esc(nf(mv[k])) : '–'}</td></tr>`;
+        });
+        return `<div class="cl-sec"><h4>${esc(COMP_FULL[comp] || comp)} ${info}</h4>
+          <p class="momentum-note" style="margin:0 0 6px">${esc(n)} match${n > 1 ? 's' : ''} · ${esc(v.v ?? 0)} V · ${esc(v.n ?? 0)} N · ${esc(v.d ?? 0)} D</p>
+          <table class="cl-table"><thead><tr><th>Statistique</th><th>Total</th><th>/ match</th><th>Moy. comp.</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+      }).join('');
+    }
+
+    // --- Effectif inscrit, par poste
+    function sommeStats(j) {
+      const t = {};
+      Object.values(j.stats || {}).forEach(s => Object.keys(s).forEach(k => { t[k] = (t[k] || 0) + s[k]; }));
+      return t;
+    }
+    function clubEffectifHtml(f) {
+      const tous = f.effectif || [];
+      const visibles = tous.filter(j => j.numero || j.joue);
+      if (!visibles.length) return `<div class="empty-state">Effectif indisponible.</div>`;
+      const POSTES = [['GOALKEEPER', 'Gardiens'], ['DEFENDER', 'Défenseurs'], ['MIDFIELDER', 'Milieux'], ['FORWARD', 'Attaquants']];
+      const info = infoBtn(`<p>Joueurs <b>inscrits auprès de l'UEFA</b> pour ce club cette saison (liste officielle comp.uefa.com), ayant un numéro de club ou des minutes jouées${tous.length > visibles.length ? ` ; ${tous.length - visibles.length} inscrit${tous.length - visibles.length > 1 ? 's' : ''} sans numéro ni minute non affiché${tous.length - visibles.length > 1 ? 's' : ''}` : ''}.</p><p>Matchs, minutes, buts, passes décisives : cumuls officiels UEFA toutes compétitions UEFA de la saison confondues ; un joueur sans minute n'a pas de statistiques. Touchez un joueur pour sa fiche.</p>`, 'Aide de l\'effectif');
+      const bloc = (titre, liste) => liste.length ? `<div class="cl-round">${esc(titre)}</div>` + liste.map(j => {
+        const t = sommeStats(j);
+        const st = j.joue ? [`${nf(t.matches_appearance || 0)} m.`, `${nf(t.minutes_played_official || 0)}′`,
+          ...(j.poste === 'GOALKEEPER' ? [`${nf(t.clean_sheet || 0)} CS`] : [`${nf(t.goals || 0)} b.`, `${nf(t.assists || 0)} pd`])].join(' · ') : '';
+        return `<button type="button" class="cl-eff-row ${j.joue ? '' : 'sans-minute'}" onclick="openPlayerFromClub('${esc(j.id)}')">
+          <span class="num">${esc(j.numero || '')}</span>
+          ${j.photo ? `<img class="ph" src="${esc(j.photo)}" alt="" loading="lazy" onerror="this.style.visibility='hidden'">` : '<span class="ph"></span>'}
+          <span class="who"><span class="nm">${esc(j.nom)}</span><small>${j.drapeau ? flag({ flag: j.drapeau, country_name: j.nationalite }) : ''}${esc(j.nationalite || '')}${j.age ? ' · ' + esc(j.age) + ' ans' : ''}</small></span>
+          <span class="st">${esc(st)}</span></button>`;
+      }).join('') : '';
+      return `<div class="cl-round" style="display:flex;justify-content:space-between;align-items:center">Effectif inscrit UEFA ${info}</div>`
+        + POSTES.map(([k, titre]) => bloc(titre, visibles.filter(j => j.poste === k))).join('')
+        + bloc('Autres', visibles.filter(j => !POSTES.some(([k]) => k === j.poste)));
+    }
+
+    // Fiche joueur depuis l'effectif : fiche complète si le joueur figure dans un match de la soirée chargée, sinon fiche
+    // réduite construite avec les seules données de clubs/<id>.json (pas de note : elle se calcule match par match).
+    function openPlayerFromClub(pid) {
+      const f = activeClub;
+      for (const k of COMP_KEYS) {
+        const comp = (appData && appData.competitions && appData.competitions[k]) || {};
+        const m = (comp.matches || []).find(x => x.players && x.players[pid]);
+        if (m) { openPlayer(pid, m); return; }
+      }
+      const j = f && (f.effectif || []).find(x => x.id === pid);
+      if (!j) return;
+      const t = sommeStats(j);
+      const items = [['matches_appearance', 'Matchs'], ['minutes_played_official', 'Minutes'], ['goals', 'Buts'], ['assists', 'Passes décisives'],
+        ['yellow_cards', 'Cartons jaunes'], ['red_cards', 'Cartons rouges']];
+      if (j.poste === 'GOALKEEPER') items.push(['saves', 'Arrêts'], ['clean_sheet', 'Matchs sans encaisser'], ['goals_conceded', 'Buts encaissés']);
+      const cells = items.filter(([k]) => t[k] != null && (j.joue || k === 'yellow_cards' || k === 'red_cards') && (t[k] || k === 'goals' || k === 'matches_appearance'))
+        .map(([k, l]) => `<div class="ps-stat"><span>${esc(l)}</span><b>${esc(nf(t[k]))}</b></div>`).join('');
+      const tags = [j.poste_fr, j.numero ? 'N° ' + j.numero : '', j.taille ? j.taille + ' cm' : '', j.naissance ? 'Né le ' + new Date(j.naissance + 'T12:00:00Z').toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' }) : ''].filter(Boolean)
+        .map(x => `<span class="ps-tag">${esc(x)}</span>`).join('');
+      const photo = j.photo ? `<img class="ps-photo" src="${esc(j.photo)}" alt="" onerror="this.style.visibility='hidden'">` : `<div class="ps-photo"></div>`;
+      const info = infoBtn('<p>Fiche réduite : ce joueur ne figure pas dans la soirée affichée. Identité : liste des joueurs inscrits UEFA ; statistiques : cumuls officiels UEFA de la saison (toutes compétitions UEFA du club). La note sur 10 se calcule match par match : ouvrez la fiche d\'un match du club (onglet Matchs) pour la voir.</p>', 'Aide de la fiche réduite');
+      document.getElementById('player-body').innerHTML = `
+        <div class="modal-close-row">
+          <span class="section-sub">${flag({ flag: f.drapeau, country_name: f.pays })} ${esc(f.nom)}</span>
+          <button class="btn-close" onclick="closePlayer()">✕</button>
+        </div>
+        <div class="ps-head">${photo}<div>
+          <div class="ps-name">${j.numero ? `<span style="color:var(--text-muted)">${esc(j.numero)}</span> ` : ''}${esc(j.nom)}</div>
+          <div class="ps-meta">${j.drapeau ? flag({ flag: j.drapeau, country_name: j.nationalite }) : ''} ${esc(j.nationalite || '')}${j.age ? ` · ${esc(j.age)} ans` : ''}</div></div></div>
+        <div class="ps-tags">${tags}</div>
+        ${cells ? `<div class="ps-section"><h4>Statistiques de la saison ${info}</h4><div class="ps-grid">${cells}</div></div>` : `<div class="empty-state" style="margin-top:12px">Aucune statistique : ce joueur n'a pas encore joué.<div class="info-row">${info}</div></div>`}`;
+      document.getElementById('player-modal').classList.add('open');
+      bringToFront(document.getElementById('player-modal'));
+      document.getElementById('player-body').scrollTop = 0;
+    }
+
     // ---------- Joueurs : liens, notes, fiche individuelle ----------
     function ratingClass(r) {
       const v = Number(r);
@@ -1779,8 +2182,8 @@
         { k: 'yellow_cards', l: 'Cartons jaunes' }, { k: 'red_cards', l: 'Cartons rouges' }]],
     ];
 
-    function openPlayer(pid) {
-      const m = activeMatch;
+    function openPlayer(pid, matchOverride) {
+      const m = matchOverride || activeMatch;
       const p = m && m.players && m.players[pid];
       if (!p) return;
       const team = p.team === 'home' ? m.home_team : m.away_team;
@@ -1807,7 +2210,7 @@
       const photo = p.photo ? `<img class="ps-photo" src="${esc(p.photo)}" alt="" onerror="this.style.visibility='hidden'">` : `<div class="ps-photo"></div>`;
       document.getElementById('player-body').innerHTML = `
         <div class="modal-close-row">
-          <span class="section-sub">${flag(team)} ${esc(team.name)}</span>
+          <span class="section-sub">${flag(team)} ${clubLink(team.id, esc(team.name))}</span>
           <button class="btn-close" onclick="closePlayer()">✕</button>
         </div>
         <div class="ps-head">
@@ -1824,6 +2227,7 @@
         ${factors ? `<div class="ps-section"><h4>Ce qui fait la note ${noteInfo}</h4>${factors}</div>` : `<div class="info-row">${noteInfo}</div>`}
         ${groups || '<div class="empty-state" style="margin-top:12px">Statistiques individuelles indisponibles.</div>'}`;
       document.getElementById('player-modal').classList.add('open');
+      bringToFront(document.getElementById('player-modal'));
       document.getElementById('player-body').scrollTop = 0;
     }
 
@@ -1834,7 +2238,7 @@
     document.addEventListener('keydown', e => {
       if (e.key !== 'Escape') return;
       if (infoOpenBtn) { closeInfo(); return; }
-      if (document.getElementById('player-modal').classList.contains('open')) closePlayer(); else closeMatchModal();
+      closeTopSheet();
     });
     initDashboard();
   </script>

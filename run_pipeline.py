@@ -7,7 +7,8 @@ Chef d'orchestre : run_pipeline.py
 3. Historique : la soirée est rangée dans soirees/<date>.json + soirees/index.json ; data.json en est la copie de la
    soirée la plus récente (jamais remplacé par une plus ancienne) : voir historique.py.
    `--reconstituer` / `--rattraper-ia` : reconstitution des soirées passées et rattrapage des résumés IA (reconstitution.py).
-4. État par soirée (etat_soirees.json). Ce script NE NOTIFIE PLUS (sauf --week) : le push ntfy est envoyé par
+4. Fiches de club : `clubs.apres_soiree` met à jour `clubs/<id>.json` des clubs qui ont joué (sans bloquer la notification).
+5. État par soirée (etat_soirees.json). Ce script NE NOTIFIE PLUS (sauf --week) : le push ntfy est envoyé par
    `--notifier` (publication.py), appelé par le workflow après un push réussi, une fois la page publique vérifiée
    à jour (un seul push par soirée, règles de soirees.py).
 """
@@ -18,6 +19,7 @@ import json
 import sys
 
 import agents_flash
+import clubs
 import collector
 import historique
 import notify
@@ -143,6 +145,8 @@ def main():
         # une soirée = soirees/<jour>.json + index ; data.json seulement si c'est la plus récente (historique.py)
         data = agents_flash.orchestrate_flash_agents(input_path="data_raw.json", output_path=None)
         historique.publier_soiree(data, jour, args.dossier_soirees)
+        # fiches des clubs qui ont joué (jamais bloquant : un échec est journalisé et repris au passage suivant)
+        clubs.apres_soiree(data, jour)
     if suivre_etat and not args.week:
         # état écrit APRÈS la réussite de data.json : un plantage de l'IA ne marque jamais la soirée comme faite.
         # `notifie` reste inchangé (faux pour une nouvelle soirée) : le push part de `--notifier`, après publication.

@@ -1,0 +1,38 @@
+name: Fiches de club (mise à jour complète hebdomadaire)
+
+# Reconstruit clubs/index.json et les 108 fiches clubs/<id UEFA>.json : matchs de la saison, classement, statistiques
+# cumulées officielles, effectifs inscrits, Wikidata et Wikipédia FR (cache de 30 jours : relus seulement s'ils sont périmés ou
+# manquent). Pas de notification, aucun Gemini ; ne touche ni à data.json, ni à soirees/, ni à etat_soirees.json (publier.sh --clubs).
+# Les clubs qui ont joué sont déjà mis à jour à chaque passage du soir (update_dashboard.yml) : ce passage rattrape le reste
+# (effectifs, prochains matchs, soirées reconstituées depuis, Wikidata / Wikipédia).
+# Premier remplissage ou à la demande : gh workflow run clubs.yml --ref main
+on:
+  schedule:
+    - cron: '17 5 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: clubs
+  cancel-in-progress: false
+
+jobs:
+  clubs:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Collecte UEFA + Wikidata + Wikipédia des 108 fiches de club
+        env:
+          PYTHONUNBUFFERED: "1"
+        run: python clubs.py --tous
+
+      - name: Publication de clubs/ (si modifié)
+        run: bash .github/scripts/publier.sh --clubs
