@@ -1,0 +1,73 @@
+== Classement ==
+{|class="wikitable"  style="text-align: center;"
+!width=25|
+!Équipe
+!width=30|Joués
+!width=30|Victoires
+!width=30|Nuls
+!width=30|Défaites
+!width=30|Buts pour
+!width=30|Buts contre
+!width=30|+/-
+!width=30|Points
+!width=30|Spectateurs<ref>{{en}} {{lien web|url=http://www.european-football-statistics.co.uk/attn/archive/aveeng60.htm|titre=Attendances - Division One 1960-1961|site=www.european-football-statistics.co.uk|consulté le=23 janvier 2008.}}</ref>
+|-style="background:#D0F0C0;"
+|1||'''[[Tottenham Hotspur]]'''||42||31||4||7||115||55||60||'''66'''||{{formatnum:53124}}
+|-
+|2||[[Sheffield Wednesday]]||42||23||12||7||78||47||31||'''58'''||{{formatnum:29229}}
+|-
+|3||[[Wolverhampton Wanderers Football Club|Wolverhampton Wanderers]]||42||25||7||10||103||75||28||'''57'''||{{formatnum:30885}}
+|-
+|4||[[Burnley FC]] '''T'''||42||22||7||13||102||77||25||'''51'''||{{formatnum:23827}}
+|-
+|5||[[Everton FC]]||42||22||6||14||87||69||18||'''50'''||{{formatnum:43448}}
+|-
+|6||[[Leicester City]]||42||18||9||15||87||70||17||'''45'''||{{formatnum:24056}}
+|-
+|7||[[Manchester United]]||42||18||9||15||88||76||12||'''45'''||{{formatnum:38888}}
+|-
+|8||[[Blackburn Rovers]]||42||15||13||14||77||76||1||'''43'''||{{formatnum:19343}}
+|-
+|9||[[Aston Villa Football Club|Aston Villa]] '''P'''||42||17||9||16||78||77||1||'''43'''||{{formatnum:33599}}
+|-
+|10||[[West Bromwich Albion]]||42||18||5||19||67||71||-4||'''41'''||{{formatnum:27410}}
+|-
+|11||[[Arsenal FC]]||42||15||11||16||77||85||-8||'''41'''||{{formatnum:34318}}
+|-
+|12||[[Chelsea FC]]||42||15||7||20||98||100||-2||'''37'''||{{formatnum:30156}}
+|-
+|13||[[Manchester City]]||42||13||11||18||79||90||-11||'''37'''||{{formatnum:29409}}
+|-
+|14||[[Nottingham Forest]] ||42||14||9||19||62||78||-16||'''37'''||{{formatnum:24668}}
+|-
+|15||[[Cardiff City]] '''P'''||42||13||11||18||60||85||-25||'''37'''||{{formatnum:23390}}
+|-
+|16||[[West Ham United]]||42||13||10||19||77||88||-11||'''36'''||{{formatnum:21948}}
+|-
+|17||[[Fulham FC]]||42||14||8||20||72||95||-23||'''36'''||{{formatnum:23014}}
+|-
+|18||[[Bolton Wanderers]]||42||12||11||19||58||73||-15||'''35'''||{{formatnum:21670}}
+|-
+|19||[[Birmingham City]]||42||14||6||22||62||84||-22||'''34'''||{{formatnum:25775}}
+|-
+|20||[[Blackpool FC]]||42||12||9||21||68||73||-5||'''33'''||{{formatnum:18715}}
+|-bgcolor=#A9A9A9
+|21||[[Newcastle United]]||42||11||10||21||86||109||-23||'''32'''||{{formatnum:26500}}
+|-bgcolor=#A9A9A9
+|22||[[Preston North End]]||42||10||10||22||43||71||-28||'''30'''||{{formatnum:16804}}
+|}
+
+== Meilleur buteur ==
+Avec 41 buts, l'attaquant [[Angleterre|anglais]] de [[Chelsea FC]], [[Jimmy Greaves]], remporte son deuxième titre de meilleur buteur du championnat d'Angleterre<ref>{{en}} {{lien web|url=http://www.rsssf.com/tablese/engtops.html#1947-1|titre=Football League Div 1 & 2 Leading Goalscorers 1947-92|auteur=[[RSSSF]]|consulté le=7 février 2008.}}</ref>.
+
+== Notes et références ==
+<references />
+
+{{Palette|Saisons du championnat d'Angleterre de football}}
+{{Portail|football|années 1960|Angleterre}}
+
+[[Catégorie:Championnat d'Angleterre de football|1960-1961]]
+[[Catégorie:Sport en Angleterre en 1960|Championnat Angleterre Football 1960-1961 D1]]
+[[Catégorie:Sport en Angleterre en 1961|Championnat Angleterre Football 1960-1961 D1]]
+[[Catégorie:Football en 1960|Angleterre D1]]
+[[Catégorie:Football en 1961|Angleterre D1]]

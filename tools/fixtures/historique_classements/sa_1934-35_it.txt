@@ -1,0 +1,61 @@
+== Classifica finale ==
+{| class="wikitable sortable" style="text-align: center; font-size: 90%;"
+!width=7%|
+!width=7%|{{Descrizione comando|Pos.|Posizione}}
+!width=27%|Squadra
+!width=10%|{{Descrizione comando|Pt|Punti}}
+!width=7%|{{Descrizione comando|G|Giocate}}
+!width=7%|{{Descrizione comando|V|Vinte}}
+!width=7%|{{Descrizione comando|N|Nulle}}
+!width=7%|{{Descrizione comando|P|Perse}}
+!width=7%|{{Descrizione comando|GF|Gol fatti}}
+!width=7%|{{Descrizione comando|GS|Gol subiti}}
+|- style=background:#99CBFF;
+|{{simbolo|Scudetto.svg|15}}||1.||style="text-align:left;"|'''{{Calcio Juventus}}'''
+||'''44'''||30||18||8||4||45||22
+|- style=background:#AFEEEE;
+|||2.||style="text-align:left;"|{{Calcio Ambrosiana-Inter}}
+||'''42'''||30||15||12||3||58||24
+|- style=background:#AFEEEE;
+|||3.||style="text-align:left;"|{{Calcio Fiorentina}}
+||'''39'''||30||15||9||6||39||23
+|- style=background:#AFEEEE;
+|||4.||style="text-align:left;"|{{Calcio Roma}}
+||'''35'''||30||14||7||9||63||38
+|-
+| ||5.||style="text-align:left;"|{{Calcio Lazio}}
+||'''32'''||30||13||6||11||55||46
+|-
+| ||6.||style="text-align:left;"|{{Calcio Bologna}}
+||'''30'''||30||11||8||11||46||34
+|-
+| ||7.||style="text-align:left;"|{{Calcio Napoli}}
+||'''29'''||30||10||9||11||39||38
+|-
+| ||7.||style="text-align:left;"|{{Calcio Alessandria}}
+||'''29'''||30||12||5||13||44||48
+|-
+| ||7.||style="text-align:left;"|{{Calcio Palermo}}
+||'''29'''||30||9||11||10||27||34
+|-
+| ||10.||style="text-align:left;"|{{Calcio Milan}}
+||'''27'''||30||8||11||11||36||38
+|-
+| ||10.||style="text-align:left;"|{{Calcio Triestina}}
+||'''27'''||30||11||5||14||33||44
+|-
+| ||10.||style="text-align:left;"|{{Calcio Brescia}}
+||'''27'''||30||10||7||13||29||45
+|-
+| ||13.||style="text-align:left;"|{{Calcio Sampierdarenese}}
+||'''26'''||30||9||8||13||29||42
+|-
+| ||14.||style="text-align:left;"|{{Calcio Torino}}
+||'''25'''||30||8||9||13||37||45
+|- style=background:#FFCCCC;
+|{{simbolo|1downarrow red.svg|15}} ||15.||style="text-align:left;"|'''{{Calcio Livorno}}'''
+||'''24'''||30||8||8||14||28||54
+|- style=background:#FFCCCC;
+|{{simbolo|1downarrow red.svg|15}} ||16.||style="text-align:left;"|'''{{Calcio Pro Vercelli}}'''
+||'''15'''||30||5||5||20||21||54
+|}

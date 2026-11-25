@@ -1,0 +1,82 @@
+== Classement ==
+{{Foot classement début}}
+{{Foot classement | 1|'''[[Real Madrid Club de Fútbol|Real Madrid]]'''|52|30|24|4|2|89|25|bgcolor={{foot couleur|champion}}}}
+{{Foot classement | 2|[[Club Atlético de Madrid|Atlético Madrid]] {{Coupe nationale}}|40|30|17|6|7|57|35|bgcolor={{Foot couleur |c2}}}}
+{{Foot classement | 3|[[Real Saragosse]]|33|30|12|9|9|54|53}}
+{{Foot classement | 4|[[FC Barcelone (football)|CF Barcelone]] {{Tenant du titre}}|32|30|13|6|11|62|47|bgcolor={{Foot couleur |c3}}}}
+{{Foot classement | 5|[[Valence Club de Fútbol|Valence CF]]|32|30|11|10|9|46|42|bgcolor={{Foot couleur |c3}}}}
+{{Foot classement | 6|[[Real Betis Balompié]]|30|30|11|8|11|42|44}}
+{{Foot classement | 7|[[Athletic Bilbao|Atlético Bilbao]]|30|30|12|6|12|42|41}}
+{{Foot classement | 8|[[Real Sociedad]]|30|30|10|10|10|37|46}}
+{{Foot classement | 9|[[RCD Majorque]] {{Promu}}|28|30|12|4|14|38|41}}
+{{Foot classement |10|[[RCD Espanyol de Barcelona|Espanyol Barcelone]]|27|30|12|3|15|46|46|bgcolor={{Foot couleur |c3}}}}
+{{Foot classement |11|[[FC Séville|Séville CF]]|27|30|9|9|12|42|46}}
+{{Foot classement |12|[[Racing Santander|Real Santander]] {{Promu}}|26|30|11|4|15|42|47}}
+{{Foot classement |13|[[Real Oviedo]]|26|30|10|6|14|39|54|bgcolor={{foot couleur|barrage de relégation}}}}
+{{Foot classement |14|[[Elche CF]]|25|30|9|7|14|48|75|bgcolor={{foot couleur|barrage de relégation}}}}
+{{Foot classement |15|[[Real Valladolid]]|25|30|11|3|16|39|52|bgcolor={{foot couleur|relégué}}}}
+{{Foot classement |16|[[Grenade CF]]|17|30|5|7|18|32|61|bgcolor={{foot couleur|relégué}}}}
+|}
+
+{{Légende/Début}}
+{{Légende|{{fc|champion}}|Champion, qualification pour la [[Coupe des clubs champions européens 1961-1962|Coupe des clubs champions 1961-1962]] en tant que champion}}
+{{Légende|{{fc|c2}}|Qualification pour la [[Coupe d'Europe des vainqueurs de coupe de football 1961-1962|Coupe des vainqueurs de coupe de football 1961-1962]] en tant que vainqueur de la [[Coupe d'Espagne de football 1960-1961|Coupe d'Espagne]]}}
+{{Légende|{{fc|c3}}|Qualification pour la [[Coupe des villes de foires 1961-1962]]}}
+{{Légende|{{fc|barrage de relégation}}|Barrages}}
+{{Légende|{{fc|relégué}}|Relégation en Segunda División}}
+{{Légende/Fin}}
+
+
+; Barrages de promotion :
+
+Les barrages opposent en matchs aller-retour [[Real Oviedo]] et [[Real Club Celta Vigo|Celta Vigo]], deuxième du groupe 1 de division 2 et, [[Elche CF]] et [[Club Atlético de Ceuta|CA Ceuta]], deuxième du groupe 2 de division 2.
+
+{{Foot match début|align=center|Aller|Retour}}
+{{Foot match |[[Real Oviedo]]|3-2 |[[Real Club Celta Vigo|Celta Vigo]] |1-0|2-2 |bgcolor1={{Foot couleur|qualifié}}}}
+{{Foot match |[[Club Atlético de Ceuta|CA Ceuta]] |1-4 |[[Elche CF]] |1-0|0-4 |bgcolor2={{Foot couleur|qualifié}}}}
+|}
+
+Le Real Oviedo et Elche CF conservent au terme des rencontres de barrage leur place en Primera División<ref>{{lien web
+ |langue=en
+ |url= http://www.rsssf.com/tabless/spanhist5969.html#6061
+ |titre=Spain, Final Tables 1959-1969
+ |auteur=José Vicente Tejedor Carnicero
+ |site=rsssf.com
+ |éditeur=''[[Rec.Sport.Soccer Statistics Foundation|RSSSF]]''
+ |en ligne le=28 septembre 2000
+ |consulté le=17 juillet 2013}}</ref>.
+
+== Bilan de la saison ==
+{{Tableau d'honneur
+|caché             =
+|continent          =Europe
+|du pays            =d'Espagne
+|division           =D1
+|champion           =[[Real Madrid Club de Fútbol|Real Madrid]]
+|titre              =7
+|dauphin            =[[Atlético de Madrid]]
+|conti              = non
+|saison1            =1960
+|saison2            =1961
+<!--Vainqueur de la Coupe nationale-->
+ |coupe             =[[Club Atlético de Madrid|Atlético Madrid]]
+|promu1             =[[Osasuna Pampelune]]
+|promu2             =[[CD Tenerife]]
+|relégué1           =[[Real Valladolid]]
+|relégué2           =[[Grenade CF]]
+|D1                 =Primera División
+|D2                 =Segunda División
+|D2existe           =
+}}
+
+== Références ==
+{{Références}}
+
+{{Palette|Saisons du championnat d'Espagne de football|Football 1960-61}}
+{{Portail|football|années 1960|Espagne}}
+
+[[Catégorie:Championnat d'Espagne de football|1960-1961]]
+[[Catégorie:Sport en Espagne en 1960|Championnat Espagne Football 1960-1961 D1]]
+[[Catégorie:Sport en Espagne en 1961|Championnat Espagne Football 1960-1961 D1]]
+[[Catégorie:Football en 1960|Espagne D1]]
+[[Catégorie:Football en 1961|Espagne D1]]

@@ -288,6 +288,62 @@ def enrichir(fiches: Dict[str, Dict[str, Any]], anciens: Dict[str, Dict[str, Any
     return n
 
 
+LANG_SOURCES = {"Wikipédia FR": "fr", "Wikipédia EN": "en", "Wikipédia ES": "es", "Wikipédia IT": "it", "Wikipédia DE": "de"}
+
+
+def parcours_championnat(fiches: Dict[str, Dict[str, Any]], hist: Dict[str, Any], cache: Dict[str, Dict[str, Any]], maintenant: str,
+                         get=clubs.get_poli) -> Dict[str, str]:
+    """Classements finaux des saisons passées (`championnats/historique/<ligue>.json`) rattachés aux clubs actuels : ligne ESPN =
+    `espn_id` ; ligne Wikipédia = lien `club_wiki` -> élément Wikidata (pageprops, redirections suivies) = élément de la fiche (jamais
+    le nom). Pose `championnat_hist` = {ligue, saisons: [[saison, rang, clubs, pts, mention]]} ; une saison où deux lignes désignent le
+    même club est ignorée pour ce club. `cache` = {"lang|titre": {qid, maj}} (mis à jour en place). Renvoie {club_wiki: "espn-<id>"}."""
+    auj = date.fromisoformat(maintenant[:10])
+    besoin: Dict[str, set] = {}
+    for sv in (hist.get("saisons") or {}).values():
+        lang = LANG_SOURCES.get(sv.get("source"))
+        for r in sv.get("rows") or []:
+            if lang and r.get("club_wiki"):
+                c = cache.get(f"{lang}|{r['club_wiki']}")
+                if not c or clubs.a_rafraichir(c, auj, 30 if c.get("qid") is None else JOURS_HISTORIQUE):
+                    besoin.setdefault(lang, set()).add(r["club_wiki"])
+    for lang, titres in besoin.items():
+        res = qids_articles(lang, sorted(titres), get)
+        if res is None:
+            print(f"[WARN] Historique des classements : Wikipédia {lang} illisible, liens précédents conservés")
+            continue
+        for t in titres:
+            cache[f"{lang}|{t}"] = {"qid": res.get(t), "maj": maintenant}
+    par_qid = {f["wikidata"]["qid"]: cid for cid, f in fiches.items() if (f.get("wikidata") or {}).get("qid")}
+    lignes: Dict[str, List[List[Any]]] = {}
+    liens: Dict[str, str] = {}
+    for saison, sv in sorted((hist.get("saisons") or {}).items()):
+        if sv.get("statut") == "illisible" or not sv.get("rows"):
+            continue
+        lang = LANG_SOURCES.get(sv.get("source"))
+        trouves: Dict[str, List[Dict[str, Any]]] = {}
+        for r in sv["rows"]:
+            cid = None
+            if sv.get("source") == "ESPN" and r.get("espn_id") in fiches:
+                cid = r["espn_id"]
+            elif lang and r.get("club_wiki"):
+                q = (cache.get(f"{lang}|{r['club_wiki']}") or {}).get("qid")
+                cid = par_qid.get(q) if q else None
+                if cid:
+                    liens[r["club_wiki"]] = f"espn-{cid}"
+            if cid:
+                trouves.setdefault(cid, []).append(r)
+        for cid, rs in trouves.items():
+            if len(rs) == 1:
+                r = rs[0]
+                lignes.setdefault(cid, []).append([saison, r.get("rang"), len(sv["rows"]), r.get("pts")] + ([r["mention"]] if r.get("mention") else []))
+            else:
+                print(f"[WARN] {saison} : {len(rs)} lignes pour {fiches[cid].get('nom')} : saison ignorée pour ce club")
+    for cid, f in fiches.items():
+        if lignes.get(cid):
+            f["championnat_hist"] = {"ligue": hist.get("ligue"), "nom": hist.get("nom"), "saisons": lignes[cid]}
+    return liens
+
+
 def historiques(fiches: List[Dict[str, Any]], base: str, ids_coupes: set, budget_s: float = 480,
                 collecter: Optional[Callable[..., int]] = None, aujourdhui: Optional[date] = None) -> int:
     """Historique européen des clubs de championnat SANS fiche UEFA (id UEFA Wikidata) : `<base>/historique/<id>.json`. Pose
@@ -405,6 +461,24 @@ def _test() -> None:
     assert fiches["169"]["stade"]["capacite"] == 29778 and "wikidata" not in fiches["2"]       # Q3 n'est pas un club
     assert fiches["3"]["wikidata"]["qid"] == "Q5"                                              # cache de moins de 30 jours gardé
     assert n == {"wikidata": 1, "wikipedia": 1, "non_relies": 1}, n
+
+    # parcours en championnat
+    hist = {"ligue": "fl1", "nom": "Ligue 1", "saisons": {
+        "1992-93": {"source": "Wikipédia FR", "statut": "ok", "rows": [
+            {"rang": 1, "club": "OM", "club_wiki": "OM (club)", "pts": 53, "mention": "déclassé"}, {"rang": 2, "club": "Rennes", "club_wiki": "SRFC", "pts": 50}]},
+        "2010-11": {"source": "ESPN", "statut": "ok", "rows": [{"rang": 1, "club": "Lille", "espn_id": "166", "pts": 76},
+                                                                  {"rang": 6, "club": "Rennes", "espn_id": "169", "pts": 57}]},
+        "1960-61": {"source": "Wikipédia FR", "statut": "illisible", "rows": []}}}
+    fx = {"169": {"nom": "Rennes", "wikidata": {"qid": "Q1"}}, "176": {"nom": "OM", "wikidata": {"qid": "Q9"}}}
+    cache: Dict[str, Dict[str, Any]] = {}
+    clubs.PAUSE_WIKIPEDIA, pause = 0, clubs.PAUSE_WIKIPEDIA
+    liens = parcours_championnat(fx, hist, cache, "2026-11-25T00:00:00Z",
+                                 get=lambda url, accept=None: {"query": {"pages": [{"title": "SRFC", "pageprops": {"wikibase_item": "Q1"}},
+                                                                                     {"title": "OM (club)", "pageprops": {"wikibase_item": "Q9"}}]}})
+    clubs.PAUSE_WIKIPEDIA = pause
+    assert fx["169"]["championnat_hist"]["saisons"] == [["1992-93", 2, 2, 50], ["2010-11", 6, 2, 57]], fx["169"]
+    assert fx["176"]["championnat_hist"]["saisons"] == [["1992-93", 1, 2, 53, "déclassé"]]
+    assert liens == {"OM (club)": "espn-176", "SRFC": "espn-169"} and cache["fr|SRFC"]["qid"] == "Q1"
 
     # historiques
     import tempfile

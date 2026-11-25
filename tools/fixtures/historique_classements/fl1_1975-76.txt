@@ -1,0 +1,253 @@
+== Classement final ===
+En cas d'égalité entre deux clubs, le premier critère de départage est la [[différence de buts]].
+{{foot classement début|align=left|bonus=oui}}
+{{foot classement| 1|[[Association sportive de Saint-Étienne|AS Saint-Étienne]] {{Tenant du titre}}	|57|38|18|15| 5|68|39|bonus=6|bgcolor={{fc|c1}}}}
+{{foot classement| 2|[[Olympique gymnaste club Nice Côte d'Azur|OGC Nice]]	|54|38|17|13| 8|67|40|bonus=7|bgcolor={{fc|c3}}}}
+{{foot classement| 3|[[Football Club Sochaux-Montbéliard|FC Sochaux]]	|52|38|16|14| 8|59|50|bonus=6|bgcolor={{fc|c3}}}}
+{{foot classement| 4|[[Football Club de Nantes|FC Nantes]]	|50|38|15|14| 9|67|44|bonus=6}}
+{{foot classement| 5|[[Stade de Reims]]	|47|38|17| 8|13|68|49|bonus=5}}
+{{foot classement| 6|[[Football Club de Metz|FC Metz]]	|47|38|18| 4|16|72|62|bonus=7}}
+{{foot classement| 7|[[Association sportive Nancy-Lorraine|AS Nancy Lorraine]] {{Promu}}	|45|38|14|10|14|67|59|bonus=7}}
+{{foot classement| 8|[[Sporting Club de Bastia|SEC Bastia]]	|45|38|14|13|11|59|53|bonus=4}}
+{{foot classement| 9|[[Olympique de Marseille]] {{Coupe nationale}}	|42|38|20| 1|17|60|60|bonus=1|bgcolor={{fc|c2}}}}
+{{foot classement|10|[[Football Club des Girondins de Bordeaux|FC Girondins de Bordeaux]]	|40|38|15| 9|14|59|59|bonus=1}}
+{{foot classement|11|[[Nîmes Olympique]]	|40|38|14| 9|15|50|53|bonus=3}}
+{{foot classement|12|[[Valenciennes Football Club|US Valenciennes-Anzin]] {{Promu}}	|40|38|13|10|15|44|54|bonus=4}}
+{{foot classement|13|[[LOSC Lille Métropole|Lille OSC]]	|40|38|14| 8|16|59|73|bonus=4}}
+{{foot classement|14|[[Paris Saint-Germain Football Club|Paris Saint-Germain FC]]	|39|38|13|11|14|63|60|bonus=2}}
+{{foot classement|15|[[Racing Club de Lens|RC Lens]]	|38|38|10|16|12|58|66|bonus=2}}
+{{foot classement|16|[[Olympique lyonnais]]	|37|38|13| 7|18|55|61|bonus=4}}
+{{foot classement|17|[[Troyes Aube Football|Troyes AF]]	|37|38| 9|16|13|48|54|bonus=3}}
+{{foot classement|18|[[Association sportive de Monaco football club|AS Monaco FC]]	|35|38|12| 9|17|53|73|bonus=2|bgcolor={{fc|relégué}}}}
+{{foot classement|19|[[Racing Club de Strasbourg|RC Strasbourg]]	|32|38| 9|11|18|39|56|bonus=3|bgcolor={{fc|relégué}}}}
+{{foot classement|20|[[Avenir Club Avignonnais|Olympique avignonnais]] {{Promu}}	|20|38| 7| 6|25|30|80|bonus=0|bgcolor={{fc|relégué}}}}
+{{foot classement fin}}
+
+{{foot classement légende|
+<small>Victoire à 2 points, 1 point de bonus pour tout match gagné par au moins 3 buts d'écart.</small>
+;Qualifications européennes
+;[[Coupe des clubs champions européens 1976-1977|Coupe des clubs champions européens]]
+{{Légende/Début}}{{Légende|{{fc|c1}}|'''{{1er}}''' : 1{{er}} tour (1/16 de finale)}}{{Légende/Fin}}
+;[[Coupe d'Europe des vainqueurs de coupe de football 1976-1977|Coupe d'Europe des vainqueurs de coupe]]
+{{Légende/Début}}{{Légende|{{fc|c2}}|'''Vainqueur de la [[Coupe de France de football 1975-1976|Coupe de France]]''' : {{1er|tour}} (1/16 de finale)}}{{Légende/Fin}}
+;[[Coupe UEFA 1976-1977|Coupe UEFA]]
+{{Légende/Début}}{{Légende|{{fc|c3}}|'''{{2e}} et {{3e}}''' : {{1er|tour}} (1/32 de finale)}}{{Légende/Fin}}
+;Relégation
+{{Légende/Début}}{{Légende|{{fc|relégué}}|'''{{18e}}, {{19e}} et {{20e}}''' : relégation en [[Championnat de France de football D2 1976-1977|Division 2]]}}{{Légende/Fin}}
+;Abréviations
+'''T''' : Tenant du titre<br />
+'''C''' : Vainqueur de la [[Coupe de France de football 1975-1976|Coupe de France 1975-76]]<br />
+'''P''' : Promus de [[Championnat de France de football D2 1974-1975|Division 2]]
+}}
+{{clr}}
+
+* Les vainqueurs des deux groupes de [[Championnat de France de football D2 1975-1976|D2]], l'[[Angers sporting club de l'Ouest|Angers SCO]] et le [[Stade rennais football club|Stade rennais FC]], obtiennent la montée directe en D1. Les deux deuxièmes des groupes se disputent la montée, et c'est le [[Stade lavallois Mayenne Football Club|Stade lavallois]] qui remporte [[Championnat de France de football D2 1975-1976#Barrages pour l'accession en division 1|ce barrage]] face au [[Red Star Football Club 93|Red Star FC]], et prend la troisième place d'accès à la D1.
+
+== Les champions de France ==
+{| class="wikitable alternance"  style="text-align:center"
+|-
+! Joueur
+! Nationalité
+! Matchs joués 
+! Buts
+|-align="center"
+| [[Dominique Bathenay]]
+| {{France}}
+| 34
+| 4
+|-align="center"
+| [[Hugues Boury]]
+| {{France}}
+| 1
+| -
+|-align="center"
+| [[Ivan Ćurković]]
+| {{Yougoslavie}}
+| 38
+| -
+|-align="center"
+| [[Gérard Farison]]
+| {{France}}
+| 28
+| -
+|-align="center"
+| [[Gérard Janvion]]
+| {{France}}
+| 32
+| 1
+|-align="center"
+| [[Félix Lacuesta]]
+| {{France}}
+| 8
+| 1
+|-align="center"
+| [[Jean-François Larios]]
+| {{France}}
+| 5
+| 2
+|-align="center"
+| [[Jean-Michel Larqué]]
+| {{France}}
+| 33
+| 5
+|-align="center"
+| [[Christian Lopez]]
+| {{France}}
+| 38
+| 1
+|-align="center"
+| [[Alain Merchadier]]
+| {{France}}
+| 4
+| -
+|-align="center"
+| [[Oswaldo Piazza]]
+| {{Argentine}}
+| 33
+| 4
+|-align="center"
+| [[Pierre Repellini]]
+| {{France}}
+| 19
+| 2
+|-align="center"
+| [[Hervé Revelli]]
+| {{France}}
+| 29
+| 12
+|-align="center"
+| [[Patrick Revelli]]
+| {{France}}
+| 24
+| 5
+|-align="center"
+| [[Dominique Rocheteau]]
+| {{France}}
+| 22
+|11
+|-align="center"
+| [[Jacques Santini]]
+| {{France}}
+| 34
+| 4
+|-align="center"
+| [[Christian Sarramagna]]
+| {{France}}
+| 11
+| 4
+|-align="center"
+| [[Jean-Marc Schaer]]
+| {{France}}
+| 17
+| 3
+|-align="center"
+| [[Christian Synaeghel]]
+| {{France}}
+| 20
+| 3
+|-align="center"
+| [[Yves Triantafilos]]
+| {{France}}
+| 6
+| 2
+|-align="center"
+| [[Dominique Vésir]]
+| {{France}}
+| 2
+| 1
+|}
+
+== Meilleurs buteurs ==
+{| class="wikitable alternance"  style="text-align:center"
+|-
+! width="50px" |Place
+! Joueur
+! Club
+! width="50px" | Buts
+|-align="center"
+| 1
+| align="left"| [[Carlos Bianchi]]
+| align="left"| [[Stade de Reims]]
+| '''34'''
+|-align="center"
+| 2
+| align="left"| [[Delio Onnis]]
+| align="left"| [[Association sportive de Monaco football club|AS Monaco FC]]
+| '''29'''
+|-align="center"
+| 3
+| align="left"| [[Hugo Curioni]]
+| align="left"| [[Football Club de Metz|FC Metz]]
+| '''25'''
+|-align="center"
+| 4
+| align="left"| [[Michel Platini]]
+| align="left"| [[Association sportive Nancy-Lorraine|AS Nancy Lorraine]]
+| '''22'''
+|-align="center"
+| 5
+| align="left"| [[Robert Pintenat]]
+| align="left"| [[Football Club Sochaux-Montbéliard|FC Sochaux]]
+| '''21'''
+|-align="center"
+| 6
+| align="left"| [[Christian Coste]]
+| align="left"| [[LOSC Lille Métropole|Lille OSC]]
+| '''19'''
+|-align="center"
+| -
+| align="left"| [[Hector Yazalde]]
+| align="left"| [[Olympique de Marseille]]
+| '''19'''
+|-align="center"
+| 8
+| align="left"| [[Serge Chiesa]]
+| align="left"| [[Olympique lyonnais]]
+| '''18'''
+|-align="center"
+| 9
+| align="left"| [[Nico Braun]]
+| align="left"| [[Football Club de Metz|FC Metz]]
+| '''16'''
+|-align="center"
+| -
+| align="left"| [[Gilles Rampillon]]
+| align="left"| [[Football Club de Nantes|FC Nantes]]
+| '''16'''
+|-align="center"
+| 11
+| align="left"| [[Jacques Zimako]]
+| align="left"| [[Sporting Club de Bastia|SEC Bastia]]
+| '''15'''
+|-align="center"
+| -
+| align="left"| [[Joachim Marx]]
+| align="left"| [[Racing Club de Lens|RC Lens]]
+| '''15'''
+|-align="center"
+| -
+| align="left"| [[Gérard Soler]]
+| align="left"| [[Football Club Sochaux-Montbéliard|FC Sochaux]]
+| '''15'''
+|-align="center"
+| 14
+| align="left"| [[Alain Giresse]]
+| align="left"| [[Football Club des Girondins de Bordeaux|FC Girondins de Bordeaux]]
+| '''13'''
+|}
+
+== Voir aussi ==
+* [[Championnat de France de football D2 1975-1976]]
+* [[Championnat de France de football de Division 3 1975-1976]]
+
+== Notes ==
+{{Références}}
+
+{{Palette|Saisons du championnat de France de football}} 
+{{Portail|football|années 1970|France}}
+
+[[Catégorie:Championnat de France de football par année|1975-1976]]
+[[Catégorie:Championnat de France en 1975|Football 1975-1976]]
+[[Catégorie:Championnat de France en 1976|Football 1975-1976]]
+[[Catégorie:Football en France en 1975]]
+[[Catégorie:Football en France en 1976]]

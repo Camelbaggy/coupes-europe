@@ -46,7 +46,7 @@ python classement.py --test && python historique.py --test && python reconstitut
 python run_ligues.py --date 2026-11-22 --donnees /tmp/donnees [--ligues fl1,pl] [--sans-journees]   # championnats : un jour -> dossier de données (ESPN + Wikipédia)
 python ligues.py --date 2026-11-22 --ligues fl1 --max-matchs 1 --sortie /tmp/l1.json   # collecteur ESPN seul (sans écriture dans le dépôt de données)
 python journees_wiki.py --test && python tools/inspect_ligues.py /tmp/donnees    # journées Wikipédia (sans réseau) ; résumé des données de championnats
-python notification_jour.py --test && python veille_ligues.py --test && python classement_ligue.py --test && python fiches_ligues.py --test && python encyclo_ligues.py --test   # notification commune du jour ; veille de la collecte quotidienne des championnats
+python notification_jour.py --test && python veille_ligues.py --test && python classement_ligue.py --test && python fiches_ligues.py --test && python encyclo_ligues.py --test && python encyclo_joueurs.py --test && python historique_classements.py --test   # notification commune du jour ; veille de la collecte quotidienne des championnats
 python notification_jour.py --veille                    # jours prêts à notifier d'après les fichiers PUBLIÉS (lecture seule)
 python run_ligues.py --date J --donnees DIR --etat      # + etat_championnats.json (collecte quotidienne) ; --alerte J --cause X : alerte d'échec
 ```
@@ -383,6 +383,18 @@ nationalité, photo). La compo et le déroulé référencent les joueurs par `id
   (donnees-football, budget `--budget-historique` 8 min par passage, reprenable, refait après 180 jours), champ `histoire` {uefa_id, ou, fichier}
   lu par l'onglet Histoire. Mesuré le 25/11/2026 : 96/96 clubs reliés, 86 avec id UEFA (0 désaccord avec les correspondances prouvées), stade
   complété 89/94 (les 5 autres : le club joue ailleurs cette saison ou Wikidata est en retard).
+- **Joueurs de championnat** (`encyclo_joueurs.py`, même étape, jamais bloquant) : bloc `wd` de chaque joueur de l'effectif (photo Commons avec
+  auteur / licence lisible, taille, lieu de naissance, `carriere` P54 avec années / matchs / buts quand Wikidata les donne, `selection` pour les
+  équipes nationales) + `wp` (extrait FR). Rapprochement : `P3681` (id ESPN, refusé si la date de naissance le contredit), sinon footballeur né le
+  MÊME JOUR (P569 à précision 11 : une date à l'année, stockée au 1er janvier, ne compte pas) dont un libellé / alias contient tous les mots du nom
+  le plus court ; UN seul candidat. Cache 30 jours, `qid: null` retenté après 30 jours. Les photos Commons ne sont affichées que sur la fiche
+  joueur, avec leur crédit (pas dans la liste de l'effectif).
+- **Historique des classements** (`historique_classements.py`, `docs/historique_classements.md`, workflow `historique_classements.yml` de
+  donnees-football) : classement FINAL de chaque saison de première division (ESPN depuis 2002-03, Wikipédia FR puis page locale avant ;
+  `championnats/historique/<ligue>.json` + `index.json`), publié tel quel (rang de la source, mentions, pénalités ; jamais re-trié ni décompté en
+  titres). `encyclo_ligues.parcours_championnat` rattache les lignes aux clubs actuels (ligne ESPN : `espn_id` ; ligne Wikipédia : `club_wiki` ->
+  élément Wikidata = élément de la fiche ; cache `championnats/clubs/wiki_qid.json`) -> `championnat_hist` des fiches (onglet Histoire,
+  « En championnat ») et `championnats/clubs/liens_historique.json` (clubs cliquables du bloc « Saisons passées » sous le classement).
 - À venir : historique des classements (Wikipédia, en cours).
 
 ## API UEFA : pièges vérifiés sur les données réelles

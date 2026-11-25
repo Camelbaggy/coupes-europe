@@ -1031,6 +1031,31 @@
     .hi-pal .l { font-size: 0.78rem; color: var(--text-muted); line-height: 1.4; }
     .hi-pal .l b { color: var(--text-main); font-weight: 600; }
     .hi-sub { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); margin: 12px 0 6px; }
+    .hs-bar { display: flex; align-items: center; gap: 8px; padding: 10px 12px 4px; }
+    .hs-bar select { flex: 1; min-height: 44px; background: var(--bg-elevated); color: var(--text-main); border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 10px; padding: 0 10px; font: inherit; font-size: 0.9rem; }
+    .hs-table td { white-space: nowrap; padding-left: 4px; padding-right: 4px; font-size: 0.82rem; }
+    .hs-table td.club { text-align: left; white-space: normal; }
+    .hs-table .mention { display: block; font-size: 0.7rem; color: var(--text-muted); font-weight: 400; }
+    .hs-note { font-size: 0.72rem; color: var(--text-muted); padding: 6px 12px 10px; line-height: 1.45; }
+    .hs-note a { color: var(--accent-ucl); }
+    details.hs-champ { padding: 0 12px 8px; }
+    details.hs-champ > summary { cursor: pointer; list-style: none; min-height: 44px; display: flex; align-items: center; font-size: 0.84rem; font-weight: 600; }
+    details.hs-champ > summary::after { content: '▾'; margin-left: auto; color: var(--text-muted); }
+    details.hs-champ[open] > summary::after { transform: rotate(180deg); }
+    .hs-ch { display: grid; grid-template-columns: 64px 1fr; gap: 2px 8px; padding: 6px 0; border-top: 1px solid rgba(255, 255, 255, 0.05); font-size: 0.82rem; }
+    .hs-ch .s { color: var(--text-muted); font-variant-numeric: tabular-nums; }
+    .ch-row { display: grid; grid-template-columns: 64px 52px 1fr; gap: 6px; padding: 7px 2px; border-top: 1px solid rgba(255, 255, 255, 0.05);
+      font-size: 0.84rem; font-variant-numeric: tabular-nums; align-items: baseline; }
+    .ch-row .r { font-weight: 700; } .ch-row .r.top { color: var(--club-ink); }
+    .ch-row .d { color: var(--text-muted); font-size: 0.76rem; }
+    .cl-match.pj-m { grid-template-columns: 58px minmax(0, 1fr) auto auto 34px; gap: 6px; }
+    .cl-match.pj-m .rating-badge { width: 34px; min-width: 0; padding: 2px 0; text-align: center; }
+    .pj-car { display: grid; grid-template-columns: 82px 1fr auto; gap: 6px; padding: 6px 0; border-top: 1px solid rgba(255, 255, 255, 0.05);
+      font-size: 0.82rem; font-variant-numeric: tabular-nums; align-items: baseline; }
+    .pj-car .a { color: var(--text-muted); } .pj-car .m { color: var(--text-muted); font-size: 0.74rem; text-align: right; }
+    .ps-credit { font-size: 0.68rem; color: var(--text-muted); margin-top: 4px; line-height: 1.35; }
+    .ps-credit a { color: var(--accent-ucl); }
     details.hi-fins, details.hi-dec, details.hi-ed { border-radius: 10px; }
     details.hi-fins > summary, details.hi-dec > summary, details.hi-ed > summary { cursor: pointer; list-style: none; min-height: 44px; display: flex;
       align-items: center; gap: 8px; font-size: 0.84rem; }
@@ -1130,6 +1155,12 @@
         <span class="legend-item"><i class="legend-dot" style="background:var(--zone-elim)"></i>25-36 : Élimination</span>
       </div>
       <div id="standings-container" class="standings-card"></div>
+    </section>
+
+    <!-- 5. CHAMPIONNATS : CLASSEMENTS FINAUX DES SAISONS PASSÉES (donnees-football championnats/historique/) -->
+    <section id="hist-section" hidden>
+      <div class="section-header"><h2 class="section-title" id="hist-title">Saisons passées</h2></div>
+      <div id="hist-container" class="standings-card"></div>
     </section>
     </div>
   </main>
@@ -1881,6 +1912,66 @@
             <tbody>${rowsHtml}</tbody>
           </table>`;
       }
+      renderHistLigue(compKey);
+    }
+
+    // ---------- Championnats : classements finaux des saisons passées (historique_classements.py, donnees-football) ----------
+    // Données publiées telles quelles : rang publié (jamais re-trié), mentions (déclassé…) et pénalités affichées, aucun titre décompté.
+    const histLigueCache = new Map(), histChoix = {};
+    let histTok = 0;
+    async function loadHistLigue(k) {
+      if (histLigueCache.has(k)) return histLigueCache.get(k);
+      const [d, l] = await Promise.all([fetchJson(DONNEES + 'championnats/historique/' + k + '.json'),
+        fetchJson(DONNEES + 'championnats/clubs/liens_historique.json')]);
+      if (!d || !d.saisons) return null;
+      const v = { d, liens: (l && l[k]) || {} };
+      histLigueCache.set(k, v);
+      return v;
+    }
+    const histSaisons = (d) => Object.keys(d.saisons).filter(x => (d.saisons[x].rows || []).length).sort().reverse();
+    async function renderHistLigue(k) {
+      const sec = document.getElementById('hist-section');
+      const tok = ++histTok;
+      if (!estLigue(k)) { sec.hidden = true; return; }
+      const v = await loadHistLigue(k);
+      if (tok !== histTok || currentComp !== k) return;
+      if (!v || !histSaisons(v.d).length) { sec.hidden = true; return; }
+      if (!histChoix[k] || !(v.d.saisons[histChoix[k]] || {}).rows) histChoix[k] = histSaisons(v.d)[0];
+      const n = histSaisons(v.d).length, ill = Object.keys(v.d.saisons).length - n;
+      document.getElementById('hist-title').innerHTML = `Saisons passées ${infoBtn(`<p>Classement <b>final</b> de chaque saison de première division, tel que publié : ESPN depuis 2002-03, Wikipédia avant (page française, sinon page de la langue du championnat). Rien n'est recalculé ni corrigé : le rang est celui de la source, les mentions (déclassement, pénalités) sont affichées telles quelles.</p><p>Contrôles : matchs = victoires + nuls + défaites, buts marqués = buts encaissés sur l'ensemble du championnat ; une saison qui ne les passe pas n'est pas affichée${ill ? ` (${ill} saison${ill > 1 ? 's' : ''} sur ${n + ill})` : ''}. Un nombre de points qui diffère du barème de l'époque est signalé sous le tableau.</p><p>Un club est cliquable quand il est relié à une fiche du dashboard (identifiant ESPN, ou article Wikipédia du club = même élément Wikidata).</p>`, 'Source des saisons passées')}`;
+      document.getElementById('hist-container').innerHTML = histLigueHtml(k, v);
+      sec.hidden = false;
+    }
+    function choisirSaisonHist(k, x) {
+      histChoix[k] = x;
+      const v = histLigueCache.get(k);
+      if (v) document.getElementById('hist-container').innerHTML = histLigueHtml(k, v);
+    }
+    function histLigueHtml(k, v) {
+      const x = histChoix[k], sv = v.d.saisons[x], rows = sv.rows || [];
+      const idClub = (r) => sv.source === 'ESPN' && r.espn_id ? 'espn-' + r.espn_id : (r.club_wiki && v.liens[r.club_wiki]) || null;
+      const opts = histSaisons(v.d).map(y => `<option value="${esc(y)}"${y === x ? ' selected' : ''}>${esc(y)}</option>`).join('');
+      const corps = rows.map(r => {
+        const id = idClub(r), nom = esc(r.club);
+        return `<tr${id && hasClub(id) ? ` class="clickable" onclick="openClub('${esc(id)}')"` : ''}><td class="rank-cell">${esc(r.rang ?? '')}</td>
+          <td class="col-team club">${id ? clubLink(id, nom) : nom}${r.mention ? `<span class="mention">${esc(r.mention)}</span>` : ''}${r.penalite ? `<span class="mention">${esc(r.penalite)} pt${r.penalite > 1 ? 's' : ''} retiré${r.penalite > 1 ? 's' : ''}</span>` : ''}</td>
+          <td>${esc(r.j ?? '')}</td><td>${esc(r.g ?? '')}-${esc(r.n ?? '')}-${esc(r.p ?? '')}</td><td>${esc(r.bp ?? '')}:${esc(r.bc ?? '')}</td><td style="font-weight:800">${esc(r.pts ?? '')}</td></tr>`;
+      }).join('');
+      const ecarts = ((sv.controles || {}).ecarts_points || []).map(e => `${esc(e.club)} (${esc(e.publie)} publiés, ${esc(e.bareme)} au barème)`).join(' ; ');
+      const src = lienSur(sv.url) ? `<a href="${esc(sv.url)}" target="_blank" rel="noopener noreferrer">${esc(sv.titre || sv.source)}</a>` : esc(sv.titre || sv.source);
+      const champions = histSaisons(v.d).map(y => {
+        const s1 = v.d.saisons[y], r = (s1.rows || []).find(z => z.rang === 1);
+        if (!r) return '';
+        const id = s1.source === 'ESPN' && r.espn_id ? 'espn-' + r.espn_id : (r.club_wiki && v.liens[r.club_wiki]) || null;
+        return `<div class="hs-ch"><span class="s">${esc(y)}</span><span>${id ? clubLink(id, esc(r.club)) : esc(r.club)}${r.mention ? ` <span style="color:var(--text-muted);font-size:0.74rem">(${esc(r.mention)})</span>` : ''}</span></div>`;
+      }).join('');
+      return `<div class="hs-bar"><label for="hs-sel" class="section-sub">Saison</label>
+          <select id="hs-sel" onchange="choisirSaisonHist('${esc(k)}', this.value)">${opts}</select></div>
+        <table class="standings-table hs-table"><thead><tr><th>#</th><th class="col-team">Club</th><th>MJ</th><th>V-N-D</th><th>Buts</th><th>Pts</th></tr></thead>
+          <tbody>${corps}</tbody></table>
+        <div class="hs-note">Source : ${src} (${esc(sv.source)})${(sv.controles || {}).points_victoire ? ` · victoire à ${esc(sv.controles.points_victoire)} points` : ''}${ecarts ? `<br>Points différents du barème, tels que publiés (pénalité, bonus…) : ${ecarts}.` : ''}</div>
+        <details class="hs-champ"><summary>1ers de chaque saison</summary>${champions}
+          <div class="hs-note" style="padding:6px 0 0">Club classé 1er dans la source, mention comprise : ce n'est pas une liste officielle des titres (un titre peut avoir été retiré).</div></details>`;
     }
 
     // Classement d'un championnat recalculé depuis les scores (classement_ligue.py) : critères appliqués selon le championnat
@@ -2625,13 +2716,13 @@
       (l.effectif || []).forEach(e => {
         const mots = motsNom(e.nom);
         const j = e.naissance && eff.find(x => x.naissance === e.naissance && [...motsNom(x.nom)].some(w => mots.has(w)));
-        if (j) { j.stats = { ...(e.stats || {}), ...(j.stats || {}) }; j.matchs = e.matchs; j.joue = j.joue || e.joue; j.ids = [j.id, e.id]; }
+        if (j) { j.stats = { ...(e.stats || {}), ...(j.stats || {}) }; j.matchs = e.matchs; j.joue = j.joue || e.joue; j.ids = [j.id, e.id]; j.wd = j.wd || e.wd; j.wp = j.wp || e.wp; }
         else eff.push(e);
       });
       return { ...u, ligue: l.ligue, espn_id: l.espn_id, competitions: [...(l.competitions || []), ...(u.competitions || [])],
         saison: { ...(u.saison || {}), matchs, forme: joues.slice(-5).map(x => x.resultat), prochain: futur ? futur.match_id : null },
         rang: [...(l.rang || []), ...(u.rang || [])], stats: { ...(l.stats || {}), ...(u.stats || {}) },
-        stade: u.stade || l.stade, effectif: eff, maj: [u.maj, l.maj].filter(Boolean).sort().pop() };
+        stade: u.stade || l.stade, championnat_hist: l.championnat_hist, effectif: eff, maj: [u.maj, l.maj].filter(Boolean).sort().pop() };
     }
     // Nationalité en français d'après le code drapeau (ESPN donne le nom anglais) ; repli : nom tel que publié
     const NOMS_PAYS = (() => { try { return new Intl.DisplayNames(['fr'], { type: 'region' }); } catch (e) { return null; } })();
@@ -2787,13 +2878,31 @@
       if (d && Array.isArray(d.ed) && d.tours && d.adv) { histoCache.set(id, d); return d; }
       return null;     // échec : pas de mise en cache, nouvel essai à la prochaine ouverture
     }
+    // Parcours en championnat (classements finaux publiés, fiche `championnat_hist` = [[saison, rang, clubs, pts, mention?]]) :
+    // regroupé par décennie, aucun titre décompté (une 1re place peut avoir été retirée : la mention est affichée).
+    function parcoursChampionnatHtml(f) {
+      const ch = f.championnat_hist;
+      if (!ch || !(ch.saisons || []).length) return '';
+      const ss = ch.saisons.slice().reverse(), rangs = ss.map(x => x[1]).filter(x => x != null);
+      const meilleur = rangs.length ? Math.min(...rangs) : null, nMeilleur = rangs.filter(x => x === meilleur).length;
+      const dec = new Map();
+      ss.forEach(x => { const d = String(x[0]).slice(0, 3) + '0'; if (!dec.has(d)) dec.set(d, []); dec.get(d).push(x); });
+      const ligne = (x) => `<div class="ch-row"><span>${esc(x[0])}</span><span class="r${x[1] === 1 ? ' top' : ''}">${esc(x[1])}${x[1] === 1 ? 'er' : 'e'}</span>
+        <span class="d">sur ${esc(x[2])} · ${esc(x[3] ?? '–')} pts${x[4] ? ' · ' + esc(x[4]) : ''}</span></div>`;
+      const blocs = [...dec.entries()].map(([d, l], i) => `<details class="hi-dec"${i === 0 ? ' open' : ''}><summary><b>Années ${esc(d)}</b>
+        <span style="color:var(--text-muted);font-size:0.78rem">${l.length} saison${l.length > 1 ? 's' : ''}</span></summary>${l.map(ligne).join('')}</details>`).join('');
+      const info = infoBtn(`<p>Classement final de chaque saison de ${esc(ch.nom || 'championnat')} où le club figure dans les données (ESPN depuis 2002-03, Wikipédia avant), tel que publié : rang de la source, mentions comprises. Seule la première division est couverte : les saisons passées à l'étage inférieur n'apparaissent pas.</p><p>Le club est reconnu par son identifiant ESPN ou par l'article Wikipédia de la ligne (même élément Wikidata que la fiche), jamais par le nom.</p>`, 'Source du parcours en championnat');
+      return `<div class="hi-sub" style="display:flex;align-items:center;gap:6px">En championnat ${info}</div>
+        <div class="hi-pal" style="display:block"><div class="t">${ch.saisons.length} saison${ch.saisons.length > 1 ? 's' : ''} en ${esc(ch.nom || 'championnat')}</div>
+          <div class="l">De ${esc(ch.saisons[0][0])} à ${esc(ss[0][0])}${meilleur != null ? ` · meilleur classement : <b>${esc(meilleur)}${meilleur === 1 ? 'er' : 'e'}</b>${meilleur === 1 ? ` (classé 1er ${nMeilleur} fois, mentions comprises)` : ` (${nMeilleur} fois)`}` : ''}</div></div>${blocs}`;
+    }
     async function renderHistoire(f) {
       const id = String(f.id), tok = ++histoToken, body = document.getElementById('club-body');
       const h = (String(f.id).startsWith('espn-') && !f.histoire) ? null : await loadHistoire(id, histoChemin(f));
       if (tok !== histoToken || currentClubView !== 'histoire' || !activeClub || String(activeClub.id) !== id) return;
-      body.innerHTML = h ? histoireHtml(h) : (String(f.id).startsWith('espn-') && !f.histoire)
+      body.innerHTML = parcoursChampionnatHtml(f) + (f.championnat_hist ? '<div class="hi-sub" style="margin-top:20px">Coupes d\'Europe</div>' : '') + (h ? histoireHtml(h) : (String(f.id).startsWith('espn-') && !f.histoire)
         ? `<div class="empty-state">Aucun historique européen pour ce club (pas d'identifiant UEFA dans Wikidata).</div>`
-        : `<div class="empty-state">L'historique européen de ce club n'est pas encore disponible.</div>`;
+        : `<div class="empty-state">L'historique européen de ce club n'est pas encore disponible.</div>`);
     }
     const hiDate = (iso) => iso ? new Date(iso + 'T12:00:00Z').toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' }) : '';
     const hiPlur = (n, s, p) => `${n} ${n > 1 ? (p || s + 's') : s}`;
@@ -3042,13 +3151,37 @@
 
     // Fiche de SAISON d'un joueur (championnat, et coupes s'il y joue aussi) : une ligne par compétition (matchs, minutes, buts,
     // passes décisives, note moyenne), puis la liste de ses matchs de championnat (note du match ; un match ouvre sa fiche).
+    // Encyclopédie d'un joueur de championnat (encyclo_joueurs.py) : photo Commons (auteur, licence), taille, lieu de naissance,
+    // carrière Wikidata, extrait Wikipédia. Rapprochement : P3681 ou date de naissance (jour) + nom, candidat unique.
+    function encJoueur(j) {
+      const wd = (j && j.wd && j.wd.qid) ? j.wd : null, wp = j && j.wp;
+      const ph = wd && wd.photo && lienSur(wd.photo.url) ? wd.photo : null;
+      const out = { photo: null, credit: '', tags: [], sections: '' };
+      if (!wd) return out;
+      if (ph && !j.photo) {
+        out.photo = ph.url;
+        out.credit = `Photo${ph.annee ? ' (' + esc(ph.annee) + ')' : ''} : ${esc(ph.auteur || 'auteur inconnu')} · ${lienSur(ph.page) ? `<a href="${esc(ph.page)}" target="_blank" rel="noopener noreferrer">${esc(ph.licence)}</a>` : esc(ph.licence)}, Wikimedia Commons`;
+      }
+      if (wd.taille) out.tags.push(wd.taille + ' cm');
+      if (wd.lieu_naissance) out.tags.push('Né à ' + wd.lieu_naissance);
+      const per = (e) => e.debut && e.fin ? (e.debut === e.fin ? e.debut : e.debut + '–' + e.fin) : e.debut ? 'depuis ' + e.debut : e.fin ? 'jusqu\'en ' + e.fin : '';
+      const det = (e) => [e.matchs != null ? e.matchs + ' m.' : '', e.buts != null ? e.buts + ' b.' : ''].filter(Boolean).join(' · ');
+      const ligne = (e) => `<div class="pj-car"><span class="a">${esc(per(e))}</span><span>${esc(e.club)}</span><span class="m">${esc(det(e))}</span></div>`;
+      const clubsC = (wd.carriere || []).filter(e => !e.selection), sel = (wd.carriere || []).filter(e => e.selection);
+      const src = `<p>Source : <b>Wikidata</b> (<a href="https://www.wikidata.org/wiki/${esc(wd.qid)}" target="_blank" rel="noopener noreferrer">${esc(wd.qid)}</a>, CC0), relié ${wd.preuve === 'P3681' ? 'par l\'identifiant ESPN du joueur enregistré dans Wikidata' : 'par la date de naissance (au jour près) et le nom, seul footballeur de Wikidata à correspondre'}. Années de début et de fin, matchs (m.) et buts (b.) seulement quand Wikidata les donne ; les prêts apparaissent comme des passages distincts. Wikidata peut être incomplet ou en retard sur les derniers transferts.</p>`;
+      if (clubsC.length) out.sections += `<div class="ps-section"><h4>Carrière ${infoBtn(src, 'Source de la carrière')}</h4>${clubsC.map(ligne).join('')}</div>`;
+      if (sel.length) out.sections += `<div class="ps-section"><h4>Sélections</h4>${sel.map(ligne).join('')}</div>`;
+      if (wp && wp.extrait) out.sections += `<div class="ps-section"><h4>Présentation</h4><p class="cl-extract">${esc(wp.extrait)}</p>
+        <div class="cl-credit">Source : ${lienSur(wp.url) ? `<a href="${esc(wp.url)}" target="_blank" rel="noopener noreferrer">Wikipédia</a>` : 'Wikipédia'} (${esc(wp.licence || 'CC BY-SA 4.0')}), article « ${esc(wp.titre || '')} » ; auteurs : voir l'historique de l'article.</div></div>`;
+      return out;
+    }
     function ficheJoueurSaison(f, j) {
       const lignes = Object.entries(j.stats || {}).map(([comp, s]) => `<tr><td>${esc(COMP_FULL[comp] || comp)}</td>
         <td>${esc(nf(s.matches_appearance || 0))}</td><td>${esc(nf(s.minutes_played_official || 0))}</td>
         <td>${esc(nf(j.poste === 'GOALKEEPER' ? (s.clean_sheet || 0) : (s.goals || 0)))}</td><td>${esc(nf(j.poste === 'GOALKEEPER' ? (s.goals_conceded || 0) : (s.assists || 0)))}</td>
         <td><b>${s.note_moyenne != null ? esc(Number(s.note_moyenne).toFixed(1)) : '–'}</b></td></tr>`).join('');
       const xg = Object.values(j.stats || {}).reduce((t, s) => t + (s.xg || 0), 0), xa = Object.values(j.stats || {}).reduce((t, s) => t + (s.xa || 0), 0);
-      const matchs = (j.matchs || []).slice().reverse().map(m => `<button type="button" class="cl-match" style="width:100%;background:none;border:none;color:inherit;font:inherit;text-align:left" onclick="openMatchFromClub('${esc(m.match_id)}', '${esc(m.date)}', '${esc(m.comp)}')">
+      const matchs = (j.matchs || []).slice().reverse().map(m => `<button type="button" class="cl-match pj-m" style="width:100%;background:none;border:none;color:inherit;font:inherit;text-align:left" onclick="openMatchFromClub('${esc(m.match_id)}', '${esc(m.date)}', '${esc(m.comp)}')">
           <span class="cl-date">${esc(jourCourt(m.date))}</span>
           <span class="cl-opp"><span class="cl-loc">${m.domicile ? 'D' : 'E'}</span><span class="nm">${esc(m.adversaire || '')}</span></span>
           <span class="cl-score">${esc(m.score || '')}</span>
@@ -3056,8 +3189,9 @@
           ${m.note != null ? `<span class="rating-badge ${ratingClass(m.note)}">${esc(Number(m.note).toFixed(1))}</span>` : '<span></span>'}</button>`).join('');
       const notes = Object.values(j.stats || {}).filter(s => s.note_moyenne != null);
       const moy = notes.length ? notes.reduce((t, s) => t + s.note_moyenne * (s.matchs_notes || 1), 0) / notes.reduce((t, s) => t + (s.matchs_notes || 1), 0) : null;
-      const photo = j.photo ? `<img class="ps-photo" src="${esc(j.photo)}" alt="" onerror="this.style.visibility='hidden'">` : `<div class="ps-photo"></div>`;
-      const tags = [j.poste_fr, j.numero ? 'N° ' + j.numero : '', j.naissance ? 'Né le ' + new Date(j.naissance + 'T12:00:00Z').toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' }) : '', j.parti ? 'A quitté le club' : '']
+      const enc = encJoueur(j), src = j.photo || enc.photo;
+      const photo = src ? `<img class="ps-photo" src="${esc(src)}" alt="" onerror="this.style.visibility='hidden'">` : `<div class="ps-photo"></div>`;
+      const tags = [j.poste_fr, j.numero ? 'N° ' + j.numero : '', j.naissance ? 'Né le ' + new Date(j.naissance + 'T12:00:00Z').toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' }) : '', ...enc.tags, j.parti ? 'A quitté le club' : '']
         .filter(Boolean).map(x => `<span class="ps-tag">${esc(x)}</span>`).join('');
       const info = infoBtn('<p>Fiche de saison. Championnat : statistiques <b>calculées</b> sur les matchs collectés (ESPN / Opta), note moyenne = moyenne des notes de ses matchs d\'au moins 10 minutes ; coupes : cumuls officiels UEFA. Gardiens : matchs sans encaisser et buts encaissés à la place des buts et passes décisives.</p><p>Touchez un match pour sa fiche détaillée.</p>', 'Aide de la fiche de saison');
       document.getElementById('player-body').innerHTML = `
@@ -3069,11 +3203,12 @@
           <div class="ps-name">${j.numero ? `<span style="color:var(--text-muted)">${esc(j.numero)}</span> ` : ''}${esc(j.nom)}</div>
           <div class="ps-meta">${j.drapeau ? flag({ flag: j.drapeau, country_name: nationaliteFr(j) }) : ''} ${esc(nationaliteFr(j))}${j.age ? ` · ${esc(j.age)} ans` : ''}</div></div>
           <div class="ps-rating">${moy != null ? `<span class="rating-badge ${ratingClass(moy)}">${esc(moy.toFixed(1))}</span><small>note moy.</small>` : '<small>non noté</small>'}</div></div>
+        ${enc.credit ? `<div class="ps-credit">${enc.credit}</div>` : ''}
         <div class="ps-tags">${tags}</div>
         <div class="ps-section"><h4>Saison ${info}</h4>
           <table class="cl-table"><thead><tr><th>Compétition</th><th>M.</th><th>Min.</th><th>${j.poste === 'GOALKEEPER' ? 'CS' : 'Buts'}</th><th>${j.poste === 'GOALKEEPER' ? 'BE' : 'PD'}</th><th>Note</th></tr></thead><tbody>${lignes}</tbody></table>
           ${xg || xa ? `<p class="momentum-note">Championnat : xG ${esc(xg.toLocaleString('fr-FR', { maximumFractionDigits: 2 }))} · xA ${esc(xa.toLocaleString('fr-FR', { maximumFractionDigits: 2 }))}</p>` : ''}</div>
-        ${matchs ? `<div class="ps-section"><h4>Matchs de championnat</h4>${matchs}</div>` : ''}`;
+        ${matchs ? `<div class="ps-section"><h4>Matchs de championnat</h4>${matchs}</div>` : ''}${enc.sections}`;
       document.getElementById('player-modal').classList.add('open');
       bringToFront(document.getElementById('player-modal'));
       document.getElementById('player-body').scrollTop = 0;
