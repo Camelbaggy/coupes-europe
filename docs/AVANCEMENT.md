@@ -39,6 +39,9 @@ Tout ce qui suit est fusionné sur `main` et en ligne (https://camelbaggy.github
 
 - **Encyclopédie des clubs de championnat** (25/11, `encyclo_ligues.py`) : fondation, stade (capacité), site, extrait Wikipédia et historique
   européen pour les clubs sans fiche UEFA, par la chaîne club ESPN -> article Wikipédia de la page de saison -> Wikidata (jamais par le nom).
+- **Joueurs de championnat et saisons passées** (25/11, `encyclo_joueurs.py`, `historique_classements.py`) : photo / taille / carrière / extrait des
+  joueurs (Wikidata, date de naissance au jour + nom, candidat unique) ; classements finaux de 460 saisons sur 466 (bloc « Saisons passées » et
+  parcours du club dans l'onglet Histoire).
 
 ## À vérifier à la reprise
 

@@ -40,6 +40,7 @@ from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
 import classement_ligue
+import encyclo_joueurs
 import encyclo_ligues
 import ligues
 from netutil import FLAG_CODES
@@ -190,7 +191,7 @@ def correspondances(ancien: Dict[str, Any], pays: List[str]) -> Dict[str, Any]:
 # Construction des fiches
 # ------------------------------------------------------------------------------
 def construire(donnees: str, ligues_demandees: List[str], avec_effectifs: bool = True, avec_encyclo: bool = True,
-               budget_historique_s: float = 480) -> Dict[str, Any]:
+               budget_historique_s: float = 480, budget_joueurs_s: float = 240) -> Dict[str, Any]:
     import run_ligues
     maintenant = datetime.now(timezone.utc)
     fin_historique = time.time() + budget_historique_s
@@ -205,6 +206,8 @@ def construire(donnees: str, ligues_demandees: List[str], avec_effectifs: bool =
         _ecrire(corr_chemin, corr)
     except Exception as e:   # jamais bloquant
         print(f"[WARN] correspondances UEFA non mises à jour : {e}")
+    qid_cache = _lire(os.path.join(base, "wiki_qid.json")) or {}
+    liens_hist = _lire(os.path.join(base, "liens_historique.json")) or {}
     index = (_lire(os.path.join(base, "index.json")) or {}).get("clubs") or []
     index = [c for c in index if c.get("ligue") not in ligues_demandees]
     for lg in ligues_demandees:
@@ -334,6 +337,30 @@ def construire(donnees: str, ligues_demandees: List[str], avec_effectifs: bool =
                 for cid, f in fiches.items():
                     if anciens[cid].get("histoire"):
                         f["histoire"] = anciens[cid]["histoire"]
+            try:   # classements des saisons passées (championnats/historique/, historique_classements.py)
+                hist = _lire(os.path.join(donnees, "championnats", "historique", f"{lg}.json"))
+                if hist:
+                    liens = encyclo_ligues.parcours_championnat(fiches, hist, qid_cache, maintenant.strftime("%Y-%m-%dT%H:%M:%SZ"))
+                    liens_hist[lg] = liens
+                    print(f"[HISTORIQUE] {meta['name']} : {sum(1 for f in fiches.values() if f.get('championnat_hist'))} club(s) avec leur "
+                          f"parcours, {len(liens)} lien(s) Wikipédia -> club")
+            except Exception as e:
+                print(f"[WARN] {meta['name']} : parcours en championnat non calculé ({e})")
+                for cid, f in fiches.items():
+                    if anciens[cid].get("championnat_hist"):
+                        f["championnat_hist"] = anciens[cid]["championnat_hist"]
+            try:
+                n = encyclo_joueurs.enrichir(fiches, anciens, maintenant.strftime("%Y-%m-%dT%H:%M:%SZ"), budget_s=budget_joueurs_s)
+                print(f"[JOUEURS] {meta['name']} : {n['demandes']} joueur(s) à relire, {n['relies']} relié(s) à Wikidata, "
+                      f"{n['photos']} photo(s), {n['extraits']} extrait(s)")
+            except Exception as e:
+                print(f"[WARN] {meta['name']} : joueurs non enrichis ({e}), valeurs précédentes conservées")
+                prec = {j["id"]: j for a in anciens.values() for j in a.get("effectif") or []}
+                for f in fiches.values():
+                    for j in f.get("effectif") or []:
+                        for k in ("wd", "wp"):
+                            if (prec.get(j["id"]) or {}).get(k):
+                                j[k] = prec[j["id"]][k]
         for cid, f in fiches.items():
             if f["stats"]:
                 f["stats"][lg]["moyenne_competition"] = {"valeurs": moy, "clubs": len(pms), "maj": maintenant.date().isoformat()}
@@ -344,6 +371,8 @@ def construire(donnees: str, ligues_demandees: List[str], avec_effectifs: bool =
                           **({"uefa_id": f["uefa_id"]} if f.get("uefa_id") else {}),
                           **({"couleurs": f["couleurs"]} if f.get("couleurs") else {})})
         print(f"[FICHES] {meta['name']} : {len(fiches)} fiches, {sum(1 for f in fiches.values() if f.get('uefa_id'))} rapprochée(s) d'une fiche UEFA")
+    _ecrire(os.path.join(base, "wiki_qid.json"), qid_cache)
+    _ecrire(os.path.join(base, "liens_historique.json"), liens_hist)
     _ecrire(os.path.join(base, "index.json"), {"saison": lib, "maj": maintenant.strftime("%Y-%m-%dT%H:%M:%SZ"),
                                                 "clubs": sorted(index, key=lambda c: (c["ligue"], c["nom"] or ""))})
     print(f"[FICHES] {ligues.REQUETES['n']} requête(s) ESPN ; {len(corr)} correspondance(s) UEFA")
@@ -379,9 +408,10 @@ if __name__ == "__main__":
     ap.add_argument("--sans-effectifs", action="store_true")
     ap.add_argument("--sans-encyclo", action="store_true", help="ni Wikidata / Wikipédia ni historique européen")
     ap.add_argument("--budget-historique", type=float, default=8, help="minutes au plus pour l'historique européen (reprenable)")
+    ap.add_argument("--budget-joueurs", type=float, default=4, help="minutes au plus, par championnat, pour les photos et extraits des joueurs")
     ap.add_argument("--test", action="store_true")
     a = ap.parse_args()
     if a.test:
         _test()
         sys.exit(0)
-    construire(a.donnees, a.ligues.split(","), not a.sans_effectifs, not a.sans_encyclo, a.budget_historique * 60)
+    construire(a.donnees, a.ligues.split(","), not a.sans_effectifs, not a.sans_encyclo, a.budget_historique * 60, a.budget_joueurs * 60)
