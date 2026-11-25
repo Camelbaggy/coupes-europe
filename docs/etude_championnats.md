@@ -144,3 +144,40 @@ interface : menu des journées, résultats, classement, fiches).
 6. Stats par mi-temps : garder les 4 actuelles (tirs, cadrés, corners, jaunes) ou étendre (passes, possession calculée…) ?
 7. Fiche club unique pour un club présent en coupe et en championnat (recommandé) ?
 8. Historique des saisons passées (depuis 1993) : dès maintenant ou plus tard ?
+
+## 10. Réponses du propriétaire (25/11/2026) et compléments mesurés
+
+1. **Accueil : option B** (une seule application, URL actuelles conservées).
+2. **Journée : Wikipédia d'abord** (football-data.org seulement en secours, avec accord). Mesuré le 25/11 :
+   - Wikipédia FR, Ligue 1, Premier League, Liga, Bundesliga : matrice `{{Foot résultat}}` ; chaque case d'un match NON joué vaut `Jnn`
+     (journée), un match joué vaut son score. Comptage : PL 281 `Jnn` + 99 scores = 380, Liga 251 + 129 = 380, Bundesliga 216 + 90 = 306,
+     L1 idem. Un match reporté garde sa journée d'origine (ex. Rennes `J06` encore non joué).
+   - Wikipédia FR, Serie A : pas de matrice ; **Wikipédia IT** (`Serie A 2026-2027`, § Calendario) donne le calendrier complet par
+     « giornata », matchs joués compris.
+   - Méthode : la journée d'un match est lue AVANT qu'il soit joué (relecture quotidienne, une page par championnat) puis conservée ; pour les
+     matchs déjà joués de 2026-27 (reconstitution), lecture d'une révision d'avant le début de la saison (API MediaWiki `prop=revisions`),
+     où tous les matchs sont encore `Jnn`. Contrôle déterministe : chaque club joue au plus une fois par journée et une journée a au plus
+     N/2 matchs ; rapprochement ESPN ↔ Wikipédia par les deux équipes (alias manuels si besoin) ; incohérence = journée absente, jamais
+     devinée. Wikipédia est modifiable par tous : la valeur lue est enregistrée avec la révision (`journee_source`).
+   - Wikidata : aucune donnée par match (pas d'élément « match » pour ces saisons) ; inutile ici.
+   - Débit : Wikipédia répond HTTP 429 au conteneur de développement après quelques requêtes rapprochées (IP partagée) ; en production,
+     5 pages par jour, `Retry-After` respecté (règle de `clubs.py`).
+3. **Place** (estimation, JSON non compressé, ~42 Ko par match complet mesuré) :
+   | Ensemble | Matchs / saison | Données ESPN | Poids / saison |
+   |---|---|---|---|
+   | Big 5 | 1 752 | Opta complet + xG | ~75 Mo |
+   | Championship (`eng.2`) | 552 | Opta complet + xG (mesuré) | ~23 Mo |
+   | Ligue 2, LaLiga 2, Serie B, 2. Bundesliga | ~1 450 | **léger** : ~20 événements, pas d'xG ni de stats Opta (mesuré) : pas de notes ni de momentum | ~15 Mo |
+   | Eredivisie (`ned.1`) | 306 | actions complètes, PAS d'xG (mesuré) | ~13 Mo |
+   | Belgique, Écosse, Turquie… | — | léger (mesuré sur `bel.1`, `sco.1`, `tur.1`) | ~5 Mo chacun |
+   Soit ~110-130 Mo par saison avec les 2es divisions, plus les réécritures dans l'historique git. GitHub recommande moins de 1 Go par dépôt
+   et par site Pages : **recommandation : dépôt de données séparé** (publié sur Pages, lu par la page, comme `courses-cyclistes-archives`),
+   le code et les coupes restant ici ; un nouveau dépôt d'archives quand il approche de la limite.
+4. **Notification : une par jour où des matchs ont été joués**, « Nouveaux résultats disponibles » ; l'accueil met en avant les derniers
+   résultats et mène aux pages correspondantes.
+5. Momentum : entrée dans la surface adverse remplace « attaque dangereuse » (poids 2). Accordé.
+6. Stats par mi-temps : on en ajoute (comptées sur les actions Opta).
+7. **Une fiche par club et par joueur** (coupes et championnats réunis).
+8. **Saisons passées : historique du classement des clubs seulement.** ESPN donne le classement final officiel (pénalités comprises :
+   Serie A 2005-06 = Inter 76 pts) **depuis 2002-03** pour les 5 championnats (mesuré ; rien en 2001-02). Avant 2002-03 : à décider
+   (football-data.co.uk depuis 1993, classement recalculé SANS les pénalités de points, donc à signaler comme tel, ou rien).

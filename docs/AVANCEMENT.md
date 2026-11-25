@@ -32,7 +32,8 @@ Tout ce qui suit est fusionné sur `main` et en ligne (https://camelbaggy.github
 
 - **Championnats nationaux (big 5)** : étude des sources faite le 25/11 (`docs/etude_championnats.md`) : ESPN (flux Opta complet
   pour toute la saison 2026-27 des 5 championnats), journée via football-data.org / OpenLigaDB, contrôle croisé football-data.co.uk.
-  **En attente des décisions du propriétaire (§ 9 de l'étude)** avant tout développement.
+  Décisions du propriétaire reçues le 25/11 (§ 10 de l'étude) ; restent : dépôt de données séparé, notification commune
+  coupes + championnats, saisons avant 2002-03.
 
 ## À vérifier à la reprise
 
