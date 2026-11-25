@@ -20,6 +20,8 @@ import urllib.error
 import urllib.request
 from typing import Any, Dict, List, Optional, Tuple
 
+from espn import XG_CLES
+
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "").strip()
 API_ROOT = "https://generativelanguage.googleapis.com/v1beta"
 FALLBACK_MODELS = ["gemini-flash-latest", "gemini-2.5-flash"]
@@ -171,7 +173,17 @@ def key_moments(comments: List[str], limit: int = 60) -> List[str]:
 
 
 def named_stats(stats: List[Dict[str, Any]], names: Dict[str, str]) -> Dict[str, Dict[str, Any]]:
-    return {s["label"]: {names["home"]: s["home"], names["away"]: s["away"]} for s in stats}
+    return {s["label"]: {names["home"]: s["home"], names["away"]: s["away"]} for s in stats if s.get("key") not in XG_CLES}
+
+
+def buts_attendus(match: Dict[str, Any], names: Dict[str, str]) -> Optional[Dict[str, Any]]:
+    """xG (modèle Opta via ESPN) du match complet, présenté au modèle comme une ESTIMATION ; None si absent."""
+    xg = next((s for s in match.get("stats", {}).get("all", []) if s.get("key") == "xg"), None)
+    if not xg:
+        return None
+    return {"avertissement": "estimation statistique du modèle Opta (via ESPN), pas un fait du match : ne jamais la présenter comme "
+                             "un score ni comme une certitude ; à citer au plus en une courte incise (« selon les xG »)",
+            "xg": {names["home"]: xg["home"], names["away"]: xg["away"]}}
 
 
 ACTION_FR = {
@@ -255,6 +267,7 @@ def build_match_dossier(comp_name: str, card: Dict[str, Any], match: Dict[str, A
         "joueurs_en_vue": standout_players(match, names),
         "phases_de_domination": dominance_phases(match.get("momentum", []), names),
         "actions_officielles_uefa": official_actions(match, names),
+        "buts_attendus_xg": buts_attendus(match, names),
         "statistiques": named_stats(match.get("stats", {}).get("all", []), names),
         "statistiques_par_mi_temps": {
             "1re": named_stats(match.get("stats", {}).get("1st", []), names),
@@ -281,6 +294,8 @@ INTERDIT :
 - énumérer les buts sous forme de liste (« buts de X (9'), Y (12'), Z (50') ») ; intègre-les au récit, au besoin en n'en citant que les plus importants ;
 - toute phrase commençant par « Score final vérifié » ou « Chronologie des buts » ;
 - tout chiffre, nom, minute, jour ou date absent du dossier (le jour du match est dans `date`) ; n'invente ni ambiance, ni blessure, ni déclaration, ni type d'action (contre-attaque, centre…) non décrit dans le dossier.
+
+`buts_attendus_xg`, s'il est présent, est une ESTIMATION (modèle Opta) : tu peux l'évoquer en une courte incise (« avec 2,3 xG contre 0,8 »), jamais comme un fait du match ni pour justifier un score.
 
 Le fil ESPN est en anglais : traduis-le naturellement. En cas de désaccord entre le fil ESPN et les données UEFA, les données UEFA font foi.
 Réponds uniquement avec le texte du résumé."""

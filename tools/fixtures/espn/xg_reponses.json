@@ -1,0 +1,462 @@
+{
+ "scoreboards": {
+  "uefa.champions/20261124": {
+   "events": [
+    {
+     "id": "401915380",
+     "date": "2026-11-24T17:45Z",
+     "status": {
+      "type": {
+       "completed": true
+      }
+     },
+     "competitions": [
+      {
+       "competitors": [
+        {
+         "id": "2980",
+         "homeAway": "home",
+         "score": "1",
+         "team": {
+          "id": "2980",
+          "displayName": "Bodo/Glimt",
+          "shortDisplayName": "Bodo/Glimt",
+          "name": "Bodo/Glimt",
+          "location": "Bodo/Glimt"
+         }
+        },
+        {
+         "id": "4411",
+         "homeAway": "away",
+         "score": "0",
+         "team": {
+          "id": "4411",
+          "displayName": "LASK Linz",
+          "shortDisplayName": "LASK Linz",
+          "name": "LASK Linz",
+          "location": "LASK Linz"
+         }
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "401915379",
+     "date": "2026-11-24T20:00Z",
+     "status": {
+      "type": {
+       "completed": true
+      }
+     },
+     "competitions": [
+      {
+       "competitors": [
+        {
+         "id": "382",
+         "homeAway": "home",
+         "score": "2",
+         "team": {
+          "id": "382",
+          "displayName": "Manchester City",
+          "shortDisplayName": "Man City",
+          "name": "Manchester City",
+          "location": "Manchester City"
+         }
+        },
+        {
+         "id": "114",
+         "homeAway": "away",
+         "score": "2",
+         "team": {
+          "id": "114",
+          "displayName": "Napoli",
+          "shortDisplayName": "Napoli",
+          "name": "Napoli",
+          "location": "Napoli"
+         }
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  "uefa.europa/20261105": {
+   "events": [
+    {
+     "id": "401915527",
+     "date": "2026-11-05T17:45Z",
+     "status": {
+      "type": {
+       "completed": true
+      }
+     },
+     "competitions": [
+      {
+       "competitors": [
+        {
+         "id": "987",
+         "homeAway": "home",
+         "score": "0",
+         "team": {
+          "id": "987",
+          "displayName": "Lillestrom",
+          "shortDisplayName": "Lillestrom",
+          "name": "Lillestrom",
+          "location": "Lillestrom"
+         }
+        },
+        {
+         "id": "11706",
+         "homeAway": "away",
+         "score": "1",
+         "team": {
+          "id": "11706",
+          "displayName": "Viktoria Plzen",
+          "shortDisplayName": "Viktoria Plzen",
+          "name": "Viktoria Plzen",
+          "location": "Viktoria Plzen"
+         }
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  "uefa.europa.conf/20261105": {
+   "events": [
+    {
+     "id": "401915827",
+     "date": "2026-11-05T17:45Z",
+     "status": {
+      "type": {
+       "completed": true
+      }
+     },
+     "competitions": [
+      {
+       "competitors": [
+        {
+         "id": "2290",
+         "homeAway": "home",
+         "score": "2",
+         "team": {
+          "id": "2290",
+          "displayName": "Red Star Belgrade",
+          "shortDisplayName": "Red Star",
+          "name": "Red Star Belgrade",
+          "location": "Red Star Belgrade"
+         }
+        },
+        {
+         "id": "20703",
+         "homeAway": "away",
+         "score": "1",
+         "team": {
+          "id": "20703",
+          "displayName": "Inter D'Escaldes",
+          "shortDisplayName": "Inter D'Escaldes",
+          "name": "Inter D'Escaldes",
+          "location": "Inter D'Escaldes"
+         }
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  }
+ },
+ "stats": {
+  "uefa.champions/401915380/2980": {
+   "splits": {
+    "categories": [
+     {
+      "name": "goalKeeping",
+      "stats": [
+       {
+        "name": "expectedGoalsConceded",
+        "value": 0.265
+       }
+      ]
+     },
+     {
+      "name": "offensive",
+      "stats": [
+       {
+        "name": "expectedGoals",
+        "value": 1.228
+       },
+       {
+        "name": "expectedAssists",
+        "value": 1.611
+       },
+       {
+        "name": "expectedGoalsNonPenalty",
+        "value": 1.228
+       },
+       {
+        "name": "expectedGoalsOnTarget",
+        "value": 0.556
+       }
+      ]
+     }
+    ]
+   }
+  },
+  "uefa.champions/401915380/4411": {
+   "splits": {
+    "categories": [
+     {
+      "name": "goalKeeping",
+      "stats": [
+       {
+        "name": "expectedGoalsConceded",
+        "value": 1.228
+       }
+      ]
+     },
+     {
+      "name": "offensive",
+      "stats": [
+       {
+        "name": "expectedGoals",
+        "value": 0.265
+       },
+       {
+        "name": "expectedAssists",
+        "value": 0.371
+       },
+       {
+        "name": "expectedGoalsNonPenalty",
+        "value": 0.265
+       },
+       {
+        "name": "expectedGoalsOnTarget",
+        "value": 0.0
+       }
+      ]
+     }
+    ]
+   }
+  },
+  "uefa.champions/401915379/382": {
+   "splits": {
+    "categories": [
+     {
+      "name": "goalKeeping",
+      "stats": [
+       {
+        "name": "expectedGoalsConceded",
+        "value": 0.608
+       }
+      ]
+     },
+     {
+      "name": "offensive",
+      "stats": [
+       {
+        "name": "expectedGoals",
+        "value": 1.408
+       },
+       {
+        "name": "expectedAssists",
+        "value": 1.92
+       },
+       {
+        "name": "expectedGoalsNonPenalty",
+        "value": 1.408
+       },
+       {
+        "name": "expectedGoalsOnTarget",
+        "value": 1.187
+       }
+      ]
+     }
+    ]
+   }
+  },
+  "uefa.champions/401915379/114": {
+   "splits": {
+    "categories": [
+     {
+      "name": "goalKeeping",
+      "stats": [
+       {
+        "name": "expectedGoalsConceded",
+        "value": 1.408
+       }
+      ]
+     },
+     {
+      "name": "offensive",
+      "stats": [
+       {
+        "name": "expectedGoals",
+        "value": 0.608
+       },
+       {
+        "name": "expectedAssists",
+        "value": 0.928
+       },
+       {
+        "name": "expectedGoalsNonPenalty",
+        "value": 0.608
+       },
+       {
+        "name": "expectedGoalsOnTarget",
+        "value": 0.626
+       }
+      ]
+     }
+    ]
+   }
+  },
+  "uefa.europa/401915527/987": {
+   "splits": {
+    "categories": [
+     {
+      "name": "goalKeeping",
+      "stats": [
+       {
+        "name": "expectedGoalsConceded",
+        "value": 2.083
+       }
+      ]
+     },
+     {
+      "name": "offensive",
+      "stats": [
+       {
+        "name": "expectedGoals",
+        "value": 0.632
+       },
+       {
+        "name": "expectedAssists",
+        "value": 0.614
+       },
+       {
+        "name": "expectedGoalsNonPenalty",
+        "value": 0.632
+       },
+       {
+        "name": "expectedGoalsOnTarget",
+        "value": 0.37
+       }
+      ]
+     }
+    ]
+   }
+  },
+  "uefa.europa/401915527/11706": {
+   "splits": {
+    "categories": [
+     {
+      "name": "goalKeeping",
+      "stats": [
+       {
+        "name": "expectedGoalsConceded",
+        "value": 0.632
+       }
+      ]
+     },
+     {
+      "name": "offensive",
+      "stats": [
+       {
+        "name": "expectedGoals",
+        "value": 2.083
+       },
+       {
+        "name": "expectedAssists",
+        "value": 1.262
+       },
+       {
+        "name": "expectedGoalsNonPenalty",
+        "value": 2.083
+       },
+       {
+        "name": "expectedGoalsOnTarget",
+        "value": 1.825
+       }
+      ]
+     }
+    ]
+   }
+  },
+  "uefa.europa.conf/401915827/2290": {
+   "splits": {
+    "categories": [
+     {
+      "name": "goalKeeping",
+      "stats": [
+       {
+        "name": "expectedGoalsConceded",
+        "value": 1.439
+       }
+      ]
+     },
+     {
+      "name": "offensive",
+      "stats": [
+       {
+        "name": "expectedGoals",
+        "value": 3.147
+       },
+       {
+        "name": "expectedAssists",
+        "value": 2.855
+       },
+       {
+        "name": "expectedGoalsNonPenalty",
+        "value": 3.147
+       },
+       {
+        "name": "expectedGoalsOnTarget",
+        "value": 2.061
+       }
+      ]
+     }
+    ]
+   }
+  },
+  "uefa.europa.conf/401915827/20703": {
+   "splits": {
+    "categories": [
+     {
+      "name": "goalKeeping",
+      "stats": [
+       {
+        "name": "expectedGoalsConceded",
+        "value": 3.147
+       }
+      ]
+     },
+     {
+      "name": "offensive",
+      "stats": [
+       {
+        "name": "expectedGoals",
+        "value": 1.439
+       },
+       {
+        "name": "expectedAssists",
+        "value": 0.888
+       },
+       {
+        "name": "expectedGoalsNonPenalty",
+        "value": 1.439
+       },
+       {
+        "name": "expectedGoalsOnTarget",
+        "value": 1.3
+       }
+      ]
+     }
+    ]
+   }
+  }
+ }
+}
