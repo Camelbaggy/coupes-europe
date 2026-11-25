@@ -83,8 +83,8 @@ sources[], maj}}}`.
   2005-06 : Inter 1er (76 pts) ; Juventus classée 20e avec 91 points (relégation administrative), sans champ de pénalité ;
   Milan 58 (pénalité 30), Fiorentina 44 (30), Lazio 32 (30) → statut `ecarts_points`. L'interface doit donc afficher le
   RANG publié (pas un tri par points) et peut signaler « rang ≠ ordre des points ».
-- Autres écarts notables (tous gardés tels que publiés) : Ligue 1 1973-74 → 1975-76 (bonus offensif), 1988-89 (point
-  supplémentaire aux tirs au but après un nul, RC Lens 17 au lieu de 14), Portsmouth 2009-10 (−9), Everton / Nottingham
+- Autres écarts notables (tous gardés tels que publiés) : Ligue 1 1973-74 → 1975-76 (bonus offensif), 1988-89 (les 20 clubs au-dessus du
+  barème, ex. OM 73 au lieu de 53, RC Lens 17 au lieu de 14 : règle de points de la saison NON vérifiée ici), Portsmouth 2009-10 (−9), Everton / Nottingham
   Forest 2023-24, Juventus 2022-23 (−10), Bielefeld 1971-72 (DE, 0 point après Abzug 19).
 
 ## Commandes
