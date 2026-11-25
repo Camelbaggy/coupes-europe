@@ -145,7 +145,10 @@
     .tabs-bar.n6 { grid-template-columns: repeat(6, 1fr); gap: 1px; }
     .tabs-bar.n6 .tab-btn { font-size: 0.7rem; padding: 10px 0; letter-spacing: -0.01em; }
     .tabs-bar.n7 { grid-template-columns: repeat(7, 1fr); gap: 0; }
-    .tabs-bar.n7 .tab-btn { font-size: 0.64rem; padding: 10px 0; letter-spacing: -0.02em; }
+    .tabs-bar.n7 .tab-btn { font-size: 0.58rem; padding: 10px 0; letter-spacing: -0.02em; }
+    .tab-ligue { display: flex; flex-direction: column; align-items: center; gap: 3px; line-height: 1.1; white-space: nowrap; }
+    .tab-ligue .flag { width: 18px; height: 13px; border-radius: 2px; }
+    .tab-btn:not(.active) .tab-ligue .flag { opacity: 0.75; }
     .tabs-bar[hidden] { display: none; }
     header.accueil { padding-bottom: 12px; }
     header.accueil .header-top { margin-bottom: 0; }
@@ -1335,7 +1338,14 @@
     const LIGUE_AUTRES = ['por', 'ned', 'bel', 'tur', 'aut', 'gre', 'nor'];
     const LIGUE_KEYS = [...LIGUE_MAJEURS, ...LIGUE_AUTRES];
     const LIGUE_COURT = { fl1: 'Ligue 1', fl2: 'Ligue 2', pl: 'Premier L.', liga: 'Liga', sa: 'Serie A', bl: 'Bundesliga',
-      por: 'Portugal', ned: 'Pays-Bas', bel: 'Belgique', tur: 'Turquie', aut: 'Autriche', gre: 'Grèce', nor: 'Norvège' };
+      por: 'Liga', ned: 'Eredivisie', bel: 'Pro League', tur: 'Süper Lig', aut: 'Bundesliga', gre: 'Super L.', nor: 'Eliteserien' };
+    // Drapeau du pays devant le nom de chaque championnat (demande du 26/11/2026 : le pays n'est plus écrit dans le nom) ; drapeaux flagcdn
+    const DRAPEAU_LIGUE = { fl1: ['fr', 'France'], fl2: ['fr', 'France'], pl: ['gb-eng', 'Angleterre'], liga: ['es', 'Espagne'], sa: ['it', 'Italie'],
+      bl: ['de', 'Allemagne'], por: ['pt', 'Portugal'], ned: ['nl', 'Pays-Bas'], bel: ['be', 'Belgique'], tur: ['tr', 'Turquie'],
+      aut: ['at', 'Autriche'], gre: ['gr', 'Grèce'], nor: ['no', 'Norvège'] };
+    const NOM_LIGUE = { por: 'Liga Portugal', ned: 'Eredivisie', bel: 'Pro League', tur: 'Süper Lig', aut: 'Bundesliga', gre: 'Super League', nor: 'Eliteserien' };
+    const drapeauLigue = (k) => DRAPEAU_LIGUE[k] ? `<img class="flag" src="https://flagcdn.com/w40/${DRAPEAU_LIGUE[k][0]}.png" alt="" title="${esc(DRAPEAU_LIGUE[k][1])}" width="18" height="13">` : '';
+    const nomLigue = (k) => NOM_LIGUE[k] || COMP_FULL[k];
     const ESPACES = { coupes: { titre: "Coupes d'Europe", keys: COMP_KEYS }, championnats: { titre: 'Championnats majeurs', keys: LIGUE_MAJEURS },
       autres: { titre: 'Autres championnats', keys: LIGUE_AUTRES } };
     const estLigue = (k) => LIGUE_KEYS.includes(k);
@@ -1553,7 +1563,7 @@
       const cur = tourChoice[k];
       const sheet = document.getElementById('tour-sheet');
       sheet.style.setProperty('--tour-accent', `var(--accent-${k})`);
-      document.getElementById('tour-head').innerHTML = `<div><b id="tour-sheet-title">${esc(COMP_FULL[k])}</b><small>Choisir une journée ou un tour</small></div>
+      document.getElementById('tour-head').innerHTML = `<div><b id="tour-sheet-title">${estLigue(k) ? drapeauLigue(k) + ' ' + esc(nomLigue(k)) : esc(COMP_FULL[k])}</b><small>Choisir une journée ou un tour</small></div>
         <button type="button" class="btn-close" onclick="closeTourMenu()" aria-label="Fermer">✕</button>`;
       document.getElementById('tour-list').innerHTML = GROUPES.map(g => {
         const ts = list.filter(t => t.groupe === g.k);
@@ -1720,7 +1730,7 @@
       bar.classList.toggle('n5', keys.length === 5 || keys.length === 4);
       bar.classList.toggle('n6', keys.length === 6);
       bar.classList.toggle('n7', keys.length >= 7);
-      bar.innerHTML = keys.map(k => `<button class="tab-btn ${k === currentComp ? 'active' : ''}" data-comp="${k}" style="--tab-accent: var(--accent-${k})" onclick="switchCompetition('${k}')">${esc(keys.length > 3 ? LIGUE_COURT[k] : COMP_FULL[k])}</button>`).join('');
+      bar.innerHTML = keys.map(k => `<button class="tab-btn ${k === currentComp ? 'active' : ''}" data-comp="${k}" style="--tab-accent: var(--accent-${k})" onclick="switchCompetition('${k}')" aria-label="${esc(estLigue(k) ? nomLigue(k) + ' (' + DRAPEAU_LIGUE[k][1] + ')' : COMP_FULL[k])}">${estLigue(k) ? `<span class="tab-ligue">${drapeauLigue(k)}<span>${esc(LIGUE_COURT[k])}</span></span>` : esc(COMP_FULL[k])}</button>`).join('');
     }
     function afficherVue(v) {
       vue = v;
@@ -1801,7 +1811,7 @@
           const ms = (c.matches || []).slice().sort((a, b) => minutesKickoff(a) - minutesKickoff(b));
           html += `<div class="acc-bloc" style="--c-accent: var(--accent-${k})">
             <button type="button" class="acc-bloc-h" onclick="entrer('${k}', ${t ? `'${esc(t.id)}'` : 'null'})">
-              <span><b>${esc(COMP_FULL[k])}</b><small>${esc(t ? t.titre : '')}${t ? ' · ' : ''}${ms.length} match${ms.length > 1 ? 's' : ''}</small></span>
+              <span><b>${estLigue(k) ? drapeauLigue(k) + ' ' : ''}${esc(estLigue(k) ? nomLigue(k) : COMP_FULL[k])}</b><small>${esc(t ? t.titre : '')}${t ? ' · ' : ''}${ms.length} match${ms.length > 1 ? 's' : ''}</small></span>
               <span class="go">Voir tout ›</span></button>
             ${ms.map(m => accLigneMatch(m, k, jour)).join('')}</div>`;
         });
@@ -1812,7 +1822,7 @@
         const t = defaultTour(k);
         const desc = t ? `<span class="tt">${esc(t.titre)}</span><span>${esc(tourSousTitre(t))}</span>`
           : `<span>${estLigue(k) ? 'Données bientôt disponibles' : 'Aucune soirée conservée'}</span>`;
-        return `<button type="button" class="acc-tuile" style="--c-accent: var(--accent-${k})" onclick="entrer('${k}', ${t ? `'${esc(t.id)}'` : 'null'})"><b>${esc(COMP_FULL[k])}</b>${desc}</button>`;
+        return `<button type="button" class="acc-tuile" style="--c-accent: var(--accent-${k})" onclick="entrer('${k}', ${t ? `'${esc(t.id)}'` : 'null'})"><b>${estLigue(k) ? drapeauLigue(k) + ' ' : ''}${esc(estLigue(k) ? nomLigue(k) : COMP_FULL[k])}</b>${desc}</button>`;
       };
       html += `<h2 class="acc-h">Coupes d'Europe</h2><div class="acc-grille">${COMP_KEYS.map(tuile).join('')}</div>`;
       html += `<h2 class="acc-h">Championnats majeurs</h2><div class="acc-grille">${LIGUE_MAJEURS.map(tuile).join('')}</div>`;
@@ -2013,7 +2023,7 @@
       }
       if (!histChoix[k] || !(v.d.saisons[histChoix[k]] || {}).rows) histChoix[k] = histSaisons(v.d)[0];
       const n = histSaisons(v.d).length, ill = Object.keys(v.d.saisons).length - n;
-      document.getElementById('hist-title').innerHTML = `${esc(COMP_FULL[k])} · saisons passées ${infoBtn(`<p>Classement <b>final</b> de chaque saison de première division, tel que publié : ESPN depuis 2002-03, Wikipédia avant (page française, sinon page de la langue du championnat). Rien n'est recalculé ni corrigé : le rang est celui de la source, les mentions (déclassement, pénalités) sont affichées telles quelles.</p><p>Contrôles : matchs = victoires + nuls + défaites, buts marqués = buts encaissés sur l'ensemble du championnat ; une saison qui ne les passe pas n'est pas affichée${ill ? ` (${ill} saison${ill > 1 ? 's' : ''} sur ${n + ill})` : ''}. Un nombre de points qui diffère du barème de l'époque est signalé sous le tableau.</p><p>Un club est cliquable quand il est relié à une fiche du dashboard (identifiant ESPN, ou article Wikipédia du club = même élément Wikidata).</p>`, 'Source des saisons passées')}`;
+      document.getElementById('hist-title').innerHTML = `${drapeauLigue(k)} ${esc(nomLigue(k))} · saisons passées ${infoBtn(`<p>Classement <b>final</b> de chaque saison de première division, tel que publié : ESPN depuis 2002-03, Wikipédia avant (page française, sinon page de la langue du championnat). Rien n'est recalculé ni corrigé : le rang est celui de la source, les mentions (déclassement, pénalités) sont affichées telles quelles.</p><p>Contrôles : matchs = victoires + nuls + défaites, buts marqués = buts encaissés sur l'ensemble du championnat ; une saison qui ne les passe pas n'est pas affichée${ill ? ` (${ill} saison${ill > 1 ? 's' : ''} sur ${n + ill})` : ''}. Un nombre de points qui diffère du barème de l'époque est signalé sous le tableau.</p><p>Un club est cliquable quand il est relié à une fiche du dashboard (identifiant ESPN, ou article Wikipédia du club = même élément Wikidata).</p>`, 'Source des saisons passées')}`;
       document.getElementById('hist-container').innerHTML = histLigueHtml(k, v);
       sec.hidden = false;
     }
