@@ -37,7 +37,15 @@ Tout ce qui suit est fusionné sur `main` et en ligne (https://camelbaggy.github
   README, CLAUDE.md), poussé sur son `main` et GitHub Pages activé (25/11). **Étape 2 livrée sur la branche** (§ 12) : accueil à la racine,
   interface des championnats ; aucune donnée publiée tant que la branche n'est pas fusionnée et la collecte lancée.
 
+- **Encyclopédie des clubs de championnat** (25/11, `encyclo_ligues.py`) : fondation, stade (capacité), site, extrait Wikipédia et historique
+  européen pour les clubs sans fiche UEFA, par la chaîne club ESPN -> article Wikipédia de la page de saison -> Wikidata (jamais par le nom).
+
 ## À vérifier à la reprise
+
+0000. Encyclopédie des championnats : après fusion, la prochaine collecte écrit `wikidata` / `wikipedia` dans `championnats/clubs/` et
+      l'historique européen de ~50 clubs (8 min par passage, plusieurs passages) ; passer `--budget-historique 2` dans
+      `reconstitution_championnats.yml` (job de 58 min).
+
 
 000. Étape 4 (25/11) : suivre `reconstitution_championnats.yml` (donnees-football) jusqu'à « 0 restant » ; contrôler quelques journées
      reconstituées (classement calculé, journée, xG) ; Liga : journées ajoutées par la page ES.

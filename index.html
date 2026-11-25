@@ -2732,7 +2732,7 @@
       if (wd.ville_siege && wd.ville_siege !== (st && st.ville)) faits.push(['Siège', esc(wd.ville_siege)]);
       if (wd.surnom) faits.push(['Surnom', esc(wd.surnom)]);
       if (lienSur(wd.site)) faits.push(['Site officiel', `<a href="${esc(lienSur(wd.site))}" target="_blank" rel="noopener noreferrer">${esc(wd.site.replace(/^https?:\/\/(www\.)?/i, '').replace(/\/$/, ''))}</a>`]);
-      const infoSrc = infoBtn(`<p><b>Sources.</b> Stade, ville, capacité et ouverture : ${st && st.source === 'ESPN' ? 'ESPN' : 'UEFA'} (stade le plus utilisé par le club à domicile cette saison${st && st.autres_stades ? ' ; autres stades : ' + esc(st.autres_stades.join(', ')) : ''}). Fondation, surnom, siège, site officiel : <b>Wikidata</b>${wd.qid ? ` (<a href="https://www.wikidata.org/wiki/${esc(wd.qid)}" target="_blank" rel="noopener noreferrer">${esc(wd.qid)}</a>, rapproché par ${wd.preuve === 'alias' ? 'un rapprochement validé à la main' : 'l\'identifiant d\'équipe UEFA (P7361)'})` : ' (club non rapproché)'}, CC0. Une information absente n'est pas affichée.</p><p>Le logo est celui de l'UEFA (lien direct vers son image).</p>`, 'Sources de la fiche');
+      const infoSrc = infoBtn(`<p><b>Sources.</b> Stade : ${st && st.source === 'Wikidata' ? '<b>Wikidata</b> (stade actuel du club ; aucun match à domicile collecté)' : `${st && st.source === 'ESPN' ? 'ESPN' : 'UEFA'} (stade le plus utilisé par le club à domicile cette saison${st && st.autres_stades ? ' ; autres stades : ' + esc(st.autres_stades.join(', ')) : ''})${st && st.complement ? ' ; capacité, ville et ouverture : <b>Wikidata</b> (même stade, nom ou autre nom identique)' : ''}`}. Fondation, surnom, siège, site officiel : <b>Wikidata</b>${wd.qid ? ` (<a href="https://www.wikidata.org/wiki/${esc(wd.qid)}" target="_blank" rel="noopener noreferrer">${esc(wd.qid)}</a>, rapproché par ${wd.preuve === 'alias' ? 'un rapprochement validé à la main' : wd.preuve === 'article' ? `l'article Wikipédia du club cité par la page de la saison (${esc((wd.article || {}).preuve || '')})` : 'l\'identifiant d\'équipe UEFA (P7361)'})` : ' (club non rapproché)'}, CC0. Une information absente n'est pas affichée.</p><p>Le logo est celui ${String(f.id).startsWith('espn-') ? 'd\'ESPN' : 'de l\'UEFA'} (lien direct vers son image).</p>`, 'Sources de la fiche');
       if (faits.length) sections.push(`<div class="cl-sec"><h4>Le club ${infoSrc}</h4><dl class="cl-facts">${faits.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${v}</dd>`).join('')}</dl></div>`);
       else sections.push(`<div class="cl-sec"><h4>Le club ${infoSrc}</h4><div class="empty-state">Informations générales indisponibles.</div></div>`);
       if (wp && wp.extrait) {
@@ -2778,17 +2778,22 @@
     // la page ne fait que regrouper et afficher (aucune règle de palmarès ici).
     const histoCache = new Map();
     let histoToken = 0;
-    async function loadHistoire(id) {
+    // Club de championnat sans fiche UEFA : `histoire` = {uefa_id, ou: coupes|donnees, fichier} (encyclo_ligues.py, id UEFA lu dans Wikidata)
+    const histoChemin = (f) => f.histoire && f.histoire.ou === 'donnees' ? DONNEES + f.histoire.fichier
+      : 'clubs/historique/' + encodeURIComponent(f.histoire ? f.histoire.uefa_id : f.id) + '.json';
+    async function loadHistoire(id, chemin) {
       if (histoCache.has(id)) return histoCache.get(id);
-      const d = await fetchJson('clubs/historique/' + encodeURIComponent(id) + '.json');
+      const d = await fetchJson(chemin);
       if (d && Array.isArray(d.ed) && d.tours && d.adv) { histoCache.set(id, d); return d; }
       return null;     // échec : pas de mise en cache, nouvel essai à la prochaine ouverture
     }
     async function renderHistoire(f) {
       const id = String(f.id), tok = ++histoToken, body = document.getElementById('club-body');
-      const h = await loadHistoire(id);
+      const h = (String(f.id).startsWith('espn-') && !f.histoire) ? null : await loadHistoire(id, histoChemin(f));
       if (tok !== histoToken || currentClubView !== 'histoire' || !activeClub || String(activeClub.id) !== id) return;
-      body.innerHTML = h ? histoireHtml(h) : `<div class="empty-state">L'historique européen de ce club n'est pas encore disponible.</div>`;
+      body.innerHTML = h ? histoireHtml(h) : (String(f.id).startsWith('espn-') && !f.histoire)
+        ? `<div class="empty-state">Aucun historique européen pour ce club (pas d'identifiant UEFA dans Wikidata).</div>`
+        : `<div class="empty-state">L'historique européen de ce club n'est pas encore disponible.</div>`;
     }
     const hiDate = (iso) => iso ? new Date(iso + 'T12:00:00Z').toLocaleDateString('fr-FR', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' }) : '';
     const hiPlur = (n, s, p) => `${n} ${n > 1 ? (p || s + 's') : s}`;

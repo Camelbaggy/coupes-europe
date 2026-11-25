@@ -46,7 +46,7 @@ python classement.py --test && python historique.py --test && python reconstitut
 python run_ligues.py --date 2026-11-22 --donnees /tmp/donnees [--ligues fl1,pl] [--sans-journees]   # championnats : un jour -> dossier de données (ESPN + Wikipédia)
 python ligues.py --date 2026-11-22 --ligues fl1 --max-matchs 1 --sortie /tmp/l1.json   # collecteur ESPN seul (sans écriture dans le dépôt de données)
 python journees_wiki.py --test && python tools/inspect_ligues.py /tmp/donnees    # journées Wikipédia (sans réseau) ; résumé des données de championnats
-python notification_jour.py --test && python veille_ligues.py --test && python classement_ligue.py --test && python fiches_ligues.py --test   # notification commune du jour ; veille de la collecte quotidienne des championnats
+python notification_jour.py --test && python veille_ligues.py --test && python classement_ligue.py --test && python fiches_ligues.py --test && python encyclo_ligues.py --test   # notification commune du jour ; veille de la collecte quotidienne des championnats
 python notification_jour.py --veille                    # jours prêts à notifier d'après les fichiers PUBLIÉS (lecture seule)
 python run_ligues.py --date J --donnees DIR --etat      # + etat_championnats.json (collecte quotidienne) ; --alerte J --cause X : alerte d'échec
 ```
@@ -373,6 +373,16 @@ nationalité, photo). La compo et le déroulé référencent les joueurs par `id
 - **Fiches de club et de joueur communes** (étape 5, étude § 15) : `fiches_ligues.py` (donnees-football `championnats/clubs/`, schéma des fiches
   UEFA ; correspondance ESPN <-> UEFA prouvée par un match de coupe) ; page : index commun, `fusionnerFiches` (une fiche pour un club des deux
   mondes ; joueurs rapprochés par date de naissance + nom), `ficheJoueurSaison`. Tests : `python fiches_ligues.py --test`.
+- **Encyclopédie des clubs de championnat** (`encyclo_ligues.py`, appelé par `fiches_ligues.construire`, jamais bloquant) : club ESPN -> article
+  Wikipédia cité par la page de la saison (`journees.json` `correspondances`, vérifiées par les scores ; Serie A : tableau « Squadre partecipanti »
+  IT, nom du calendrier = `{{Calcio <nom>}}` de la même ligne) -> élément Wikidata (`pageprops.wikibase_item`, doit être un club de football
+  P31/P279* Q476028) -> `wikidata` (fondation, siège, site, surnom, `uefa_id` P7361 et stade P115 seulement s'ils sont UNIQUES, `preuve: "article"`)
+  + `wikipedia` (extrait FR) ; cache 30 jours. Stade : celui d'ESPN reste ; capacité / ville / ouverture Wikidata ajoutées (`complement`) seulement si
+  le nom ESPN partage un mot distinctif avec le nom ou un autre nom (libellés, alias) du stade Wikidata ; sans stade ESPN : stade Wikidata
+  (`source: "Wikidata"`). Historique européen des clubs sans fiche UEFA : `histoire.py` -> `championnats/clubs/historique/<id UEFA>.json`
+  (donnees-football, budget `--budget-historique` 8 min par passage, reprenable, refait après 180 jours), champ `histoire` {uefa_id, ou, fichier}
+  lu par l'onglet Histoire. Mesuré le 25/11/2026 : 96/96 clubs reliés, 86 avec id UEFA (0 désaccord avec les correspondances prouvées), stade
+  complété 89/94 (les 5 autres : le club joue ailleurs cette saison ou Wikidata est en retard).
 - À venir : historique des classements (Wikipédia, en cours).
 
 ## API UEFA : pièges vérifiés sur les données réelles
