@@ -719,5 +719,120 @@
   "reconstituee": true,
   "maj": "2026-11-25T01:41:28Z",
   "fichier": "soirees/2026-08-26.json"
+ },
+ {
+  "date": "2026-08-25",
+  "statut": "complet",
+  "matchs": 3,
+  "termines": 3,
+  "competitions": {
+   "ucl": {
+    "matchs": 3,
+    "stage": "qualifying",
+    "tour": "Barrages retour"
+   }
+  },
+  "francais": [],
+  "resumes": {
+   "gemini": 0,
+   "deterministe": 0,
+   "a_rattraper": 0
+  },
+  "reconstituee": true,
+  "maj": "2026-11-25T01:41:39Z",
+  "fichier": "soirees/2026-08-25.json"
+ },
+ {
+  "date": "2026-08-20",
+  "statut": "complet",
+  "matchs": 36,
+  "termines": 36,
+  "competitions": {
+   "uel": {
+    "matchs": 12,
+    "stage": "qualifying",
+    "tour": "Barrages aller"
+   },
+   "uecl": {
+    "matchs": 24,
+    "stage": "qualifying",
+    "tour": "Barrages aller"
+   }
+  },
+  "francais": [
+   {
+    "comp": "uecl",
+    "match_id": "2049252",
+    "home": "Górnik Zabrze",
+    "away": "Monaco",
+    "home_fr": false,
+    "away_fr": true,
+    "score": "2-3",
+    "statut": "Terminé"
+   }
+  ],
+  "resumes": {
+   "gemini": 0,
+   "deterministe": 1,
+   "a_rattraper": 0
+  },
+  "reconstituee": true,
+  "maj": "2026-11-25T01:41:46Z",
+  "fichier": "soirees/2026-08-20.json"
+ },
+ {
+  "date": "2026-08-19",
+  "statut": "complet",
+  "matchs": 4,
+  "termines": 4,
+  "competitions": {
+   "ucl": {
+    "matchs": 4,
+    "stage": "qualifying",
+    "tour": "Barrages aller"
+   }
+  },
+  "francais": [],
+  "resumes": {
+   "gemini": 0,
+   "deterministe": 0,
+   "a_rattraper": 0
+  },
+  "reconstituee": true,
+  "maj": "2026-11-25T01:42:37Z",
+  "fichier": "soirees/2026-08-19.json"
+ },
+ {
+  "date": "2026-08-18",
+  "statut": "complet",
+  "matchs": 3,
+  "termines": 3,
+  "competitions": {
+   "ucl": {
+    "matchs": 3,
+    "stage": "qualifying",
+    "tour": "Barrages aller"
+   }
+  },
+  "francais": [
+   {
+    "comp": "ucl",
+    "match_id": "2049213",
+    "home": "Fenerbahçe",
+    "away": "Lyon",
+    "home_fr": false,
+    "away_fr": true,
+    "score": "1-1",
+    "statut": "Terminé"
+   }
+  ],
+  "resumes": {
+   "gemini": 0,
+   "deterministe": 1,
+   "a_rattraper": 0
+  },
+  "reconstituee": true,
+  "maj": "2026-11-25T01:42:46Z",
+  "fichier": "soirees/2026-08-18.json"
  }
 ]
