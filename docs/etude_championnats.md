@@ -299,3 +299,32 @@ Coût : 10 requêtes ESPN par passage de veille (2 par championnat). Échec de l
 
 **Premier lancement** : donnees-football : « Run workflow » de `battement.yml` (puis il se relance seul) ; coupes-europe : relancer `battement.yml`
 (ses scripts ont changé : `veille_notification.sh`).
+
+## 14. Étape 4 livrée : classement recalculé et reconstitution de la saison (25/11/2026)
+
+**Classement recalculé** (`classement_ligue.py`) : ESPN ne donne que le classement actuel ; pour une journée passée il est recalculé depuis
+les scores des matchs terminés jusqu'au jour inclus (heure de Paris), `standings_source: "calcule"` + `standings_at`.
+- Départage (`CRITERES`) : Premier League, Bundesliga, Ligue 1 : points, différence de buts, buts marqués ; Liga et Serie A : points, puis
+  confrontations directes (points puis différence de buts des matchs entre clubs à égalité) SEULEMENT si l'aller et le retour ont été joués,
+  puis différence de buts, buts marqués. Critères suivants (fair-play, etc.) non appliqués : égalité résiduelle = même rang, `ex_aequo`, « = »
+  à l'écran. Pas de zone ni de pénalité de points (un écart avec ESPN la révélerait : `comparer`).
+- **Validé** (`python classement_ligue.py --valider`, 25/11) : calcul à la date du jour = classement officiel ESPN pour les 5 championnats
+  (96 clubs, 0 écart de rang, points, matchs joués, différence de buts) ; et au 22/11 = classement officiel relevé ce jour-là (Ligue 1,
+  Bundesliga : 0 écart).
+- Utilisé par la collecte du jour quand le classement ESPN n'est plus valable (au lieu de recopier un classement plus ancien) et par la
+  reconstitution.
+
+**Reconstitution** (`run_ligues.py --reconstituer --budget-min 40`, workflow `reconstitution_championnats.yml` de donnees-football,
+auto-relancé tant qu'il reste des jours et que le passage progresse) : jours (heure de Paris) ayant au moins un match terminé, antérieurs à
+aujourd'hui, sans fichier publié, du plus récent au plus ancien ; même collecte que le jour même, classement recalculé, `reconstituee: true`
+(fichier et ligne d'index) ; jamais d'état du jour ni de notification ; complète aussi le classement des jours collectés en direct sans
+classement valable (`standings_source: "absent"`). Estimation : ~650 matchs à rejouer (13 journées x 5 championnats), ~18 s par match :
+~3 h 30, soit 5 à 6 passages de 40 min.
+
+**Journées de la Liga** : page locale de secours (`journees_wiki.SECOURS`, Wikipédia ES « Primera División de España 2026-27 », § Resultados,
+une table « Jornada N » par journée, matchs joués compris ; `calendrier_es`) lue pour les seuls matchs encore sans journée après la page FR ;
+adoptée seulement si ses journées concordent avec celles de la page FR (au plus 2 % d'écart sur les matchs communs), puis le contrôle « un club
+une fois par journée » s'applique. Mesuré le 25/11 : 8 journées ajoutées (J1-J3, J8), 372/372 concordantes avec la page FR -> Liga 380/380.
+
+**Interface** : titre « Classement · calculé » + info-bulle propre au championnat (critères, date), « = » des ex æquo ; info-bulle
+« Reconstituée » adaptée aux championnats (`RECONSTITUEE_LIGUE_INFO`).

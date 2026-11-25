@@ -21,9 +21,30 @@ import os
 from datetime import date, datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional
 
+import classement_ligue
 import journees_wiki
 import ligues
 import ratings
+
+_SAISONS: Dict[str, Any] = {}      # ligue -> matchs de la saison (ligues.saison), lus une fois par processus
+_CLUBS: Dict[str, Any] = {}        # ligue -> {id ESPN brut: ligne du classement ESPN actuel} (noms, logos)
+
+
+def matchs_saison(lg: str, annee: int) -> Optional[List[Dict[str, Any]]]:
+    if lg not in _SAISONS:
+        rows, _ = ligues.classement(lg)
+        _CLUBS[lg] = {r["team_id"].replace("espn-", ""): r for r in rows}
+        _SAISONS[lg] = ligues.saison(lg, annee, {c: [] for c in _CLUBS[lg]}) if rows else None
+    return _SAISONS[lg]
+
+
+def classement_calcule(lg: str, annee: int, jour: str) -> List[Dict[str, Any]]:
+    """Classement recalculé à l'issue du jour (classement_ligue.py) ; [] si la liste de la saison est illisible (jamais de
+    classement calculé sur une liste tronquée)."""
+    ms = matchs_saison(lg, annee)
+    if not ms:
+        return []
+    return classement_ligue.calculer(lg, ms, _CLUBS[lg], jour)
 
 
 DELAI_APRES_COUP_MIN = 120   # un match terminé n'est collecté que 2 h après son coup d'envoi (stats Opta finalisées)
@@ -153,7 +174,8 @@ def classement_valable(jour: str, calendrier: Dict[str, str], maintenant: dateti
 
 
 def collecter(jour: str, donnees: str, ligues_demandees: List[str], avec_wiki: bool = True,
-              maintenant: Optional[datetime] = None) -> Dict[str, Any]:
+              maintenant: Optional[datetime] = None, reconstituee: bool = False,
+              forcer_calcul: bool = False) -> Dict[str, Any]:
     maintenant = maintenant or datetime.now(timezone.utc)
     annee = saison_de(jour)
     bilan: Dict[str, Any] = {}
@@ -207,13 +229,17 @@ def collecter(jour: str, donnees: str, ligues_demandees: List[str], avec_wiki: b
         # Notes : recalculées sur TOUS les matchs notés du jour (standardisation par championnat et par jour, comme les
         # coupes par soirée) ; un match déjà noté peut donc voir ses notes bouger légèrement quand un autre s'ajoute
         notes = ratings.rate_matches([m for m in matchs if m.get("players")]) if any(m.get("players") for m in matchs) else {}
-        rows, source = [], "absent"
-        if classement_valable(jour, jr.get("calendrier") or {}, maintenant):
+        rows, source, calc_at = [], "absent", None
+        if not reconstituee and not forcer_calcul and classement_valable(jour, jr.get("calendrier") or {}, maintenant):
             rows, st = ligues.classement(lg)
             source = "officiel" if rows else "absent"
         else:
             ancien = (precedent.get("competitions") or {}).get(lg) or {}
-            rows, source = ancien.get("standings") or [], ancien.get("standings_source") or "absent"
+            if ancien.get("standings_source") == "officiel" and not reconstituee and not forcer_calcul:
+                rows, source = ancien["standings"], "officiel"     # relevé à temps lors d'un passage précédent : gardé
+            else:
+                rows = classement_calcule(lg, annee, jour)
+                source, calc_at = ("calcule", jour) if rows else ("absent", None)
         # Matchs comptés pour l'état : les reportés / annulés ne bloquent pas un jour ; un match « prêt » = terminé ET collecté
         comptes = [m for m in matchs if m.get("status") not in ("Reporté", "Annulé")]
         termines = sum(1 for m in comptes if m["finished"] and not m.get("en_attente") and not m.get("detail_manquant"))
@@ -222,11 +248,14 @@ def collecter(jour: str, donnees: str, ligues_demandees: List[str], avec_wiki: b
             "stage_type": "league", "type": "championnat", "pays": ligues.LIGUES[lg]["country"],
             "matches": sorted(matchs, key=lambda x: (x.get("date_utc", ""), x["home_team"]["name"])),
             "standings": rows, "standings_source": source, "french_clubs_focus": [], "notes": notes,
-            "incomplet": incomplet,
+            "incomplet": incomplet, **({"standings_at": calc_at} if calc_at else {}),
         }
         sortie = {"last_updated": maintenant.strftime("%Y-%m-%dT%H:%M:%SZ"), "target_dates": [jour],
                   "source": ligues.SOURCE + " ; journées : Wikipédia", "saison": libelle_saison(annee),
                   "competitions": {lg: comp}}
+        if reconstituee or precedent.get("reconstituee"):
+            sortie["reconstituee"] = True
+            sortie["reconstituee_le"] = precedent.get("reconstituee_le") or maintenant.date().isoformat()
         ecrit = ecrire_si_change(chemin, sortie)
         # Index de la saison
         chemin_idx = os.path.join(dossier, "index.json")
@@ -236,7 +265,8 @@ def collecter(jour: str, donnees: str, ligues_demandees: List[str], avec_wiki: b
                     "par_journee": {str(n): sum(1 for m in matchs if m.get("journee") == n)
                                     for n in sorted({m["journee"] for m in matchs if m.get("journee")})},
                     "sans_journee": sum(1 for m in matchs if not m.get("journee")),
-                    "maj": maintenant.strftime("%Y-%m-%dT%H:%M:%SZ"), "fichier": f"{jour}.json"})
+                    "maj": maintenant.strftime("%Y-%m-%dT%H:%M:%SZ"), "fichier": f"{jour}.json",
+                    **({"reconstituee": True} if sortie.get("reconstituee") else {})})
         idx.sort(key=lambda l: l["date"], reverse=True)
         ecrire_si_change(chemin_idx, idx)
         statut = "aucun_match" if not comptes else "complet" if termines == len(comptes) and not incomplet else "partiel"
@@ -245,6 +275,52 @@ def collecter(jour: str, donnees: str, ligues_demandees: List[str], avec_wiki: b
               f"{nouveaux} nouveau(x), classement {source}, fichier {'écrit' if ecrit else 'inchangé'}")
     print(f"[INFO] {ligues.REQUETES['n']} requête(s) ESPN, {ligues.REQUETES['erreurs']} en erreur")
     return bilan
+
+
+def a_reconstituer(donnees: str, ligues_demandees: List[str], maintenant: datetime) -> List[tuple]:
+    """(jour, ligue) à reconstituer : jours (heure de Paris) avec au moins un match terminé, antérieurs à aujourd'hui, sans
+    fichier publié ; du plus récent au plus ancien."""
+    auj = maintenant.astimezone(ligues._PARIS).date().isoformat()
+    annee = saison_de(auj)
+    out = []
+    for lg in ligues_demandees:
+        ms = matchs_saison(lg, annee)
+        if ms is None:
+            print(f"[WARN] {lg} : calendrier de la saison illisible ; rien à reconstituer ce passage")
+            continue
+        dossier = os.path.join(donnees, "championnats", lg, libelle_saison(annee))
+        jours = {classement_ligue.jour_paris(m["date_utc"]) for m in ms if m.get("score") is not None}
+        for j in jours:
+            if not j or j >= auj:
+                continue
+            chemin = os.path.join(dossier, f"{j}.json")
+            if not os.path.exists(chemin):
+                out.append((j, lg, True))
+            elif ((_lire(chemin) or {}).get("competitions") or {}).get(lg, {}).get("standings_source") == "absent":
+                out.append((j, lg, False))   # jour collecté en direct sans classement valable : classement recalculé seul
+    return sorted(out, reverse=True)
+
+
+def reconstituer(donnees: str, ligues_demandees: List[str], budget_min: float) -> Dict[str, int]:
+    """Rejoue les jours passés de la saison (même collecte, classement RECALCULÉ, `reconstituee: true`) dans la limite du
+    budget ; jamais d'état du jour ni de notification. Reprenable : un jour déjà écrit n'est plus demandé."""
+    debut = datetime.now(timezone.utc)
+    todo = a_reconstituer(donnees, ligues_demandees, debut)
+    print(f"[RECONSTITUTION] {len(todo)} jour(s) x championnat à reconstituer")
+    faits = 0
+    for jour, lg, nouveau in todo:
+        if (datetime.now(timezone.utc) - debut).total_seconds() > budget_min * 60:
+            print(f"[RECONSTITUTION] budget de {budget_min} min atteint")
+            break
+        collecter(jour, donnees, [lg], True, reconstituee=nouveau, forcer_calcul=not nouveau)
+        faits += 1
+    restants = len(todo) - faits
+    print(f"[RECONSTITUTION] {faits} fait(s), {restants} restant(s)")
+    sortie = os.environ.get("GITHUB_OUTPUT")
+    if sortie:
+        with open(sortie, "a", encoding="utf-8") as f:
+            f.write(f"traites={faits}\nrestants={restants}\n")
+    return {"traites": faits, "restants": restants}
 
 
 if __name__ == "__main__":
@@ -258,7 +334,12 @@ if __name__ == "__main__":
     ap.add_argument("--etat", action="store_true", help="écrire etat_championnats.json (collecte quotidienne)")
     ap.add_argument("--alerte", metavar="JOUR", help="alerte ntfy d'échec pour ce jour (avec --cause), sans collecte")
     ap.add_argument("--cause", default="workflow")
+    ap.add_argument("--reconstituer", action="store_true", help="rejouer les jours passés de la saison sans fichier")
+    ap.add_argument("--budget-min", type=float, default=40)
     a = ap.parse_args()
+    if a.reconstituer:
+        reconstituer(a.donnees, a.ligues.split(","), a.budget_min)
+        raise SystemExit(0)
     if a.alerte:
         e = os.environ
         url = f"{e.get('GITHUB_SERVER_URL', '')}/{e.get('GITHUB_REPOSITORY', '')}/actions/runs/{e.get('GITHUB_RUN_ID', '')}" \
