@@ -1,0 +1,161 @@
+===Final table===
+{{#invoke:sports table|main|style=WDL
+|section=First Division
+|source=[https://www.worldfootball.net/competition/ro15221/md42/results-and-standings/ World Football]
+
+<!--Team positions-->
+|team_order=AVL, IPS, ARS, WBA, LIV, SOU, NFO, MUN, LEE, TOT, STK, MCI, BIR, MID, EVE, COV, SUN, WOL, BHA, NOR, LEI, CRY
+
+<!--Team qualifications-->
+|result1=EC1R |result2=UC1R |result3=UC1R |result4=UC1R |result5=EC1RC |result6=UC1R |result10=CWC1R |result20=REL |result21=REL |result22=REL
+
+<!--Team results-->
+|update=complete
+|win_ARS=19|draw_ARS=15|loss_ARS=8 |gf_ARS=61|ga_ARS=45<!--Arsenal-->
+|win_AVL=26|draw_AVL=8 |loss_AVL=8 |gf_AVL=72|ga_AVL=40<!--Aston Villa-->
+|win_BIR=13|draw_BIR=12|loss_BIR=17|gf_BIR=50|ga_BIR=61<!--Birmingham City-->
+|win_BHA=14|draw_BHA=7 |loss_BHA=21|gf_BHA=54|ga_BHA=67<!--Brighton & Hove Albion-->
+|win_COV=13|draw_COV=10|loss_COV=19|gf_COV=48|ga_COV=68<!--Coventry City-->
+|win_CRY=6 |draw_CRY=7 |loss_CRY=29|gf_CRY=47|ga_CRY=83<!--Crystal Palace-->
+|win_EVE=13|draw_EVE=10|loss_EVE=19|gf_EVE=55|ga_EVE=58<!--Everton-->
+|win_IPS=23|draw_IPS=10|loss_IPS=9 |gf_IPS=77|ga_IPS=43<!--Ipswich Town-->
+|win_LEE=17|draw_LEE=10|loss_LEE=15|gf_LEE=39|ga_LEE=47<!--Leeds United-->
+|win_LEI=13|draw_LEI=6 |loss_LEI=23|gf_LEI=40|ga_LEI=67<!--Leicester City-->
+|win_LIV=17|draw_LIV=17|loss_LIV=8 |gf_LIV=62|ga_LIV=42<!--Liverpool-->
+|win_MCI=14|draw_MCI=11|loss_MCI=17|gf_MCI=56|ga_MCI=59<!--Manchester City-->
+|win_MUN=15|draw_MUN=18|loss_MUN=9 |gf_MUN=51|ga_MUN=36<!--Manchester United-->
+|win_MID=16|draw_MID=5 |loss_MID=21|gf_MID=53|ga_MID=61<!--Middlesbrough-->
+|win_NOR=13|draw_NOR=7 |loss_NOR=22|gf_NOR=49|ga_NOR=73<!--Norwich City-->
+|win_NFO=19|draw_NFO=12|loss_NFO=11|gf_NFO=62|ga_NFO=44<!--Nottingham Forest-->
+|win_SOU=20|draw_SOU=10|loss_SOU=12|gf_SOU=76|ga_SOU=56<!--Southampton-->
+|win_STK=12|draw_STK=18|loss_STK=12|gf_STK=51|ga_STK=60<!--Stoke City-->
+|win_SUN=14|draw_SUN=7 |loss_SUN=21|gf_SUN=52|ga_SUN=53<!--Sunderland-->
+|win_TOT=14|draw_TOT=15|loss_TOT=13|gf_TOT=70|ga_TOT=68<!--Tottenham Hotspur-->
+|win_WBA=20|draw_WBA=12|loss_WBA=10|gf_WBA=60|ga_WBA=42<!--West Bromwich Albion-->
+|win_WOL=13|draw_WOL=9 |loss_WOL=20|gf_WOL=43|ga_WOL=55<!--Wolverhampton Wanderers-->
+
+<!--Status-->
+|status_AVL=C
+|status_NOR=R
+|status_LEI=R
+|status_CRY=R
+
+<!--Team definitions-->
+|name_ARS=[[Arsenal F.C.|Arsenal]]
+|name_AVL=[[Aston Villa F.C.|Aston Villa]]
+|name_BIR=[[Birmingham City F.C.|Birmingham City]]
+|name_BHA=[[Brighton & Hove Albion F.C.|Brighton & Hove Albion]]
+|name_COV=[[Coventry City F.C.|Coventry City]]
+|name_CRY=[[Crystal Palace F.C.|Crystal Palace]]
+|name_EVE=[[Everton F.C.|Everton]]
+|name_IPS=[[Ipswich Town F.C.|Ipswich Town]]
+|name_LEE=[[Leeds United F.C.|Leeds United]]
+|name_LEI=[[Leicester City F.C.|Leicester City]]
+|name_LIV=[[Liverpool F.C.|Liverpool]]
+|name_MCI=[[Manchester City F.C.|Manchester City]]
+|name_MUN=[[Manchester United F.C.|Manchester United]]
+|name_MID=[[Middlesbrough F.C.|Middlesbrough]]
+|name_NOR=[[Norwich City F.C.|Norwich City]]
+|name_NFO=[[Nottingham Forest F.C.|Nottingham Forest]]
+|name_SOU=[[Southampton F.C.|Southampton]]
+|name_STK=[[Stoke City F.C.|Stoke City]]
+|name_SUN=[[Sunderland A.F.C.|Sunderland]]
+|name_TOT=[[Tottenham Hotspur F.C.|Tottenham Hotspur]]
+|name_WBA=[[West Bromwich Albion F.C.|West Bromwich Albion]]
+|name_WOL=[[Wolverhampton Wanderers F.C.|Wolverhampton Wanderers]]
+
+<!--Table settings and rules-->
+|show_limit=5
+|winpoints=2
+|class_rules=1) Points; 2) Goal difference; 3) Goals scored
+
+<!--Qualification and relegation column definitions-->
+<!-- note that this reference must be repeated in order to a void problems in transcluding articles -->
+|res_col_header=QR
+|col_EC1R=green1   |text_EC1R=Qualification for the [[1981–82 European Cup#First round|European Cup first round]]
+|col_UC1R=blue1    |text_UC1R=Qualification for the [[1981–82 UEFA Cup#First round|UEFA Cup first round]]
+|col_EC1RC=green1  |text_EC1RC=Qualification for the [[1981–82 European Cup#First round|European Cup first round]] |note_res_EC1RC=Liverpool qualified for the European Cup first round as the [[1980–81 European Cup]] winners.
+|col_CWC1R=yellow1 |text_CWC1R=Qualification for the [[1981–82 European Cup Winners' Cup#First round|European Cup Winners' Cup first round]] |note_res_CWC1R=Tottenham Hotspur qualified for the European Cup Winners' Cup first round as the [[1980–81 FA Cup]] winners.
+|col_REL=red1      |text_REL=Relegation to the [[1981–82 Football League#Second Division|Second Division]]
+}}
+
+===Second Division===
+{{#invoke:sports table|main|style=WDL
+|section=Second Division
+|source=
+
+<!--Team positions-->
+|team_order=WHU, NTC, SWA, BLA, LUT, DER, GRI, QPR, WAT, SHW, NEW, CHE, CAM, SHR, OLD, WRE, ORI, BOL, CAR, PNE, BRC, BRV
+
+<!--Team qualifications-->
+|result1=PRO |result2=PRO |result3=CWCPRO |result20=REL |result21=REL |result22=REL
+
+<!--Team results-->
+|update=complete
+|win_BLA=16|draw_BLA=18|loss_BLA=8 |gf_BLA=42|ga_BLA=29<!--Blackburn Rovers-->
+|win_BOL=14|draw_BOL=10|loss_BOL=18|gf_BOL=61|ga_BOL=66<!--Bolton Wanderers-->
+|win_BRC=7 |draw_BRC=16|loss_BRC=19|gf_BRC=29|ga_BRC=51<!--Bristol City-->
+|win_BRV=5 |draw_BRV=13|loss_BRV=24|gf_BRV=34|ga_BRV=65<!--Bristol Rovers-->
+|win_CAM=17|draw_CAM=6 |loss_CAM=19|gf_CAM=53|ga_CAM=65<!--Cambridge United-->
+|win_CAR=12|draw_CAR=12|loss_CAR=18|gf_CAR=44|ga_CAR=60<!--Cardiff City-->
+|win_CHE=14|draw_CHE=12|loss_CHE=16|gf_CHE=46|ga_CHE=41<!--Chelsea-->
+|win_DER=15|draw_DER=15|loss_DER=12|gf_DER=57|ga_DER=52<!--Derby County-->
+|win_GRI=15|draw_GRI=15|loss_GRI=12|gf_GRI=44|ga_GRI=42<!--Grimsby Town-->
+|win_LUT=18|draw_LUT=12|loss_LUT=12|gf_LUT=61|ga_LUT=46<!--Luton Town-->
+|win_NEW=14|draw_NEW=14|loss_NEW=14|gf_NEW=30|ga_NEW=45<!--Newcastle United-->
+|win_NTC=18|draw_NTC=17|loss_NTC=7 |gf_NTC=49|ga_NTC=38<!--Notts County-->
+|win_OLD=12|draw_OLD=15|loss_OLD=15|gf_OLD=39|ga_OLD=48<!--Oldham Athletic-->
+|win_ORI=13|draw_ORI=12|loss_ORI=17|gf_ORI=52|ga_ORI=56<!--Orient-->
+|win_PNE=11|draw_PNE=14|loss_PNE=17|gf_PNE=41|ga_PNE=62<!--Preston North End-->
+|win_QPR=15|draw_QPR=13|loss_QPR=14|gf_QPR=56|ga_QPR=46<!--Queens Park Rangers-->
+|win_SHW=17|draw_SHW=8 |loss_SHW=17|gf_SHW=53|ga_SHW=51<!--Sheffield Wednesday-->
+|win_SHR=11|draw_SHR=17|loss_SHR=14|gf_SHR=46|ga_SHR=47<!--Shrewsbury Town-->
+|win_SWA=18|draw_SWA=14|loss_SWA=10|gf_SWA=64|ga_SWA=44<!--Swansea City-->
+|win_WAT=16|draw_WAT=11|loss_WAT=15|gf_WAT=50|ga_WAT=45<!--Watford-->
+|win_WHU=28|draw_WHU=10|loss_WHU=4 |gf_WHU=79|ga_WHU=29<!--West Ham United-->
+|win_WRE=12|draw_WRE=14|loss_WRE=16|gf_WRE=43|ga_WRE=45<!--Wrexham-->
+
+<!--Status-->
+|status_WHU=C, P
+|status_NTC=P
+|status_SWA=P
+|status_PNE=R
+|status_BRC=R
+|status_BRV=R
+
+<!--Team definitions-->
+|name_BLA=[[Blackburn Rovers F.C.|Blackburn Rovers]]
+|name_BOL=[[Bolton Wanderers F.C.|Bolton Wanderers]]
+|name_BRC=[[Bristol City F.C.|Bristol City]]
+|name_BRV=[[Bristol Rovers F.C.|Bristol Rovers]]
+|name_CAM=[[Cambridge United F.C.|Cambridge United]]
+|name_CAR=[[Cardiff City F.C.|Cardiff City]]
+|name_CHE=[[Chelsea F.C.|Chelsea]]
+|name_DER=[[Derby County F.C.|Derby County]]
+|name_GRI=[[Grimsby Town F.C.|Grimsby Town]]
+|name_LUT=[[Luton Town F.C.|Luton Town]]
+|name_NEW=[[Newcastle United F.C.|Newcastle United]]
+|name_NTC=[[Notts County F.C.|Notts County]]
+|name_OLD=[[Oldham Athletic A.F.C.|Oldham Athletic]]
+|name_ORI=[[Leyton Orient F.C.|Orient]]
+|name_PNE=[[Preston North End F.C.|Preston North End]]
+|name_QPR=[[Queens Park Rangers F.C.|Queens Park Rangers]]
+|name_SHW=[[Sheffield Wednesday F.C.|Sheffield Wednesday]]
+|name_SHR=[[Shrewsbury Town F.C.|Shrewsbury Town]]
+|name_SWA=[[Swansea City A.F.C.|Swansea City]]
+|name_WAT=[[Watford F.C.|Watford]]
+|name_WHU=[[West Ham United F.C.|West Ham United]]
+|name_WRE=[[Wrexham A.F.C.|Wrexham]]
+
+<!--Table settings and rules-->
+|show_limit=5
+|winpoints=2
+|class_rules=1) Points; 2) Goal difference; 3) Goals scored
+
+<!--Qualification and relegation column definitions-->
+<!-- note that this reference must be repeated in order to a void problems in transcluding articles -->
+|res_col_header=QR
+|col_PRO=green1    |text_PRO=Promotion to the [[1981–82 Football League#First Division|First Division]]
+|col_CWCPRO=green1 |text_CWCPRO=[[1981–82 European Cup Winners' Cup#First round|Cup Winners' Cup first round]] and promotion to the [[1981–82 Football League#First Division|First Division]]
+|col_REL=red1      |text_REL=Relegation to the [[1981–82 Football League#Third Division|Third Division]]
+}}

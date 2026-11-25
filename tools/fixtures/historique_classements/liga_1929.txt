@@ -1,0 +1,293 @@
+== Classement ==
+Débuté le {{date|10 février 1929}}, le championnat est rapidement dominé par le [[Real Madrid Club de Fútbol|Real Madrid]], qui remporte notamment la victoire sur le terrain du FC Barcelone. Le club ''blaugrana'' change d'entraîneur, [[Romà Forns]] laissant sa place à [[Jim Bellamy]], et réalise une belle remontée au classement, qui s'achève avec le titre à l'issue de la saison, le {{date|23 juin 1929}}<ref>{{en}} {{lien web|url=http://www.fcbarcelona.com/web/english/noticies/futbol/temporada08-09/02/n090212103826.html |titre=Eighty years since league debut |site=fcbarcelona.com |éditeur=''[[FC Barcelone (football)|FC Barcelone]]'' |en ligne le= 12 février 2009 |consulté le=9 janvier 2013}}</ref>.
+
+{{Foot classement début |[[FC Barcelone (football)|BAR]]|[[Real Madrid Club de Fútbol|MAD]]|[[Athletic Bilbao|ATH]]|[[Real Sociedad|RSO]]|[[Arenas Club de Getxo|ARE]]|[[Atlético de Madrid|ATL]]|[[Espanyol Barcelone|ESP]]|[[CE Europa|EUR]]|[[Real Unión de Irun|UNI]]|[[Racing Santander|SAN]]}}
+{{Foot classement |1|'''[[FC Barcelone (football)|FC Barcelone]]'''|25|18|11|3|4|37|23|[[FC Barcelone (football)|FC Barcelone]]|XXX||1-2|3-0|1-0|2-2|4-0|1-0|5-2|4-1|5-1|bgcolor={{foot couleur|champion}}}}
+{{Foot classement |2|[[Real Madrid Club de Fútbol|Real Madrid]]|23|18|11|1|6|40|24|[[Real Madrid Club de Fútbol|Real Madrid]]|0-1|XXX|5-1|2-1|2-0|2-1|2-0|5-0|2-0|2-2}}
+{{Foot classement |3|[[Athletic Bilbao]]|20|18|8|4|6|43|33|[[Athletic Bilbao]]|5-1|2-0|XXX||4-2|2-3|3-3|9-0|2-0|2-1|0-0}}
+{{Foot classement |4|[[Real Sociedad]]|20|18|8|4|6|46|41|[[Real Sociedad]]|3-0|5-4|1-1|XXX||3-2|3-3|1-1|5-4|3-2|8-1}}
+{{Foot classement |5|[[Arenas Club de Getxo|Arenas de Getxo]]|19|18|8|3|7|32|39|[[Arenas Club de Getxo|Arenas de Getxo]]|0-2|3-2|1-0|3-0|XXX||2-3|3-0|2-2|1-1|2-1}}
+{{Foot classement |6|[[Atlético Madrid|Athletic Madrid]]|18|18|8|2|8|43|41|[[Atlético Madrid|Athletic Madrid]]|4-1|0-3|2-3|0-3|1-2|XXX||7-1|5-4|3-1|4-0}}
+{{Foot classement |7|[[Espanyol Barcelone]] {{Coupe nationale}}|18|18|7|4|7|32|38|[[Espanyol Barcelone]]|1-1|4-0|4-1|1-1|1-2|3-2|XXX||3-1|3-2|3-0}}
+{{Foot classement |8|[[CE Europa]]|16|18|6|4|8|45|49|[[CE Europa]]|1-1|5-2|1-1|4-3|5-2|4-1|0-3|XXX||3-3|4-1}}
+{{Foot classement |9|[[Real Unión de Irun]]|12|18|5|2|11|40|42|[[Real Unión de Irun]]|1-2|0-2|6-3|2-3|7-1|1-2|4-3|2-3|XXX||3-1}}
+{{Foot classement |10|[[Racing de Santander|Racing Santander]]|9|18|3|3|12|25|50|[[Racing de Santander|Racing Santander]]|0-2|1-3|0-4|6-1|5-1|1-2|1-1|3-2|1-3|XXX|bgcolor={{Foot couleur |barrage de relégation}}}}
+{{Foot classement fin}}
+
+{{Légende/Début}}
+{{Légende|{{fc|champion}}|Champion}}
+{{Légende|{{fc|barrage de relégation}}|Barrages de relégation}}
+{{Légende/Fin}}
+
+'''Barrage de promotion :'''
+
+Le [[Racing Santander]], dixième de division 1, bat le [[Séville FC]], premier de division 2, sur le score de trois buts à deux sur les deux matchs. Il perd la première rencontre deux buts à un avant de l'emporter deux buts à zéro lors du match retour disputé à domicile.
+
+=== Évolution du classement ===
+{| class="wikitable sortable centre" border="0" cellpadding="0" style="font-size:80%"
+!width="85"| Journée →
+!width="2"|1!!width="2"|2!!width="2"|3!!width="2"|4!!width="2"|5!!width="2"|6!!width="2"|7!!width="2"|8!!width="2"|9!!width="2"|10!!width="2"|11!!width="2"|12
+!width="2"|13!!width="2"|14!!width="2"|15!!width="2"|16!!width="2"|17!!width="2"|18 !! Journées<br />en tête !! Journées<br />barragiste
+|-
+!width="85"|Équipe !!width="2"| !!width="2"| !!width="2"| !!width="2"| !!width="2"| !!width="2"| !!width="2"| !!width="2"| !!width="2"| !!width="2"| !!width="2"| !!width="2"| !!width="2"| !!width="2"| !!width="2"| !!width="2"| !!width="2"| !!width="2"| !!width="2"| !!width="2"| 
+|- align="center"
+| [[FC Barcelone (football)|FC Barcelone]]
+| 2
+| 4
+| 7
+| 7
+| 9
+| 8
+| 9
+| 7
+| 6
+| 4
+| 5
+| 3
+| bgcolor={{foot couleur|champion}}|1
+| bgcolor={{foot couleur|champion}}|1
+| bgcolor={{foot couleur|champion}}|1
+| bgcolor={{foot couleur|champion}}|1
+| 2
+| bgcolor={{foot couleur|champion}}|1
+| bgcolor={{foot couleur|champion}}|5
+| 
+|- align="center"
+| [[Real Madrid Club de Fútbol|Real Madrid]]
+| bgcolor={{foot couleur|champion}}|1
+| bgcolor={{foot couleur|champion}}|1
+| bgcolor={{foot couleur|champion}}|1
+| bgcolor={{foot couleur|champion}}|1
+| bgcolor={{foot couleur|champion}}|1
+| bgcolor={{foot couleur|champion}}|1
+| bgcolor={{foot couleur|champion}}|1
+| bgcolor={{foot couleur|champion}}|1
+| bgcolor={{foot couleur|champion}}|1
+| bgcolor={{foot couleur|champion}}|1
+| 2
+| bgcolor={{foot couleur|champion}}|1
+| 2
+| 2
+| 2
+| 2
+| bgcolor={{foot couleur|champion}}|1
+| 2
+| bgcolor={{foot couleur|champion}}|12
+| 
+|- align="center"
+| [[Athletic Bilbao]]
+| 6
+| 2
+| 2
+| 2
+| 2
+| 4
+| 2
+| 2
+| 3
+| 3
+| 3
+| 5
+| 4
+| 5
+| 3
+| 4
+| 4
+| 3
+| 
+| 
+|- align="center"
+| [[Real Sociedad]]
+| 5
+| 3
+| 3
+| 4
+| 4
+| 5
+| 4
+| 3
+| 5
+| 6
+| 6
+| 7
+| 6
+| 6
+| 6
+| 6
+| 5
+| 4
+| 
+| 
+|- align="center"
+| [[Arenas Club de Getxo|Arenas de Getxo]]
+| 8
+| 9
+| 9
+| 8
+| 7
+| 7
+| 6
+| 4
+| 2
+| 2
+| bgcolor={{foot couleur|champion}}|1
+| 4
+| 5
+| 4
+| 5
+| 3
+| 3
+| 5
+| bgcolor={{foot couleur|champion}}|1
+| 
+|- align="center"
+| [[Atlético Madrid|Athletic Madrid]]
+| 3
+| 7
+| 8
+| 5
+| 5
+| 3
+| 5
+| 6
+| 7
+| 9
+| 9
+| 9
+| 8
+| 9
+| 8
+| 7
+| 8
+| 6
+| 
+| 
+|- align="center"
+| [[Espanyol Barcelone]]
+| 4
+| 8
+| 4
+| 3
+| 3
+| 2
+| 3
+| 5
+| 4
+| 5
+| 4
+| 2
+| 3
+| 3
+| 4
+| 5
+| 6
+| 7
+| 
+| 
+|- align="center"
+| [[CE Europa]]
+| bgcolor={{Foot couleur|barrage de relégation}}|10
+| 6
+| 6
+| 9
+| 8
+| 9
+| 8
+| 9
+| 8
+| 7
+| 8
+| 8
+| 9
+| 7
+| 7
+| 8
+| 7
+| 8
+| 
+| bgcolor={{Foot couleur|barrage de relégation}}|1
+|- align="center"
+| [[Real Unión de Irun]]
+| 7
+| 5
+| 5
+| 6
+| 6
+| 6
+| 7
+| 8
+| 9
+| 8
+| 7
+| 6
+| 7
+| 8
+| 9
+| 9
+| 9
+| 9
+| 
+| 
+|- align="center"
+| [[Racing de Santander|Racing Santander]]
+| 9
+| bgcolor={{Foot couleur|barrage de relégation}}|10
+| bgcolor={{Foot couleur|barrage de relégation}}|10
+| bgcolor={{Foot couleur|barrage de relégation}}|10
+| bgcolor={{Foot couleur|barrage de relégation}}|10
+| bgcolor={{Foot couleur|barrage de relégation}}|10
+| bgcolor={{Foot couleur|barrage de relégation}}|10
+| bgcolor={{Foot couleur|barrage de relégation}}|10
+| bgcolor={{Foot couleur|barrage de relégation}}|10
+| bgcolor={{Foot couleur|barrage de relégation}}|10
+| bgcolor={{Foot couleur|barrage de relégation}}|10
+| bgcolor={{Foot couleur|barrage de relégation}}|10
+| bgcolor={{Foot couleur|barrage de relégation}}|10
+| bgcolor={{Foot couleur|barrage de relégation}}|10
+| bgcolor={{Foot couleur|barrage de relégation}}|10
+| bgcolor={{Foot couleur|barrage de relégation}}|10
+| bgcolor={{Foot couleur|barrage de relégation}}|10
+| bgcolor={{Foot couleur|barrage de relégation}}|10
+| 
+| bgcolor={{Foot couleur|barrage de relégation}}|17
+|}
+
+== Récompenses ==
+L'[[Attaquant (football)|attaquant]] [[Espagne|espagnol]] [[Paco Bienzobas]], joueur de la [[Real Sociedad]] termine [[Trophée Pichichi|meilleur buteur]] du championnat avec 17 réalisations<ref>La [[Liga Nacional de Fútbol Profesional|LFP]] lui accorde 17 buts, le journal [[Marca (journal)|Marca]] n'en indique que 14</ref>. Il devance {{Lien|langue=es|trad=Cosme Vázquez|fr=Cosme Vázquez|texte=Cosme Vázquez}}, de l'[[Atlético Madrid|Athletic Madrid]], auteur de 15 buts<ref>La [[Liga Nacional de Fútbol Profesional|LFP]] lui accorde 15 buts, le journal [[Marca (journal)|Marca]] n'en indique que 13</ref> et deux joueurs à 12 buts, [[Ramón de la Fuente Leal]]<ref>La [[Liga Nacional de Fútbol Profesional|LFP]] lui accorde 12 buts, le journal [[Marca (journal)|Marca]] n'en indique que 11</ref>, de l'[[Athletic Bilbao]] et Luis Marín<ref>La [[Liga Nacional de Fútbol Profesional|LFP]] lui accorde 12 buts, le journal [[Marca (journal)|Marca]] n'en indique que 13</ref> de l'Athletic Madrid<ref name="BD">{{es}} {{lien web |url=http://www.bdfutbol.com/es/t/t1928-29.html |titre=Temporada 1928-29: Primera División |site=bdfutbol.com |consulté le=8 janvier 2013}}</ref>.
+
+Le meilleur [[Gardien de but (football)|gardien]] du championnat est [[Ricardo Zamora]], joueur de l'[[Espanyol Barcelone]]<ref name="BD"/>. Son nom sera donné au [[Trophée Zamora|trophée]] récompensant le meilleur gardien de la saison en 1958.
+
+== Bilan de la saison ==
+{{Tableau d'honneur
+|caché             =
+|continent          =Europe
+|du pays            =d'Espagne
+|division           =D1
+|champion           =[[FC Barcelone (football)|FC Barcelone]]
+|titre              =1
+|dauphin            = [[Real Madrid Club de Fútbol|Real Madrid]]
+|conti              = non
+|saison1            =1928
+|saison2            =1929
+<!--Vainqueur de la Coupe nationale-->
+ |coupe             =[[Espanyol Barcelone]]
+|promu1             =Aucun
+|relégué1           =Aucun
+|D1                 =Primera División
+|D2                 =Segunda División
+|D2existe           =
+}}
+
+== Notes et références ==
+{{références}}
+{{Traduction/Référence|es|Primera División de España 1928/29|62536671}}
+
+== Bibliographie ==
+* {{ouvrage |langue=es |prénom1=Vicente|nom1=Martínez Calatrava|titre= Historia y estadística del fúbol español |sous-titre=De la Olimpiada de Amberes a la Guerra Civil (1920-1939)|année= 2002|lieu=Sitges|éditeur=Fundación Zerumuga|isbn=8460757013}}
+
+{{Palette|Saisons du championnat d'Espagne de football|Football 1928-29}}
+{{Portail|football|entre-deux-guerres|Espagne}}
+
+[[Catégorie:Championnat d'Espagne de football]]
+[[Catégorie:Championnat national de football en 1929|Espagne]]
+[[Catégorie:Sport en Espagne en 1929]]

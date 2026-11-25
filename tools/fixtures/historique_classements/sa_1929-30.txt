@@ -1,0 +1,172 @@
+== Classement final ==
+{{Foot classement début|align=left}}
+{{Foot classement|1 |[[FC Internazionale Milan|AS Ambrosiana]]
+|50|34|22|6|6|85|38|bgcolor={{Foot couleur|ldc}}}}
+{{Foot classement|2| [[Genoa Cricket and Football Club|Genova 1893]]
+|48|34|20|8|6|63|39|bgcolor={{Foot couleur|ldc-qnc}}}}
+{{Foot classement|3| [[Juventus Football Club|FBC Juventus]]
+|45|34|19|7|8|56|31|}}
+{{Foot classement|4| [[Torino Football Club|FBC Torino]]
+|39|34|16|7|11|52|31|}}
+{{Foot classement|5| [[Società Sportiva Calcio Naples|AC Naples]]
+|37|34|14|9|11|61|51|}}
+{{Foot classement|6| [[Associazione Sportiva Roma|AS Rome]]
+|36|34|15|6|13|73|52|}}
+{{Foot classement|7| [[Bologna Football Club 1909|Bologne SC]] {{Tenant du titre}}
+|36|34|14|8|12|56|46|}}
+{{Foot classement|8| [[Unione Sportiva Alexandrie Calcio 1912|Alexandrie US]]
+|36|34|14|8|12|55|49|}}
+{{Foot classement|9| [[Union Sportiva Verceil Calcio|Pro Verceil]]
+|33|34|12|9|13|52|60|}}
+{{Foot classement|10| [[Brescia Calcio|AC Brescia]]
+|33|34|13|7|14|45|56|}}
+{{Foot classement|11| [[Associazione Calcio Milan|Milan FC]]
+|32|34|11|10|13|52|48|}}
+{{Foot classement|12|[[Modène Football Club|Modène FC]]
+|30|34|11|8|15|48|55|}}
+{{Foot classement|13| [[Aurora Pro Patria 1919|Pro Patria et Libertate]]
+|30|34|12|6|16|46|64|}}
+{{Foot classement|14| [[Unione Sportiva Livourne 1915|US Livourne]]
+|29|34|12|5|17|51|79|}}
+{{Foot classement|15|[[Società Sportiva Lazio|Lazio Rome]]
+|28|34|10|8|16|49|50|}}
+{{Foot classement|16|[[Unione Sportiva Triestina Calcio 1918|US Triestina]]
+|28|34|11|6|17|42|59|}}
+{{Foot classement|17|[[Calcio Padoue|AFC Padoue]]
+|26|34|11|4|19|52|78|bgcolor={{Foot couleur|relégué}}}}
+{{Foot classement|18|[[Unione Sportiva Cremonese|US Cremonese]]
+|16|34|4|8|22|31|83|bgcolor={{Foot couleur|relégué}}}}
+{{Foot classement fin}}
+{{Foot classement légende|
+;Qualifications européennes
+;[[Coupe Mitropa 1930]]
+{{Légende/Début}}
+{{Légende|{{Foot couleur|ldc}}|'''{{1er}} et {{2e}}''' : quarts de finale }}
+{{Légende/Fin}}
+;Relégation
+{{Légende/Début}}{{Légende|{{Foot couleur|relégué}}|'''{{17e}} et {{18e}}''' : relégation en [[Championnat d'Italie de football D2|Serie B 1930-1931]]}}
+{{Légende/Fin}}
+;Abréviations
+{{Légende/Début}}{{légende|texte={{Tenant du titre}}|[[Championnat d'Italie de football 1928-1929|Tenant du titre]]}}
+{{Légende/Fin}}
+}}
+{{Clr}}
+<small> Victoire à 2 points</small>
+
+== Résultats ==
+
+{{Foot résultat début|ALE|AMB|BOL|BRE|CRE|GEN|JUV|LAZ|LIV|MIL|MOD|NAP|PAD|PPA|PVE|ROM|TOR|TRI}}
+{{Foot résultat |[[Unione Sportiva Alexandrie Calcio 1912|Alexandrie US]]|XXX|1-2 | 2-3 | 4-0 | 3-0 | 0-2 | 1-0 | 4-2 | 3-2 | 2-1 | 1-1 | 2-1 | 4-2 | 0-0 | 0-2 | 3-1 | 3-3 | 4-1 }}
+{{Foot résultat |[[FC Internazionale Milano|AS Ambrosiana]]|2-0|XXX|2-1 | 5-1 | 3-2 | 3-3 | 2-0 | 4-2 | 6-2 | 2-0 | 5-1 | 2-1 | 6-1 | 8-0 | 4-0 | 6-0 | 3-0 | 1-2}}
+{{Foot résultat |[[Bologna Football Club 1909|Bologne SC]]|1-2|2-2|XXX|0-0 | 4-1 | 0-1 | 0-1 | 3-2 | 6-1 | 1-1 | 2-1 | 3-1 | 1-2 | 2-0 | 2-2 | 5-2  | 0-1 | 2-2}}
+{{Foot résultat |[[Brescia Calcio|AC Brescia]]|2-1 | 0-0 | 2-0 |XXX|4-3 | 4-1 | 2-2 | 3-2 | 2-0 | 4-1 | 3-2 | 2-1 | 3-2 | 2-1 | 1-0 | 1-1 | 0-2 | 0-1}}
+{{Foot résultat |[[Unione Sportiva Cremonese|US Cremonese]] |1-1 | 0-0 | 0-3 | 0-1 |XXX| 1-2 | 0-0 | 1-3 | 1-2 | 0-2<ref>Juge sportif</ref> | 2-2 | 0-0 | 1-1 | 1-2 | 0-0 | 1-0 | 0-1 | 2-1}}
+{{Foot résultat |[[Genoa Cricket and Football Club|Genova 1893]]| 2-1 | 1-4 | 2-0 | 1-0 | 2-1 |XXX| 2-0 | 2-0 | 2-0 | 2-2 | 2-2 | 2-2 | 8-0 | 6-2 | 1-0 | 3-1 | 1-0 | 2-1}}
+{{Foot résultat |[[Juventus Football Club|FBC Juventus]]|2-1 | 1-2 | 2-0 | 0-0 | 4-1 | 0-0 |XXX| 3-1 | 4-1 | 3-1 | 1-0 | 3-2 | 3-1 | 1-0 | 6-1 | 2-1 | 2-0 | 0-1}}
+{{Foot résultat |[[Società Sportiva Lazio|Lazio Rome]]|0-0 | 1-1 | 3-0 | 0-0 | 6-0 | 3-0 | 0-1|XXX | 3-1 | 0-0 | 4-0 | 0-2 | 4-0 | 2-1 | 3-2 | 0-1 | 1-0 | 0-0}}
+{{Foot résultat |[[Unione Sportiva Livourne 1915|US Livourne]] | 2-1 | 1-2 | 0-2 | 5-3 | 1-1 | 3-1 | 1-5 | 4-0 |XXX| 4-1 | 2-2 | 3-0 | 4-3 | 2-1 | 1-1 | 1-0 | 1-0 | 2-0}}
+{{Foot résultat |[[Associazione Calcio Milan|Milan FC]]|0-1 | 1-2 | 0-1 | 4-1 | 5-2 | 0-2 | 1-1 | 2-2 | 2-2 |XXX| 1-0 | 2-2 | 6-0 | 3-2 | 3-0 | 3-1 | 1-2 | 2-1}}
+{{Foot résultat |[[Modène Football Club 2018|Modène FC]]|0-1 | 2-0 | 1-2 | 2-1 | 5-1 | 2-1 | 2-1 | 0-0 | 6-0 | 1-1 |XXX| 0-5 | 0-2 | 2-1 | 1-1 | 1-2 | 2-1 | 2-1}}
+{{Foot résultat |[[Società Sportiva Calcio Napoli|AC Naples]]|3-1 | 3-1 | 2-1 | 1-1 | 3-0 | 1-2 | 2-2 | 3-0 | 1-1 | 2-1 |2-1 |XXX| 1-0 | 4-2 | 1-1 | 1-1 | 2-0 | 4-1}}
+{{Foot résultat |[[Calcio Padoue|AFC Padoue]]|1-3 | 1-2 | 2-3 | 2-1 | 0-1 | 0-0 | 2-1 | 2-1 | 3-1 | 1-1 | 1-3 | 3-0 |XXX| 7-0 | 5-0 | 3-0 | 1-0 | 1-2}}
+{{Foot résultat |[[Aurora Pro Patria 1919|Pro Patria]]|4-0 | 0-0 | 2-1 | 2-0 | 4-2 | 0-1 | 0-1 | 0-0 | 5-0 | 2-1 | 2-0 | 3-2 | 0-0 |XXX| 1-0 | 6-1 | 1-0 | 1-1}}
+{{Foot résultat |[[Union Sportiva Verceil Calcio|Pro Verceil]]|2-2 | 1-0 | 2-2 | 2-0 | 3-2 | 3-3 | 1-0 | 3-1 | 4-1 | 0-1 | 2-1 | 4-0 | 5-1 | 0-0 |XXX| 2-0 | 0-2 | 6-0}}
+{{Foot résultat |[[Associazione Sportiva Roma|AS Rome]]| 1-1 | 2-0 | 2-2 | 2-1 | 9-0 | 2-0 | 2-3 | 3-1 | 2-0 | 1-0 | 4-2 | 2-2 | 8-0 | 5-0 | 7-0 |XXX| 3-0 | 5-0}}
+{{Foot résultat |[[Torino Football Club|FBC Torino]]|2-2 | 4-1 | 0-0 | 5-0 | 2-3 | 1-1 | 0-0 | 1-0 | 3-0 | 0-0 | 0-0 | 1-0 | 3-1 | 7-0 | 5-1 | 1-0 |XXX| 4-1}}
+{{Foot résultat |[[Unione Sportiva Triestina Calcio 1918|US Triestina]]| 1-0 | 1-2 | 0-1 | 1-0 | 4-0 | 0-2 | 0-1 | 3-3 | 3-0 | 2-2|0-1|3-4 |2-1 |2-1| 3-1|1-1|0-1 |XXX}}
+{{Foot résultat fin}}
+
+== Meilleurs buteurs ==
+{| class="wikitable" style="text-align:center"
+|+
+!Rang
+!Joueur
+!Club
+!Buts
+|-
+|1
+| align=left |{{ITA (1861-1946)-d}} [[Giuseppe Meazza]]
+| align=left |[[FC Internazionale Milano|AS Ambrosiana]]
+|31
+|-
+|2
+| align=left |{{ITA (1861-1946)-d}} [[Rodolfo Volk]]
+| align=left |[[Associazione Sportiva Roma|AS Rome]]
+|21
+|-
+|rowspan=2| 3
+| align=left |{{ITA (1861-1946)-d}} [[Bruno Maini]]
+| align=left |[[Bologna Football Club 1909|Bologne SC]]
+|rowspan=2| 20
+|-
+| align=left |{{ITA (1861-1946)-d}} [[Antonio Vojak]]
+| align=left |[[Società Sportiva Calcio Naples|AC Naples]]
+|-
+|rowspan=4| 5
+| align=left |{{ITA (1861-1946)-d}} [[Elvio Banchero]]
+| align=left |[[Genoa Cricket and Football Club|Genova 1893]]
+|rowspan=4| 17
+|-
+| align=left |{{ITA (1861-1946)-d}} [[Giovanni Ferrari (football)|Giovanni Ferrari]]
+| align=left |[[Unione Sportiva Alexandrie Calcio 1912|Alexandria US]]
+|-
+| align=left |{{ITA (1861-1946)-d}} [[Gino Rossetti]]
+| align=left |[[Torino Football Club|FBC Torino]]
+|-
+| align=left |{{ITA (1861-1946)-d}} [[Giovanni Vecchina]]
+| align=left |[[Calcio Padoue|AFC Padoue]]
+|-
+|9
+| align=left |{{ITA (1861-1946)-d}} [[Pietro Serantoni]]
+| align=left |[[FC Internazionale Milano|AS Ambrosiana]]
+|16
+|-
+|rowspan=3| 10
+| align=left |{{ITA (1861-1946)-d}} [[Virgilio Levratto]]
+| align=left |[[Genoa Cricket and Football Club|Genova 1893]]
+|rowspan=3| 15
+|-
+| align=left |{{ITA (1861-1946)-d}} [[Mario Magnozzi]]
+| align=left |[[Associazione Sportiva Livourne Calcio|US Livourne]]
+|-
+| align=left |{{ITA (1861-1946)-d}} [[Raimundo Orsi]]
+| align=left |[[Juventus Football Club|FBC Juventus]]
+|}
+
+== Bilan de la saison ==
+{{Tableau d'honneur
+|du pays=d'Italie
+|champion=[[Inter Milan|AS Ambrosiana]]
+|coupe=Non disputée
+|titre=3
+|saison1=1929
+|saison2=1930
+|c3=[[Coupe Mitropa 1930]]
+|c3-1=[[Inter Milan|AS Ambrosiana]]
+|c3-2=[[Genoa Cricket and Football Club|Genova 1893]]
+|relégué1=[[Calcio Padoue|AFC Padoue]]
+|relégué2=[[Unione Sportiva Cremonese|US Cremonese]]
+|promu1=[[Football Club Casale Associazione Sportiva Dilettantistica|Casale FBC]]
+|promu2=[[Associazione Calcio Legnano|FC Legnano]]
+|D1=Serie A
+|D2=Serie B
+}}
+
+== Voir aussi ==
+=== Références ===
+{{Références}}
+
+=== Liens internes ===
+* [[Championnat d'Italie de football]]
+
+=== Liens externes ===
+*{{en}} [http://www.rsssf.com/tablesi/ital30.html Serie A 1929-30 Page sur rsssf.com]
+
+{{Palette|Saisons du championnat d'Italie de football|Football 1929-30}}
+{{Portail|football|entre-deux-guerres|Italie}}
+
+[[Catégorie:Championnat d'Italie de football|1929-1930]]
+[[Catégorie:Sport en Italie en 1929|Championnat Italie Football 1929-1930 Serie A]]
+[[Catégorie:Sport en Italie en 1930|Championnat Italie Football 1929-1930 Serie A]]
+[[Catégorie:Football en 1929|Italie]]
+[[Catégorie:Football en 1930|Italie]]
