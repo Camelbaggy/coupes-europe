@@ -948,5 +948,134 @@
   "reconstituee": true,
   "maj": "2026-11-25T01:43:52Z",
   "fichier": "soirees/2026-08-11.json"
+ },
+ {
+  "date": "2026-08-06",
+  "statut": "complet",
+  "matchs": 37,
+  "termines": 37,
+  "competitions": {
+   "uel": {
+    "matchs": 10,
+    "stage": "qualifying",
+    "tour": "T3 aller"
+   },
+   "uecl": {
+    "matchs": 27,
+    "stage": "qualifying",
+    "tour": "T3 aller"
+   }
+  },
+  "francais": [],
+  "resumes": {
+   "gemini": 0,
+   "deterministe": 0,
+   "a_rattraper": 0
+  },
+  "reconstituee": true,
+  "maj": "2026-11-25T01:44:12Z",
+  "fichier": "soirees/2026-08-06.json"
+ },
+ {
+  "date": "2026-08-05",
+  "statut": "complet",
+  "matchs": 5,
+  "termines": 5,
+  "competitions": {
+   "ucl": {
+    "matchs": 2,
+    "stage": "qualifying",
+    "tour": "T3 aller"
+   },
+   "uel": {
+    "matchs": 1,
+    "stage": "qualifying",
+    "tour": "T3 aller"
+   },
+   "uecl": {
+    "matchs": 2,
+    "stage": "qualifying",
+    "tour": "T3 aller"
+   }
+  },
+  "francais": [],
+  "resumes": {
+   "gemini": 0,
+   "deterministe": 0,
+   "a_rattraper": 0
+  },
+  "reconstituee": true,
+  "maj": "2026-11-25T01:45:04Z",
+  "fichier": "soirees/2026-08-05.json"
+ },
+ {
+  "date": "2026-08-04",
+  "statut": "complet",
+  "matchs": 11,
+  "termines": 11,
+  "competitions": {
+   "ucl": {
+    "matchs": 8,
+    "stage": "qualifying",
+    "tour": "T3 aller"
+   },
+   "uel": {
+    "matchs": 2,
+    "stage": "qualifying",
+    "tour": "T3 aller"
+   },
+   "uecl": {
+    "matchs": 1,
+    "stage": "qualifying",
+    "tour": "T3 aller"
+   }
+  },
+  "francais": [
+   {
+    "comp": "ucl",
+    "match_id": "2049108",
+    "home": "Sparta Praha",
+    "away": "Lyon",
+    "home_fr": false,
+    "away_fr": true,
+    "score": "2-1",
+    "statut": "Terminé"
+   }
+  ],
+  "resumes": {
+   "gemini": 0,
+   "deterministe": 1,
+   "a_rattraper": 0
+  },
+  "reconstituee": true,
+  "maj": "2026-11-25T01:45:11Z",
+  "fichier": "soirees/2026-08-04.json"
+ },
+ {
+  "date": "2026-07-30",
+  "statut": "complet",
+  "matchs": 51,
+  "termines": 51,
+  "competitions": {
+   "uel": {
+    "matchs": 9,
+    "stage": "qualifying",
+    "tour": "T2 retour"
+   },
+   "uecl": {
+    "matchs": 42,
+    "stage": "qualifying",
+    "tour": "T2 retour"
+   }
+  },
+  "francais": [],
+  "resumes": {
+   "gemini": 0,
+   "deterministe": 0,
+   "a_rattraper": 0
+  },
+  "reconstituee": true,
+  "maj": "2026-11-25T01:45:27Z",
+  "fichier": "soirees/2026-07-30.json"
  }
 ]
