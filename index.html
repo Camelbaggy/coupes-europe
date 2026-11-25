@@ -28,6 +28,9 @@
       /* Variantes lisibles (contraste AA) des couleurs d'équipe pour le texte */
       --home-ink: color-mix(in srgb, var(--home-color) 80%, var(--text-main));
       --away-ink: color-mix(in srgb, var(--away-color) 55%, var(--text-main));
+      /* Surchargées en ligne par couleursMatch() / coulVars() : couleur de l'aplat, encre lisible sur la page, texte posé sur l'aplat, liseré */
+      --home-on: #fff; --away-on: #fff; --home-bord: transparent; --away-bord: transparent;
+      --club-color: var(--accent-ucl); --club-ink: var(--accent-ucl); --club-on: #000; --club-bord: transparent;
     }
 
     [hidden] { display: none !important; }
@@ -543,6 +546,7 @@
       color: var(--accent-ucl);
       border-bottom-color: var(--accent-ucl);
     }
+    #club-tabs .subtab-btn.active { color: var(--club-ink); border-bottom-color: var(--club-ink); }
 
     .modal-body {
       padding: 16px;
@@ -646,8 +650,17 @@
       border: 2px solid #fff;
       box-shadow: 0 2px 6px rgba(0,0,0,0.45);
     }
-    .player-dot.home { background: #0284c7; }
-    .player-dot.away { background: #e11d48; }
+    .player-dot.home { background: var(--home-color); color: var(--home-on); }
+    .player-dot.away { background: var(--away-color); color: var(--away-on); }
+    .player-dot.home.lis { border-color: var(--home-bord); } .player-dot.away.lis { border-color: var(--away-bord); }
+    /* Pastille / bandeau d'équipe : aplat de la couleur d'équipe, liseré 1 px si quasi blanc ou quasi noir */
+    .sw-eq { margin-right: 6px; display: inline-block; width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; vertical-align: baseline; }
+    .sw-eq.home { background: var(--home-color); box-shadow: 0 0 0 1px var(--home-bord); }
+    .sw-eq.away { background: var(--away-color); box-shadow: 0 0 0 1px var(--away-bord); }
+    .duo-bar { display: flex; height: 4px; border-radius: 99px; overflow: hidden; gap: 2px; margin-top: 8px; }
+    .duo-bar i { flex: 1; display: block; }
+    .duo-bar i.home { background: var(--home-color); box-shadow: inset 0 0 0 1px var(--home-bord); }
+    .duo-bar i.away { background: var(--away-color); box-shadow: inset 0 0 0 1px var(--away-bord); }
     .player-label {
       font-size: 0.65rem;
       font-weight: 600;
@@ -708,7 +721,7 @@
     .st-team { display: flex; align-items: center; gap: 6px; font-weight: 800; font-size: 0.85rem; min-width: 0; }
     .st-team.away { justify-content: flex-end; }
     .st-team .sw { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
-    .st-team.home .sw { background: var(--home-color); } .st-team.away .sw { background: var(--away-color); }
+    .st-team.home .sw { background: var(--home-color); box-shadow: 0 0 0 1px var(--home-bord); } .st-team.away .sw { background: var(--away-color); box-shadow: 0 0 0 1px var(--away-bord); }
     .st-team.home { color: var(--home-ink); } .st-team.away { color: var(--away-ink); }
     .poss { background: var(--bg-main); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px 14px; margin-bottom: 4px; }
     .poss-lbl { text-align: center; font-size: 0.72rem; font-weight: 700; color: var(--text-muted); letter-spacing: 0.05em; text-transform: uppercase; }
@@ -717,7 +730,7 @@
     .poss-v.home { color: var(--home-ink); } .poss-v.away { color: var(--away-ink); }
     .poss-bar { display: flex; height: 10px; border-radius: 99px; overflow: hidden; gap: 3px; }
     .poss-bar i { display: block; height: 100%; }
-    .poss-bar .h { background: var(--home-color); } .poss-bar .a { background: var(--away-color); }
+    .poss-bar .h { background: var(--home-color); box-shadow: inset 0 0 0 1px var(--home-bord); } .poss-bar .a { background: var(--away-color); box-shadow: inset 0 0 0 1px var(--away-bord); }
     .st-row { padding: 8px 0 7px; border-bottom: 1px solid var(--border); }
     .st-row:last-child { border-bottom: none; }
     .st-top { display: grid; grid-template-columns: 1fr minmax(0, 2.2fr) 1fr; align-items: baseline; gap: 6px; font-variant-numeric: tabular-nums; }
@@ -731,7 +744,7 @@
     .st-half { display: flex; height: 5px; border-radius: 99px; background: var(--bg-elevated); overflow: hidden; }
     .st-half.l { justify-content: flex-end; }
     .st-half i { display: block; height: 100%; }
-    .st-half.l i { background: var(--home-color); } .st-half.r i { background: var(--away-color); }
+    .st-half.l i { background: var(--home-color); box-shadow: inset 0 0 0 1px var(--home-bord); } .st-half.r i { background: var(--away-color); box-shadow: inset 0 0 0 1px var(--away-bord); }
     .st-half i.dim { opacity: 0.4; }
 
     /* Glissement entre onglets (composant attachTabSwipe / slideIn : accueil, fiche de match, futures feuilles) */
@@ -850,7 +863,8 @@
     }
     .club-sheet.settle { transition: transform 0.22s ease-out; }
     @media (prefers-reduced-motion: reduce) { .club-sheet.settle { transition: none; } }
-    .club-head { touch-action: none; padding: 4px 16px 12px; background: var(--bg-elevated); border-bottom: 1px solid var(--border); }
+    .club-head { touch-action: none; padding: 4px 16px 12px; border-bottom: 3px solid var(--club-color); box-shadow: 0 1px 0 var(--club-bord);
+      background: linear-gradient(180deg, color-mix(in srgb, var(--club-color) 26%, var(--bg-elevated)) 0, var(--bg-elevated) 75%); }
     .club-id { display: flex; align-items: center; gap: 12px; }
     .club-logo { width: 52px; height: 52px; object-fit: contain; flex-shrink: 0; }
     .club-logo.vide { display: inline-block; }
@@ -868,7 +882,7 @@
       display: flex; align-items: center; gap: 4px; }
     .cl-rank { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; background: var(--bg-main); border: 1px solid var(--border);
       border-radius: 12px; padding: 10px 12px; margin-bottom: 6px; }
-    .cl-rank b { font-size: 1.5rem; line-height: 1; }
+    .cl-rank b { font-size: 1.5rem; line-height: 1; color: var(--club-ink); }
     .cl-rank span { font-size: 0.8rem; color: var(--text-muted); }
     .cl-trend-UP { color: var(--zone-top8); } .cl-trend-DOWN { color: var(--zone-elim); } .cl-trend-STABLE { color: var(--text-muted); }
     .cl-form { display: flex; gap: 6px; }
@@ -889,7 +903,7 @@
     .cl-opp { display: flex; align-items: center; gap: 6px; min-width: 0; }
     .cl-opp img { width: 20px; height: 20px; object-fit: contain; flex-shrink: 0; }
     .cl-opp .nm { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-    .cl-loc { font-size: 0.66rem; color: var(--text-muted); border: 1px solid var(--border); border-radius: 4px; padding: 0 4px; flex-shrink: 0; }
+    .cl-loc { font-size: 0.66rem; font-weight: 700; color: var(--club-on); background: var(--club-color); border: 1px solid var(--club-bord); border-radius: 4px; padding: 0 4px; flex-shrink: 0; }
     .cl-score { font-weight: 800; white-space: nowrap; text-align: right; }
     button.cl-score { background: var(--bg-elevated); border: 1px solid var(--border); border-radius: 8px; color: var(--accent-ucl);
       padding: 6px 10px; min-height: 36px; font: inherit; font-weight: 800; cursor: pointer; }
@@ -985,6 +999,7 @@
           <div class="score-box" id="modal-score"></div>
           <div class="team-name away" id="modal-away-name"></div>
         </div>
+        <div class="duo-bar" aria-hidden="true"><i class="home"></i><i class="away"></i></div>
       </div>
 
       <div class="modal-subtabs">
@@ -1255,7 +1270,7 @@
           }).join('');
           const source = fc.summary_source === 'gemini' ? '✓ Résumé IA contrôlé sur les données officielles' : '✓ Résumé généré depuis les données officielles';
           return `
-            <article class="fr-card" onclick="openMatchModal('${esc(fc.match_id)}')">
+            <article class="fr-card" style="${coulStyleMatch(fc)}" onclick="openMatchModal('${esc(fc.match_id)}')">
               <div class="fr-card-top">
                 <span class="fr-club-tag">${clubLink(fc.club_id, `${flag(fc.home_team.name === fc.club_name ? fc.home_team : fc.away_team) || '🇫🇷'} ${esc(fc.club_name)}`)}</span>
                 <span class="rank-pill ${esc(fc.club_zone || 'none')}">${getZoneLabel(fc.club_zone, fc.club_rank)}</span>
@@ -1265,6 +1280,7 @@
                 <div class="score-box">${fc.home_team.score} - ${fc.away_team.score}</div>
                 <div class="team-name away ${fc.away_team.is_french ? 'is-fr' : ''}">${flag(fc.away_team)} ${esc(fc.away_team.name)}</div>
               </div>
+              <div class="duo-bar" aria-hidden="true"><i class="home"></i><i class="away"></i></div>
               ${goalsHtml ? `<div class="goals-timeline">${goalsHtml}</div>` : ''}
               ${fc.ai_summary ? `<p class="ai-summary-text">${esc(fc.ai_summary)}</p>` : ''}
               <div class="fr-card-footer">
@@ -1281,14 +1297,14 @@
         gridContainer.innerHTML = `<div class="empty-state">Aucun match sur cette période dans cette compétition.</div>`;
       } else {
         gridContainer.innerHTML = comp.matches.map(m => `
-          <div class="match-tile" onclick="openMatchModal('${esc(m.match_id)}')">
+          <div class="match-tile" style="${coulStyleMatch(m)}" onclick="openMatchModal('${esc(m.match_id)}')">
             <div class="tile-teams">
               <div class="tile-team-row">
-                <span class="tile-team-name ${m.home_team.is_french ? 'is-fr' : ''}">${flag(m.home_team)} ${esc(m.home_team.name)}</span>
+                <span class="tile-team-name ${m.home_team.is_french ? 'is-fr' : ''}"><i class="sw-eq home"></i>${flag(m.home_team)} ${esc(m.home_team.name)}</span>
                 <span class="tile-team-score">${m.status === 'À venir' ? '' : m.home_team.score}</span>
               </div>
               <div class="tile-team-row">
-                <span class="tile-team-name ${m.away_team.is_french ? 'is-fr' : ''}">${flag(m.away_team)} ${esc(m.away_team.name)}</span>
+                <span class="tile-team-name ${m.away_team.is_french ? 'is-fr' : ''}"><i class="sw-eq away"></i>${flag(m.away_team)} ${esc(m.away_team.name)}</span>
                 <span class="tile-team-score">${m.status === 'À venir' ? '' : m.away_team.score}</span>
               </div>
             </div>
@@ -1355,6 +1371,7 @@
       document.getElementById('modal-home-name').innerHTML = clubLink(activeMatch.home_team.id, `${esc(activeMatch.home_team.name)} ${flag(activeMatch.home_team)}`);
       document.getElementById('modal-away-name').innerHTML = clubLink(activeMatch.away_team.id, `${flag(activeMatch.away_team)} ${esc(activeMatch.away_team.name)}`);
       document.getElementById('modal-score').textContent = `${activeMatch.home_team.score} - ${activeMatch.away_team.score}`;
+      coulPoserMatch(document.getElementById('match-modal'), activeMatch);
       document.getElementById('match-modal').classList.add('open');
       bringToFront(document.getElementById('match-modal'));
       syncBodyLock();
@@ -1424,16 +1441,16 @@
         const subs = (list) => list.length ? list.map(p => `${esc(p.number)} ${p.potm ? '⭐ ' : ''}${plink(p.id, p.name)}${p.minute ? ' (' + esc(p.minute) + ')' : ''}${p.rating ? ` <span class="rating-badge ${ratingClass(p.rating)}" style="font-size:0.68rem">${esc(Number(p.rating).toFixed(1))}</span>` : ''}`).join(', ') : '—';
         container.innerHTML = `
           <div style="display:flex;justify-content:space-between;font-size:0.78rem;color:var(--text-muted);margin-bottom:8px">
-            <span>🔵 ${clubLink(m.home_team.id, esc(m.home_team.short))} ${esc(m.home_team.formation || '')}</span>
-            <span>🔴 ${clubLink(m.away_team.id, esc(m.away_team.short))} ${esc(m.away_team.formation || '')}</span>
+            <span><i class="sw-eq home"></i>${clubLink(m.home_team.id, esc(m.home_team.short))} ${esc(m.home_team.formation || '')}</span>
+            <span><i class="sw-eq away"></i>${clubLink(m.away_team.id, esc(m.away_team.short))} ${esc(m.away_team.formation || '')}</span>
           </div>
           <div class="pitch-container" id="pitch">
             <div class="pitch-midline"></div>
             <div class="pitch-circle"></div>
           </div>
           <div class="subs-list">
-            <div><b style="color:var(--home-color)">Entrés (${esc(m.home_team.short)})</b> : ${subs(L.home_subs || [])}</div>
-            <div><b style="color:var(--away-color)">Entrés (${esc(m.away_team.short)})</b> : ${subs(L.away_subs || [])}</div>
+            <div><b style="color:var(--home-ink)">Entrés (${esc(m.home_team.short)})</b> : ${subs(L.home_subs || [])}</div>
+            <div><b style="color:var(--away-ink)">Entrés (${esc(m.away_team.short)})</b> : ${subs(L.away_subs || [])}</div>
             ${(L.home_coach || L.away_coach) ? `<div>Entraîneurs : ${esc(L.home_coach || '—')} / ${esc(L.away_coach || '—')}</div>` : ''}
             <div class="info-row">${infoBtn(`<p>© capitaine · ⭐ homme du match UEFA · ↓ minute de sortie${hasPlayers ? ' · touchez un joueur pour sa fiche' : ''}</p>${hasPlayers ? `<p>Notes sur 10 calculées à partir des statistiques officielles UEFA (méthode : voir la fiche d'un joueur).</p>` : ''}`, 'Légende et méthode des compositions')}</div>
           </div>`;
@@ -1477,6 +1494,7 @@
       const dot = W < 360 ? 24 : 26;
       pitch.style.setProperty('--dot', dot + 'px');
       const L = m.lineups || {};
+      const coul = couleursMatch(m);
       const sides = [
         { side: 'home', rows: lineupRows(L.home || [], m.home_team.formation || L.home_formation, 'home') },
         { side: 'away', rows: lineupRows(L.away || [], m.away_team.formation || L.away_formation, 'away') },
@@ -1488,7 +1506,7 @@
         if (hasPlayers && p.id) { el.setAttribute('onclick', `openPlayer('${esc(p.id)}')`); el.setAttribute('role', 'button'); }
         const full = (hasPlayers && m.players[p.id] && m.players[p.id].name) || p.name;
         el.title = full;
-        el.innerHTML = `<div class="player-dot ${S.side}">${esc(p.number)}`
+        el.innerHTML = `<div class="player-dot ${S.side}${coul[S.side].bord ? ' lis' : ''}">${esc(p.number)}`
           + (p.rating ? `<span class="pn-rating rating-badge ${ratingClass(p.rating)}">${esc(Number(p.rating).toFixed(1))}</span>` : '')
           + `</div><span class="player-label"></span>`
           + (p.subbed_out ? `<span class="pn-out">↓${esc(p.subbed_out)}</span>` : '');
@@ -1571,6 +1589,120 @@
       }
     }
 
+    // ===== COULEURS : début =====
+    // Couleurs d'équipe (règle du 25/11/2026, voir couleurs.py : jumeau exact, comparé par `python couleurs.py --test`).
+    // Maillot porté dans le match > couleur principale du club (clubs/index.json) > repli neutre ; ΔE76 < 25 : l'équipe à
+    // l'extérieur prend sa secondaire, sinon un repli neutre. Texte blanc / noir selon le contraste WCAG, liseré pour les aplats
+    // quasi blancs ou noirs, `encre` = couleur lisible comme texte sur la page.
+    const COUL_SEUIL_DE = 25, COUL_SEUIL_TEXTE = 4.5, COUL_LUM_BLANC = 0.85, COUL_LUM_NOIR = 0.04;
+    const COUL_NEUTRE_DOM = '#38bdf8', COUL_NEUTRE_EXT = '#f43f5e';
+    const COUL_FONDS_PAGE = ['#151c28', '#0b0f17', '#202b3d'];   // --bg-card, --bg-main, --bg-elevated
+    const COUL_BORDS = ['#e2e8f0', '#7c8799', '#1e293b'];
+    const coulValide = (h) => typeof h === 'string' && /^#[0-9a-fA-F]{6}$/.test(h);
+    const coulRgb = (h) => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)];
+    const coulHex = (r, g, b) => '#' + [r, g, b].map(x => Math.max(0, Math.min(255, Math.floor(x + 0.5))).toString(16).padStart(2, '0')).join('');
+    const coulLin = (v) => { const s = v / 255; return s <= 0.03928 ? s / 12.92 : Math.pow((s + 0.055) / 1.055, 2.4); };
+    function coulLuminance(h) { const [r, g, b] = coulRgb(h); return 0.2126 * coulLin(r) + 0.7152 * coulLin(g) + 0.0722 * coulLin(b); }
+    function coulContraste(a, b) {
+      const la = coulLuminance(a), lb = coulLuminance(b);
+      return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05);
+    }
+    function coulLab(h) {
+      const [R, G, B] = coulRgb(h).map(coulLin);
+      const x = (0.4124564 * R + 0.3575761 * G + 0.1804375 * B) / 0.95047;
+      const y = 0.2126729 * R + 0.7151522 * G + 0.0721750 * B;
+      const z = (0.0193339 * R + 0.1191920 * G + 0.9503041 * B) / 1.08883;
+      const f = (t) => t > 216 / 24389 ? Math.pow(t, 1 / 3) : (24389 / 27 * t + 16) / 116;
+      const fx = f(x), fy = f(y), fz = f(z);
+      return [116 * fy - 16, 500 * (fx - fy), 200 * (fy - fz)];
+    }
+    function coulDeltaE76(a, b) {
+      const p = coulLab(a), q = coulLab(b);
+      return Math.sqrt((p[0] - q[0]) ** 2 + (p[1] - q[1]) ** 2 + (p[2] - q[2]) ** 2);
+    }
+    const coulTexteSur = (fond) => coulContraste('#ffffff', fond) >= coulContraste('#000000', fond) ? '#ffffff' : '#000000';
+    function coulBordPour(fond, fondsPage) {
+      const lum = coulLuminance(fond);
+      if (!(lum > COUL_LUM_BLANC || lum < COUL_LUM_NOIR)) return null;
+      let best = COUL_BORDS[0], score = -1;
+      for (const b of COUL_BORDS) {
+        const s = Math.min(coulContraste(b, fond), ...fondsPage.map(p => coulContraste(b, p)));
+        if (s > score + 1e-9) { best = b; score = s; }
+      }
+      return best;
+    }
+    function coulEncrePour(fond, fondsPage) {
+      const sombre = fondsPage.reduce((s, f) => s + coulLuminance(f), 0) / fondsPage.length < 0.5;
+      const cible = sombre ? '#ffffff' : '#000000';
+      const [r0, g0, b0] = coulRgb(fond), [r1, g1, b1] = coulRgb(cible);
+      for (let k = 0; k <= 20; k++) {
+        const t = k / 20, c = coulHex(r0 + (r1 - r0) * t, g0 + (g1 - g0) * t, b0 + (b1 - b0) * t);
+        if (Math.min(...fondsPage.map(p => coulContraste(c, p))) >= COUL_SEUIL_TEXTE) return c;
+      }
+      return cible;
+    }
+    function coulHabiller(fond, source, fondsPage) {
+      return { fond, texte: coulTexteSur(fond), bord: coulBordPour(fond, fondsPage), encre: coulEncrePour(fond, fondsPage), source };
+    }
+    function coulChoix(eq, neutre) {
+      if (coulValide(eq.maillot)) return [eq.maillot.toLowerCase(), 'maillot'];
+      if (coulValide(eq.principale)) return [eq.principale.toLowerCase(), 'club'];
+      return [neutre, 'neutre'];
+    }
+    // dom / ext : { maillot, principale, secondaire } (clés facultatives) -> { home, away } = { fond, texte, bord, encre, source }
+    function coulChoisir(dom, ext, fondsPage) {
+      let [h, hs] = coulChoix(dom, COUL_NEUTRE_DOM), [a, as] = coulChoix(ext, COUL_NEUTRE_EXT);
+      if (coulDeltaE76(h, a) < COUL_SEUIL_DE) {
+        const cands = [];
+        if (coulValide(ext.secondaire)) cands.push([ext.secondaire.toLowerCase(), 'secondaire']);
+        cands.push([COUL_NEUTRE_EXT, 'neutre'], [COUL_NEUTRE_DOM, 'neutre']);
+        for (const [hx, src] of cands) {
+          if (coulDeltaE76(h, hx) >= COUL_SEUIL_DE) { a = hx; as = src; break; }
+        }
+      }
+      return { home: coulHabiller(h, hs, fondsPage), away: coulHabiller(a, as, fondsPage) };
+    }
+    // Fonds de page réels (thème courant) ; repli = valeurs du thème sombre
+    function coulFondsPage() {
+      try {
+        const cs = getComputedStyle(document.documentElement);
+        const l = ['--bg-card', '--bg-main', '--bg-elevated'].map(k => cs.getPropertyValue(k).trim());
+        return l.every(coulValide) ? l : COUL_FONDS_PAGE;
+      } catch (e) { return COUL_FONDS_PAGE; }
+    }
+    // LA fonction de couleurs d'un match : { home: { fond, texte, bord, encre, source }, away: { … } }
+    function couleursMatch(m) {
+      const eq = (t) => {
+        const c = (clubIndex && t && t.id != null && clubIndex.get(String(t.id)) || {}).couleurs || {};
+        return { maillot: t && t.shirt_color, principale: c.principale, secondaire: c.secondaire };
+      };
+      return coulChoisir(eq(m.home_team), eq(m.away_team), coulFondsPage());
+    }
+    // Couleur d'un club seul (accent de sa fiche) : principale du club, sinon accent neutre de la page
+    function couleurClub(id) {
+      const c = (clubIndex && id != null && clubIndex.get(String(id)) || {}).couleurs || {};
+      return coulHabiller(coulValide(c.principale) ? c.principale.toLowerCase() : COUL_NEUTRE_DOM, coulValide(c.principale) ? 'club' : 'neutre', coulFondsPage());
+    }
+    // Variables CSS --<pref>-color / -ink / -on / -bord d'une équipe (un style en ligne, valeurs déjà validées en hex)
+    const coulVars = (pref, c) => `--${pref}-color:${c.fond};--${pref}-ink:${c.encre};--${pref}-on:${c.texte};--${pref}-bord:${c.bord || 'transparent'};`;
+    // ===== COULEURS : fin =====
+    const COUL_PROPS = ['color', 'ink', 'on', 'bord'];
+    // Pose les variables CSS des deux équipes d'un match sur un élément (fiche de match, tuile, carte)
+    function coulPoserMatch(el, m) {
+      const c = couleursMatch(m);
+      for (const [pref, k] of [['home', c.home], ['away', c.away]]) {
+        el.style.setProperty(`--${pref}-color`, k.fond); el.style.setProperty(`--${pref}-ink`, k.encre);
+        el.style.setProperty(`--${pref}-on`, k.texte); el.style.setProperty(`--${pref}-bord`, k.bord || 'transparent');
+      }
+      return c;
+    }
+    const coulStyleMatch = (m) => { const c = couleursMatch(m); return coulVars('home', c.home) + coulVars('away', c.away); };
+    function coulPoserClub(el, id) {
+      const c = couleurClub(id);
+      el.style.setProperty('--club-color', c.fond); el.style.setProperty('--club-ink', c.encre);
+      el.style.setProperty('--club-on', c.texte); el.style.setProperty('--club-bord', c.bord || 'transparent');
+    }
+
     // ---------- Momentum (en tête de l'onglet Stats) ----------
     const MO = { W: 300, X0: 5, MID: 66, AMP: 60, BOTTOM: 132 };
     function momentumHtml(m) {
@@ -1596,11 +1728,12 @@
         const i = pts.findIndex(p => p.minute === mn && !String(labelOf(p)).includes('+'));
         return i < 0 ? '' : `<text x="${xOf(i).toFixed(1)}" y="${BOTTOM + 9}" font-size="8" fill="#94a3b8" text-anchor="middle">${mn}'</text>`;
       }).join('');
+      const cm = couleursMatch(m);
       const goals = (m.events || []).filter(e => e.type === 'goal').map(e => {
         const x = xOf(idxOfLabel(e.minute_label, e.minute));
         const home = e.team === 'home';
         const y = home ? 6 : BOTTOM - 4;
-        return `<line x1="${x.toFixed(1)}" y1="${home ? 12 : MID}" x2="${x.toFixed(1)}" y2="${home ? MID : BOTTOM - 10}" stroke="${home ? '#38bdf8' : '#f43f5e'}" stroke-opacity="0.4" stroke-width="0.6" stroke-dasharray="1.5,1.5" />
+        return `<line x1="${x.toFixed(1)}" y1="${home ? 12 : MID}" x2="${x.toFixed(1)}" y2="${home ? MID : BOTTOM - 10}" stroke="${home ? cm.home.fond : cm.away.fond}" stroke-opacity="0.55" stroke-width="0.6" stroke-dasharray="1.5,1.5" />
                 <text x="${x.toFixed(1)}" y="${y}" font-size="9" text-anchor="middle" dominant-baseline="middle">⚽</text>`;
       }).join('');
       return `
@@ -1615,12 +1748,12 @@
             <defs>
               <clipPath id="clip-home"><rect x="0" y="0" width="310" height="${MID}" /></clipPath>
               <clipPath id="clip-away"><rect x="0" y="${MID}" width="310" height="${BOTTOM - MID}" /></clipPath>
-              <linearGradient id="grad-home" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#38bdf8" stop-opacity="0.95"/><stop offset="1" stop-color="#38bdf8" stop-opacity="0.25"/></linearGradient>
-              <linearGradient id="grad-away" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f43f5e" stop-opacity="0.25"/><stop offset="1" stop-color="#f43f5e" stop-opacity="0.95"/></linearGradient>
+              <linearGradient id="grad-home" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${cm.home.fond}" stop-opacity="0.95"/><stop offset="1" stop-color="${cm.home.fond}" stop-opacity="0.25"/></linearGradient>
+              <linearGradient id="grad-away" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${cm.away.fond}" stop-opacity="0.25"/><stop offset="1" stop-color="${cm.away.fond}" stop-opacity="0.95"/></linearGradient>
             </defs>
             ${htX !== null ? `<line x1="${htX.toFixed(1)}" y1="2" x2="${htX.toFixed(1)}" y2="${BOTTOM}" stroke="#475569" stroke-dasharray="2,2" stroke-width="0.6" /><text x="${htX.toFixed(1)}" y="${BOTTOM + 9}" font-size="8" fill="#94a3b8" text-anchor="middle">MT</text>` : ''}
-            <path d="${area}" fill="url(#grad-home)" clip-path="url(#clip-home)" />
-            <path d="${area}" fill="url(#grad-away)" clip-path="url(#clip-away)" />
+            <path d="${area}" fill="url(#grad-home)" clip-path="url(#clip-home)"${cm.home.bord ? ` stroke="${cm.home.bord}" stroke-width="0.8"` : ''} />
+            <path d="${area}" fill="url(#grad-away)" clip-path="url(#clip-away)"${cm.away.bord ? ` stroke="${cm.away.bord}" stroke-width="0.8"` : ''} />
             <line x1="0" y1="${MID}" x2="310" y2="${MID}" stroke="#475569" stroke-width="0.6" />
             ${goals}${ticks}
             <line id="momentum-cursor" x1="0" y1="2" x2="0" y2="${BOTTOM}" stroke="#e2e8f0" stroke-width="0.5" visibility="hidden" />
@@ -1894,6 +2027,7 @@
       const modal = document.getElementById('club-modal'), body = document.getElementById('club-body');
       modal.classList.add('open'); bringToFront(modal); syncBodyLock();
       const entree = clubIndex && clubIndex.get(id);
+      coulPoserClub(document.getElementById('club-sheet'), id);
       if (!activeClub || activeClub.id !== id) {
         activeClub = null;
         document.getElementById('club-head').innerHTML = clubHeadHtml(entree ? { id, nom: entree.nom, pays: entree.pays, drapeau: entree.drapeau, logos: entree.logos } : { id, nom: '…' });
