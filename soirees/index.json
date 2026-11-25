@@ -577,5 +577,147 @@
   "reconstituee": true,
   "maj": "2026-11-25T01:39:49Z",
   "fichier": "soirees/2026-09-10.json"
+ },
+ {
+  "date": "2026-09-09",
+  "statut": "complet",
+  "matchs": 6,
+  "termines": 6,
+  "competitions": {
+   "ucl": {
+    "matchs": 6,
+    "stage": "league",
+    "tour": "J1"
+   }
+  },
+  "francais": [
+   {
+    "comp": "ucl",
+    "match_id": "2049559",
+    "home": "Paris",
+    "away": "S. Bratislava",
+    "home_fr": true,
+    "away_fr": false,
+    "score": "6-1",
+    "statut": "Terminé"
+   }
+  ],
+  "resumes": {
+   "gemini": 0,
+   "deterministe": 1,
+   "a_rattraper": 1
+  },
+  "reconstituee": true,
+  "maj": "2026-11-25T01:40:06Z",
+  "fichier": "soirees/2026-09-09.json"
+ },
+ {
+  "date": "2026-09-08",
+  "statut": "complet",
+  "matchs": 6,
+  "termines": 6,
+  "competitions": {
+   "ucl": {
+    "matchs": 6,
+    "stage": "league",
+    "tour": "J1"
+   }
+  },
+  "francais": [
+   {
+    "comp": "ucl",
+    "match_id": "2049557",
+    "home": "Lille",
+    "away": "Real Betis",
+    "home_fr": true,
+    "away_fr": false,
+    "score": "2-3",
+    "statut": "Terminé"
+   }
+  ],
+  "resumes": {
+   "gemini": 0,
+   "deterministe": 1,
+   "a_rattraper": 1
+  },
+  "reconstituee": true,
+  "maj": "2026-11-25T01:40:23Z",
+  "fichier": "soirees/2026-09-08.json"
+ },
+ {
+  "date": "2026-08-27",
+  "statut": "complet",
+  "matchs": 35,
+  "termines": 35,
+  "competitions": {
+   "uel": {
+    "matchs": 12,
+    "stage": "qualifying",
+    "tour": "Barrages retour"
+   },
+   "uecl": {
+    "matchs": 23,
+    "stage": "qualifying",
+    "tour": "Barrages retour"
+   }
+  },
+  "francais": [
+   {
+    "comp": "uecl",
+    "match_id": "2049276",
+    "home": "Monaco",
+    "away": "Górnik Zabrze",
+    "home_fr": true,
+    "away_fr": false,
+    "score": "4-1",
+    "statut": "Terminé"
+   }
+  ],
+  "resumes": {
+   "gemini": 0,
+   "deterministe": 1,
+   "a_rattraper": 0
+  },
+  "reconstituee": true,
+  "maj": "2026-11-25T01:40:36Z",
+  "fichier": "soirees/2026-08-27.json"
+ },
+ {
+  "date": "2026-08-26",
+  "statut": "complet",
+  "matchs": 5,
+  "termines": 5,
+  "competitions": {
+   "ucl": {
+    "matchs": 4,
+    "stage": "qualifying",
+    "tour": "Barrages retour"
+   },
+   "uecl": {
+    "matchs": 1,
+    "stage": "qualifying",
+    "tour": "Barrages retour"
+   }
+  },
+  "francais": [
+   {
+    "comp": "ucl",
+    "match_id": "2049220",
+    "home": "Lyon",
+    "away": "Fenerbahçe",
+    "home_fr": true,
+    "away_fr": false,
+    "score": "1-2",
+    "statut": "Terminé"
+   }
+  ],
+  "resumes": {
+   "gemini": 0,
+   "deterministe": 1,
+   "a_rattraper": 0
+  },
+  "reconstituee": true,
+  "maj": "2026-11-25T01:41:28Z",
+  "fichier": "soirees/2026-08-26.json"
  }
 ]
