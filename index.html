@@ -2486,7 +2486,7 @@
         return `<div class="hi-pal"><div class="n ${v.length ? '' : 'zero'}">${v.length || '–'}</div>
           <div class="t">${esc(h.comp[c].nom)}</div>
           <div class="l">${v.length ? `<b>${esc(hiPlur(v.length, 'titre'))}</b> : ${saisons(v)}` : 'Aucun titre'}</div>
-          <div class="l">${d.length ? `${esc(hiPlur(d.length, 'finale perdue'))} : ${saisons(d)}` : 'Aucune finale perdue'}${q.length ? ` · ${esc(hiPlur(q.length, 'finale'))} d'issue non déterminée : ${saisons(q)}` : ''}</div></div>`;
+          <div class="l">${d.length ? `${esc(hiPlur(d.length, 'finale perdue', 'finales perdues'))} : ${saisons(d)}` : 'Aucune finale perdue'}${q.length ? ` · ${esc(hiPlur(q.length, 'finale'))} d'issue non déterminée : ${saisons(q)}` : ''}</div></div>`;
       };
       const infoPal = infoBtn(`<p><b>Titres</b> : finales gagnées en Ligue des champions (Coupe des clubs champions), Coupe des vainqueurs de coupe, Ligue Europa (Coupe UEFA), Ligue Conférence et Supercoupe d'Europe. La Coupe des villes de foires, la Coupe Intertoto et la Coupe intercontinentale sont listées à part : ce ne sont pas des titres UEFA.</p>
         <p><b>Calcul</b> d'après les scores UEFA, jamais inventé : finale à match unique = score (prolongation comprise) puis tirs au but ; finale en <b>deux manches</b> (Coupe UEFA jusqu'en 1997, Supercoupe, villes de foires…) = <b>cumul</b> des deux scores ; en cas d'égalité, tirs au but de la 2e manche, sinon le vainqueur que l'UEFA indique (buts à l'extérieur, tirage au sort…), sinon « issue non déterminée ». Finale rejouée : le match rejoué décide.</p>`, 'Méthode du palmarès');
@@ -2516,7 +2516,7 @@
       });
       const html = [...decs.keys()].sort((a, b) => b - a).map((d, k) => {
         const idx = decs.get(d).slice().reverse();
-        const titres = idx.filter(i => h.ed[i].i === 'V').length;
+        const titres = idx.filter(i => h.ed[i].i === 'V' && h.comp[h.ed[i].c] && h.comp[h.ed[i].c].titre).length;
         return `<details class="hi-dec" ${k === 0 ? 'open' : ''}><summary>${d}-${d + 9} <small>${esc(hiPlur(idx.length, 'édition'))}${titres ? ` · ${esc(hiPlur(titres, 'titre'))}` : ''}</small></summary>
           ${idx.map(i => {
             const e = h.ed[i], [lib, cls] = hiIssue(h, e);
