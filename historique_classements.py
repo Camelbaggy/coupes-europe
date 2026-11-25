@@ -286,6 +286,10 @@ def tables_sports_table(w: str) -> List[List[Dict[str, Any]]]:
             while params.get(f"team{n}") or params.get(f"equipo{n}"):
                 ordre.append((params.get(f"team{n}") or params.get(f"equipo{n}")).strip())
                 n += 1
+        if not ordre:   # codes numériques « nombre_1 … nombre_20 » sans ordre explicite : le numéro est le rang
+            nums = sorted(int(k.split("_")[-1]) for k in params if re.match(r"^(?:name|nombre)_\d+$", k))
+            if nums and nums == list(range(1, len(nums) + 1)):
+                ordre = [str(x) for x in nums]
         vp = next((_nombre(params[k]) for k in _ST_V if k in params), 3)
         np_ = next((_nombre(params[k]) for k in _ST_N if k in params), 1)
         if not ordre or vp is None or np_ is None:
@@ -716,12 +720,20 @@ def collecter(donnees: str, ligues: List[str], budget_min: float, aujourdhui: Op
             if restes:
                 lang = cfg["local"][0]
                 tl = {a: titre_local(lg, a)[1] for a in restes}
-                pl = pages_wiki(lang, list(tl.values()))
+                # Angleterre : certaines saisons ont un article propre « … Football League First Division »
+                t1 = {a: tl[a].replace("Football League", "Football League First Division") for a in restes
+                      if lg == "pl" and tl[a].endswith("Football League")}
+                pl = pages_wiki(lang, list(tl.values()) + list(t1.values()))
                 for a in restes:
-                    p = pl.get(tl[a])
+                    res, p = ("illisible", [], {}), None
+                    for t in ([t1[a]] if a in t1 else []) + [tl[a]]:
+                        p = pl.get(t)
+                        if p:
+                            res = classement_final(p[0], lang, points_victoire(lg, a))
+                            if res[0] != "illisible":
+                                break
                     if not p:
                         continue
-                    res = classement_final(p[0], lang, points_victoire(lg, a))
                     if res[0] != "illisible":
                         ecrire_saison(fichier, lg, a, res, f"Wikipédia {lang.upper()}", lang, p[1], noms, jour)
             traites += sum(1 for a in lot if a != derniere)
