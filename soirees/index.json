@@ -1077,5 +1077,113 @@
   "reconstituee": true,
   "maj": "2026-11-25T01:45:27Z",
   "fichier": "soirees/2026-07-30.json"
+ },
+ {
+  "date": "2026-07-29",
+  "statut": "complet",
+  "matchs": 11,
+  "termines": 11,
+  "competitions": {
+   "ucl": {
+    "matchs": 8,
+    "stage": "qualifying",
+    "tour": "T2 retour"
+   },
+   "uecl": {
+    "matchs": 3,
+    "stage": "qualifying",
+    "tour": "T2 retour"
+   }
+  },
+  "francais": [],
+  "resumes": {
+   "gemini": 0,
+   "deterministe": 0,
+   "a_rattraper": 0
+  },
+  "reconstituee": true,
+  "maj": "2026-11-25T01:46:37Z",
+  "fichier": "soirees/2026-07-29.json"
+ },
+ {
+  "date": "2026-07-28",
+  "statut": "complet",
+  "matchs": 10,
+  "termines": 10,
+  "competitions": {
+   "ucl": {
+    "matchs": 6,
+    "stage": "qualifying",
+    "tour": "T2 retour"
+   },
+   "uecl": {
+    "matchs": 4,
+    "stage": "qualifying",
+    "tour": "T2 retour"
+   }
+  },
+  "francais": [],
+  "resumes": {
+   "gemini": 0,
+   "deterministe": 0,
+   "a_rattraper": 0
+  },
+  "reconstituee": true,
+  "maj": "2026-11-25T01:46:53Z",
+  "fichier": "soirees/2026-07-28.json"
+ },
+ {
+  "date": "2026-07-23",
+  "statut": "complet",
+  "matchs": 49,
+  "termines": 49,
+  "competitions": {
+   "uel": {
+    "matchs": 9,
+    "stage": "qualifying",
+    "tour": "T2 aller"
+   },
+   "uecl": {
+    "matchs": 40,
+    "stage": "qualifying",
+    "tour": "T2 aller"
+   }
+  },
+  "francais": [],
+  "resumes": {
+   "gemini": 0,
+   "deterministe": 0,
+   "a_rattraper": 0
+  },
+  "reconstituee": true,
+  "maj": "2026-11-25T01:47:07Z",
+  "fichier": "soirees/2026-07-23.json"
+ },
+ {
+  "date": "2026-07-22",
+  "statut": "complet",
+  "matchs": 9,
+  "termines": 9,
+  "competitions": {
+   "ucl": {
+    "matchs": 3,
+    "stage": "qualifying",
+    "tour": "T2 aller"
+   },
+   "uecl": {
+    "matchs": 6,
+    "stage": "qualifying",
+    "tour": "T2 aller"
+   }
+  },
+  "francais": [],
+  "resumes": {
+   "gemini": 0,
+   "deterministe": 0,
+   "a_rattraper": 0
+  },
+  "reconstituee": true,
+  "maj": "2026-11-25T01:48:12Z",
+  "fichier": "soirees/2026-07-22.json"
  }
 ]
