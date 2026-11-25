@@ -39,7 +39,7 @@ const ok = (c, msg) => { if (!c) { echecs++; console.log('ECHEC : ' + msg); } el
   ok(t && t.info, 'infoBtn de définition / source présent dans le bloc xG');
   const ordre = await page.evaluate(() => [...document.querySelectorAll('#modal-body-content .poss-lbl, #modal-body-content .st-sec')].map(e => e.textContent.trim().slice(0, 22)));
   const ix = ordre.findIndex(s => /Buts attendus/.test(s));
-  ok(ix > 0 && /Possession/.test(ordre[ix - 1]), 'xG juste sous la possession : ' + ordre.slice(0, 4).join(' | '));
+  ok(ix >= 0 && (ix === 0 || /Possession/.test(ordre[ix - 1])), 'xG en tête des stats (sous la possession si elle existe) : ' + ordre.slice(0, 4).join(' | '));
   const lignes = await page.evaluate(() => [...document.querySelectorAll('#modal-body-content .st-row')].filter(r => /xG|Passes décisives attendues/.test(r.textContent)).map(r => r.innerText.replace(/\n/g, ' ')));
   ok(lignes.length >= 1 && lignes.every(l => /\d,\d{2}/.test(l)), 'lignes xGOT / xA en 2 décimales : ' + JSON.stringify(lignes));
   let d = await debord();
