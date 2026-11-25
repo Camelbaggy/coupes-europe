@@ -535,27 +535,39 @@ def _ecrire(chemin: str, obj: Any) -> None:
     os.replace(tmp, chemin)
 
 
-def a_faire(ligue: str, fichier: Dict[str, Any], derniere: int) -> List[int]:
-    """Saisons à (re)lire : absentes, illisibles (retentées) et la dernière saison terminée (classement final possiblement
-    revu)."""
+RETENTE_JOURS = 30          # une saison illisible n'est retentée qu'après ce délai (pas de relance sans fin)
+
+
+def a_faire(ligue: str, fichier: Dict[str, Any], derniere: int, aujourdhui: Optional[dt.date] = None) -> List[int]:
+    """Saisons à (re)lire : absentes, illisibles dont le dernier essai date de plus de RETENTE_JOURS jours, et la dernière
+    saison terminée (classement final possiblement revu)."""
+    auj = aujourdhui or dt.date.today()
     faites = fichier.get("saisons") or {}
     out = []
     for a in saisons(ligue, derniere):
         s = faites.get(libelle(a, ligue))
-        if s is None or s.get("statut") == "illisible" or a == derniere:
+        if s is None or a == derniere:
             out.append(a)
+        elif s.get("statut") == "illisible":
+            try:
+                essai = dt.date.fromisoformat(s.get("essai", ""))
+            except ValueError:
+                essai = None
+            if essai is None or (auj - essai).days >= RETENTE_JOURS:
+                out.append(a)
     return out
 
 
 def collecter(donnees: str, ligues: List[str], budget_min: float, aujourdhui: Optional[dt.date] = None) -> Dict[str, int]:
     debut = time.monotonic()
     derniere = derniere_saison_terminee(aujourdhui)
+    jour = (aujourdhui or dt.date.today()).isoformat()
     traites = restants = 0
     for lg in ligues:
         cfg = LIGUES[lg]
         chemin = os.path.join(donnees, "championnats", "historique", f"{lg}.json")
         fichier = _lire(chemin) or {"ligue": lg, "nom": cfg["nom"], "saisons": {}}
-        todo = a_faire(lg, fichier, derniere)
+        todo = a_faire(lg, fichier, derniere, aujourdhui)
         # 1. ESPN (2002-03 et après), du plus récent au plus ancien
         for a in sorted([a for a in todo if a >= ESPN_DEPUIS], reverse=True):
             if time.monotonic() - debut > budget_min * 60:
@@ -563,10 +575,12 @@ def collecter(donnees: str, ligues: List[str], budget_min: float, aujourdhui: Op
             rows = classement_espn(lg, a)
             v = points_victoire(lg, a)
             st, c = controler(rows, v) if rows else ("illisible", {"erreur": "ESPN illisible"})
-            fichier["saisons"][libelle(a, lg)] = {
-                "source": "ESPN", "url": f"{ESPN}/{cfg['slug']}/standings?season={a}", "statut": st, "controles": c,
-                "rows": rows if st != "illisible" else []}
-            traites += 1
+            ancien = fichier["saisons"].get(libelle(a, lg))
+            if not (st == "illisible" and ancien and ancien.get("statut") != "illisible"):
+                fichier["saisons"][libelle(a, lg)] = {
+                    "source": "ESPN", "url": f"{ESPN}/{cfg['slug']}/standings?season={a}", "statut": st, "controles": c,
+                    "rows": rows if st != "illisible" else [], **({"essai": jour} if st == "illisible" else {})}
+            traites += a != derniere
         noms = index_noms_espn(fichier)
         # 2. Wikipédia (avant 2002-03) : FR, puis page locale pour les saisons restées illisibles
         anciennes = sorted([a for a in todo if a < ESPN_DEPUIS], reverse=True)
@@ -583,7 +597,7 @@ def collecter(donnees: str, ligues: List[str], budget_min: float, aujourdhui: Op
                 res = classement_final(p[0], "fr", points_victoire(lg, a)) if p else ("illisible", [], {"erreur": "page absente"})
                 if res[0] == "illisible" and cfg["local"]:
                     restes.append(a)
-                ecrire_saison(fichier, lg, a, res, "Wikipédia FR", "fr", p[1] if p else titres[a], noms)
+                ecrire_saison(fichier, lg, a, res, "Wikipédia FR", "fr", p[1] if p else titres[a], noms, jour)
             if restes:
                 lang, modele = cfg["local"]
                 tl = {a: modele.format(a=a, b=a + 1, b2=str(a + 1)[2:]) for a in restes}
@@ -594,13 +608,12 @@ def collecter(donnees: str, ligues: List[str], budget_min: float, aujourdhui: Op
                         continue
                     res = classement_final(p[0], lang, points_victoire(lg, a))
                     if res[0] != "illisible":
-                        ecrire_saison(fichier, lg, a, res, f"Wikipédia {lang.upper()}", lang, p[1], noms)
-            traites += len(lot)
+                        ecrire_saison(fichier, lg, a, res, f"Wikipédia {lang.upper()}", lang, p[1], noms, jour)
+            traites += sum(1 for a in lot if a != derniere)
         fichier["maj"] = dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
         fichier["saisons"] = dict(sorted(fichier["saisons"].items(), key=lambda kv: kv[0]))
         _ecrire(chemin, fichier)
-        reste = len(a_faire(lg, fichier, derniere)) - (1 if derniere in a_faire(lg, fichier, derniere) else 0)
-        restants += max(0, reste)
+        restants += sum(1 for a in a_faire(lg, fichier, derniere, aujourdhui) if a != derniere)
         st = [s["statut"] for s in fichier["saisons"].values()]
         print(f"[HISTORIQUE] {cfg['nom']} : {len(st)} saison(s) — ok {st.count('ok')}, écarts de points "
               f"{st.count('ecarts_points')}, illisibles {st.count('illisible')}")
@@ -615,7 +628,7 @@ def collecter(donnees: str, ligues: List[str], budget_min: float, aujourdhui: Op
 
 
 def ecrire_saison(fichier: Dict[str, Any], lg: str, a: int, res: Tuple[str, List[Dict[str, Any]], Dict[str, Any]],
-                  source: str, lang: str, titre: str, noms: Dict[str, str]) -> None:
+                  source: str, lang: str, titre: str, noms: Dict[str, str], jour: str = "") -> None:
     st, rows, c = res
     ancien = (fichier["saisons"] or {}).get(libelle(a, lg))
     if st == "illisible" and ancien and ancien.get("statut") != "illisible":
@@ -627,7 +640,8 @@ def ecrire_saison(fichier: Dict[str, Any], lg: str, a: int, res: Tuple[str, List
     fichier["saisons"][libelle(a, lg)] = {
         "source": source, "titre": titre,
         "url": f"https://{lang}.wikipedia.org/wiki/{urllib.parse.quote(titre.replace(' ', '_'))}",
-        "statut": st, "controles": c, "rows": rows if st != "illisible" else []}
+        "statut": st, "controles": c, "rows": rows if st != "illisible" else [],
+        **({"essai": jour} if st == "illisible" and jour else {})}
 
 
 def ecrire_index(donnees: str) -> None:
@@ -712,6 +726,11 @@ def _test() -> None:
     assert points_victoire("fl1", 1993) == 2 and points_victoire("fl1", 1994) == 3 and points_victoire("pl", 1981) == 3
     assert libelle(1929, "liga") == "1929" and libelle(1929, "sa") == "1929-30"
     assert 1940 not in saisons("fl1", 2025) and saisons("bl", 2025)[0] == 1963
+    # reprise : saison illisible retentée seulement après RETENTE_JOURS jours ; dernière saison toujours relue
+    f = {"saisons": {libelle(a, "bl"): {"statut": "ok"} for a in saisons("bl", 2025)}}
+    f["saisons"]["1971-72"] = {"statut": "illisible", "essai": "2026-11-20"}
+    assert a_faire("bl", f, 2025, dt.date(2026, 11, 25)) == [2025]
+    assert a_faire("bl", f, 2025, dt.date(2026, 12, 25)) == [1971, 2025]
     print("[OK] historique_classements : tests passés")
 
 
