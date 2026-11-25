@@ -1,0 +1,22 @@
+== Abschlusstabelle ==
+{{Fußballtabelle/Kopf|nosort=1}}
+{{Fußballtabelle/Zeile|Farbe=ccffcc |Rang= 1 |S=24 |U= 7 |N= 3 |ET=101|GT=38 |Siegpunkte=2 |Verein=[[FC Bayern München]] (P) }}
+{{Fußballtabelle/Zeile|Farbe=B4CDCD |Rang= 2 |S=24 |U= 4 |N= 6 |ET=76 |GT=35 |Siegpunkte=2 |Verein=[[FC Schalke 04]] }}
+{{Fußballtabelle/Zeile|Farbe=eeeeff |Rang= 3 |S=18 |U= 7 |N= 9 |ET=82 |GT=40 |Siegpunkte=2 |Verein=[[Borussia Mönchengladbach]] (M) }}
+{{Fußballtabelle/Zeile|Farbe=eeeeff |Rang= 4 |S=15 |U=13 |N= 6 |ET=64 |GT=44 |Siegpunkte=2 |Verein=[[1. FC Köln]] }}
+{{Fußballtabelle/Zeile|Farbe=eeeeff |Rang= 5 |S=16 |U= 7 |N=11 |ET=71 |GT=61 |Siegpunkte=2 |Verein=[[Eintracht Frankfurt]] }}
+{{Fußballtabelle/Zeile|Farbe=ffffff |Rang= 6 |S=14 |U= 9 |N=11 |ET=46 |GT=55 |Siegpunkte=2 |Verein=[[Hertha BSC]] }}
+{{Fußballtabelle/Zeile|Farbe=eeeeff |Rang= 7 |S=14 |U= 7 |N=13 |ET=59 |GT=53 |Siegpunkte=2 |Verein=[[1. FC Kaiserslautern]] }}
+{{Fußballtabelle/Zeile|Farbe=ffffff |Rang= 8 |S=13 |U= 9 |N=12 |ET=52 |GT=56 |Siegpunkte=2 |Verein=[[VfB Stuttgart]] }}
+{{Fußballtabelle/Zeile|Farbe=ffffff |Rang= 9 |S=14 |U= 6 |N=14 |ET=59 |GT=69 |Siegpunkte=2 |Verein=[[VfL Bochum]] (N) }}
+{{Fußballtabelle/Zeile|Farbe=ffffff |Rang=10 |S=13 |U= 7 |N=14 |ET=52 |GT=52 |Siegpunkte=2 |Verein=[[Hamburger SV]] }}
+{{Fußballtabelle/Zeile|Farbe=ffffff |Rang=11 |S=11 |U= 9 |N=14 |ET=63 |GT=58 |Siegpunkte=2 |Verein=[[Werder Bremen]] }}
+{{Fußballtabelle/Zeile|Farbe=ffffff |Rang=12 |S= 8 |U=15 |N=11 |ET=43 |GT=48 |Siegpunkte=2 |Verein=[[Eintracht Braunschweig]] }}
+{{Fußballtabelle/Zeile|Farbe=ffffff |Rang=13 |S=10 |U=10 |N=14 |ET=40 |GT=53 |Siegpunkte=2 |Verein=[[Fortuna Düsseldorf]] (N) }}
+{{Fußballtabelle/Zeile|Farbe=ffffff |Rang=14 |S=10 |U= 7 |N=17 |ET=36 |GT=51 |Siegpunkte=2 |Verein=[[MSV Duisburg]] }}
+{{Fußballtabelle/Zeile|Farbe=ffffff |Rang=15 |S= 7 |U=11 |N=16 |ET=33 |GT=66 |Siegpunkte=2 |Verein=[[Rot-Weiß Oberhausen]] }}
+{{Fußballtabelle/Zeile|Farbe=ffffff |Rang=16 |S=10 |U= 3 |N=21 |ET=54 |GT=69 |Siegpunkte=2 |Verein=[[Hannover 96]] }}
+{{Fußballtabelle/Zeile|Farbe=ffcccc |Rang=17 |S= 6 |U= 8 |N=20 |ET=34 |GT=83 |Siegpunkte=2 |Verein=[[Borussia Dortmund]] }}
+{{Fußballtabelle/Zeile|Farbe=ffcccc |Rang=18 |S= 6 |U= 7 |N=21 |ET=41 |GT=75 |Siegpunkte=2 |Verein=[[Arminia Bielefeld]] {{FN|(1)}} |Abzug=19}}
+{{Fußballtabelle/Ende}}
+{

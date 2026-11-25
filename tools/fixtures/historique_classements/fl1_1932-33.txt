@@ -1,0 +1,132 @@
+ultats et classements ==
+
+Le championnat est divisé en deux groupes de dix équipes se rencontrant en matchs aller-retour, les deux vainqueurs de groupe se rencontrant lors d'une finale. En cas d'égalité entre deux clubs, le premier critère de départage est la [[moyenne de buts]].
+
+Cannes termine deuxième de son groupe mais participe tout de même à la finale à la suite du déclassement de l'[[Football Club d'Antibes|Olympique d'Antibes]].
+
+=== Groupe A ===
+'''Classement'''
+
+{{foot classement début|align=left|GA=oui}}
+{{foot classement|GA=oui| 1|[[Olympique lillois (football)|Olympique lillois]]      |28|18|14| 0| 4|41|23|bgcolor={{fc|qualifié}}}}
+{{foot classement|GA=oui| 2|[[Olympique de Marseille]]            |23|18|10| 3| 5|40|24}}
+{{foot classement|GA=oui| 3|[[Racing Club de France (football)|RC Paris]]    |21|18| 8| 5| 5|40|36}}
+{{foot classement|GA=oui| 4|[[Football Club de Sète 34|FC Sète]]         |20|18| 8| 4| 6|32|32}}
+{{foot classement|GA=oui| 5|[[Sporting Club nîmois|SC Nîmes]]          |19|18| 8| 3| 7|37|38}}
+{{foot classement|GA=oui| 6|[[Excelsior Athlétic Club de Roubaix|Excelsior AC]] {{Coupe nationale}} |18|18| 5| 8| 5|32|37}}
+{{foot classement|GA=oui| 7|[[Olympique Gymnaste Club Nice Côte d'Azur|OGC Nice]]     |15|18| 5| 5| 8|26|32}}
+{{foot classement|GA=oui| 8|[[Club français]]              |13|18| 5| 3|10|43|50|bgcolor={{fc|relégué}}}}
+{{foot classement|GA=oui| 9|[[Hyères Football Club|Hyères FC]]          |12|18| 4| 4|10|22|29|bgcolor={{fc|relégué}}}}
+{{foot classement|GA=oui|10|[[Football Club de Mulhouse|FC Mulhouse]]        |11|18| 4| 3|11|36|48|bgcolor={{fc|relégué}}}}
+{{foot classement fin}}
+
+{{foot classement légende|
+;Résultat
+{{Légende/Début}}
+{{légende|{{fc|qualifié}}|Qualifié pour la finale du championnat}}
+{{Légende/Fin}}
+;Relégation
+{{Légende/Début}}
+{{légende|{{fc|relégué}}|'''{{8e}}, {{9e}} et {{10e}}''' : relégation en [[Championnat de France de football D2 1933-1934|Division 2]]}}
+{{Légende/Fin}}
+;Abréviations
+{{Coupe nationale}} : Vainqueur de la [[Coupe de France de football 1932-1933|Coupe de France 1932-33]]
+}}
+{{clr}}
+
+'''Évolution du classement'''
+
+{| border="0" cellpadding="0" class="wikitable sortable" style="font-size:90%;line-height:13px;"
+! rowspan="2"|Clubs / Journées<br /> !! 1<br /> !! 2<br /> !! 3<br /> !! 4<br /> !! 5<br /> !! 6<br /> !! 7<br /> !! 8<br /> !! 9<br /> !! 10<br /> !! 11<br /> !! 12<br /> !! 13<br /> !! 14<br /> !! 15<br /> !! 16<br /> !! 17<br /> !! 18<br /> !! Journées<br />en&nbsp;tête !! Journées<br /> relégable
+|- align="center"
+! !! <br /> !! <br /> !! <br /> !! <br /> !! <br /> !! <br /> !! <br /> !! <br /> !! <br /> !! <br /> !! <br /> !! <br /> !! <br /> !! <br /> !! <br /> !! <br /> !! <br /> !! <br /> !! 
+|- align="center"
+| {{tri|France}} [[Club français]] || 4 || 6 || bgcolor={{fc|relégué}}|8 || 4 || 6 || 6 || 6 || 7 || 7 || 6 || 7 || bgcolor={{fc|relégué}}|8 || bgcolor={{fc|relégué}}|8 || bgcolor={{fc|relégué}}|8 || bgcolor={{fc|relégué}}|8 || bgcolor={{fc|relégué}}|8 || bgcolor={{fc|relégué}}|8 || bgcolor={{fc|relégué}}|8 || 0 || bgcolor={{fc|relégué}}|8
+|- align="center"
+| {{tri|Hyères}} [[Hyères Football Club|Hyères FC]] || bgcolor={{fc|relégué}}|8 || 5 || 6 || bgcolor={{fc|relégué}}|8 || bgcolor={{fc|relégué}}|9 || bgcolor={{fc|relégué}}|9 || bgcolor={{fc|relégué}}|9 || bgcolor={{fc|relégué}}|9 || bgcolor={{fc|relégué}}|9 || bgcolor={{fc|relégué}}|9 || bgcolor={{fc|relégué}}|10 || bgcolor={{fc|relégué}}|10 || bgcolor={{fc|relégué}}|10 || bgcolor={{fc|relégué}}|9 || bgcolor={{fc|relégué}}|9 || bgcolor={{fc|relégué}}|9 || bgcolor={{fc|relégué}}|9 || bgcolor={{fc|relégué}}|9 || 0 || bgcolor={{fc|relégué}}|16
+|- align="center"
+| {{tri|Lille}} [[Olympique lillois (football)|Olympique lillois]] || bgcolor={{fc|relégué}}|8 || 3 || 3 || 3 || 3 || 2 || 2 || bgcolor={{fc|qualifié}}|1 || bgcolor={{fc|qualifié}}|1 || bgcolor={{fc|qualifié}}|1 || bgcolor={{fc|qualifié}}|1 || bgcolor={{fc|qualifié}}|1 || bgcolor={{fc|qualifié}}|1 || bgcolor={{fc|qualifié}}|1 || bgcolor={{fc|qualifié}}|1 || bgcolor={{fc|qualifié}}|1 || bgcolor={{fc|qualifié}}|1 || bgcolor={{fc|qualifié}}|1 || bgcolor={{fc|qualifié}}|11 || 1 
+|- align="center"
+| {{tri|Marseille}} [[Olympique de Marseille]] || 2 || bgcolor={{fc|qualifié}}|1 || bgcolor={{fc|qualifié}}|1 || bgcolor={{fc|qualifié}}|1 || bgcolor={{fc|qualifié}}|1 || bgcolor={{fc|qualifié}}|1 || bgcolor={{fc|qualifié}}|1 || 2 || 2 || 2 || 2 || 2 || 2 || 2 || 2 || 2 || 2 || 2 || 6 || 0
+|- align="center"
+| {{tri|Mulhouse}} [[Football Club de Mulhouse|FC Mulhouse]] || 6 || bgcolor={{fc|relégué}}|9 || 7 || bgcolor={{fc|relégué}}|9 || bgcolor={{fc|relégué}}|10 || bgcolor={{fc|relégué}}|10 || bgcolor={{fc|relégué}}|8 || bgcolor={{fc|relégué}}|8 || bgcolor={{fc|relégué}}|8 || bgcolor={{fc|relégué}}|10 || bgcolor={{fc|relégué}}|9 || bgcolor={{fc|relégué}}|9 || bgcolor={{fc|relégué}}|9 || bgcolor={{fc|relégué}}|10 || bgcolor={{fc|relégué}}|10 || bgcolor={{fc|relégué}}|10 || bgcolor={{fc|relégué}}|10 || bgcolor={{fc|relégué}}|10 || 0 || bgcolor={{fc|relégué}}|16
+|- align="center"
+| {{tri|Nice}} [[Olympique Gymnaste Club Nice Côte d'Azur|OGC Nice]] || 6 || 4 || 4 || 5 || 4 || 5 || 4 || 4 || 3 || 5 || 6 || 6 || 6 || 7 || 6 || 7 || 7 || 7 || 0 || 0
+|- align="center"
+| {{tri|Nîmes}} [[Sporting Club nîmois|SC Nîmes]] || 4 || 7 || 5 || 6 || 5 || 4 || 5 || 5 || 4 || 3 || 3 || 5 || 5 || 5 || 5 || 5 || 5 || 5 || 0 || 0
+|- align="center"
+| {{tri|Paris}} [[Racing Club de France (football)|RC Paris]] || 2 || bgcolor={{fc|relégué}}|8 || bgcolor={{fc|relégué}}|9 || 7 || bgcolor={{fc|relégué}}|8 || 7 || 6 || 6 || 5 || 4 || 4 || 3 || 4 || 3 || 3 || 3 || 3 || 3 || 0 || 3
+|- align="center"
+| {{tri|Roubaix}} [[Excelsior Athlétic Club de Roubaix|Excelsior AC]] || bgcolor={{fc|relégué}}|10 || bgcolor={{fc|relégué}}|10 || bgcolor={{fc|relégué}}|10 || bgcolor={{fc|relégué}}|10 || 7 || bgcolor={{fc|relégué}}|8 || bgcolor={{fc|relégué}}|10 || bgcolor={{fc|relégué}}|10 || bgcolor={{fc|relégué}}|10 || bgcolor={{fc|relégué}}|8 || bgcolor={{fc|relégué}}|8 || 7 || 7 || 6 || 7 || 6 || 6 || 6 || 0 || 10
+|- align="center"
+| {{tri|Sète}} [[Football Club de Sète 34|FC Sète]] || bgcolor={{fc|qualifié}}|1 || 2 || 2 || 2 || 2 || 3 || 3 || 3 || 6 || 7 || 5 || 4 || 3 || 4 || 4 || 4 || 4 || 4 || 1 || 0
+|}
+
+'''Résultats'''
+
+{{Foot résultat début |[[Olympique lillois (football)|OL]]|[[Olympique de Marseille|OM]]|[[Racing Club de France (football)|RCP]]|[[Football Club de Sète 34|FCS]]|[[Sporting Club nîmois|SCN]]|[[Excelsior Athlétic Club de Roubaix|EAC]]|[[Olympique Gymnaste Club Nice Côte d'Azur|OGCN]]|[[Club français|CF]]|[[Hyères Football Club|HFC]]|[[Football Club de Mulhouse|FCM]] |align=gauche}}
+{{Foot résultat |[[Olympique lillois (football)|Olympique lillois]]   |XXX|1-2|4-1|4-2|4-0|2-0|3-0|5-3|2-1|2-0}}
+{{Foot résultat |[[Olympique de Marseille]]         |7-0|XXX|1-0|3-1|2-0|2-2|1-0|5-1|1-2|3-1}}
+{{Foot résultat |[[Racing Club de France (football)|RC Paris]]  |0-1|3-1|XXX|5-3|3-1|2-2|2-2|4-1|2-1|2-1}}
+{{Foot résultat |[[Football Club de Sète 34|FC Sète]]      |1-0|1-1|3-2|XXX|1-1|0-2|1-2|3-2|1-0|1-1}}
+{{Foot résultat |[[Sporting Club nîmois|SC Nîmes]]       |0-3|1-3|5-1|1-3|XXX|2-0|2-0|3-1|3-0|3-1}}
+{{Foot résultat |[[Excelsior Athlétic Club de Roubaix|Excelsior AC]]   |2-1|2-1|1-1|0-3|4-4|XXX|2-2|4-1|2-1|2-2}}
+{{Foot résultat |[[Olympique Gymnaste Club Nice Côte d'Azur|OGC Nice]]  |2-3|1-0|0-0|2-2|2-3|2-2|XXX|2-0|2-1|5-2}}
+{{Foot résultat |[[Club français]]           |1-3|6-2|5-5|2-3|5-2|2-2|2-0|XXX|2-2|5-0}}
+{{Foot résultat |[[Hyères Football Club|Hyères FC]]       |0-1|1-1|1-2|1-2|2-2|3-1|1-0|3-1|XXX|1-1}}
+{{Foot résultat |[[Football Club de Mulhouse|FC Mulhouse]]     |1-2|1-4|3-5|3-1|3-4|6-2|5-2|2-3|3-1|XXX}}
+|}
+{{foot classement légende|
+;Légende des résultats
+{{Légende/Début}}
+{{Légende|{{Fc |1-0}}|Victoire à domicile}}
+{{Légende|{{Fc |0-0}}|Match nul}}
+{{Légende|{{Fc |0-1}}|Victoire à l'extérieur}}
+{{Légende/Fin}}
+}}
+{{clr}}
+
+=== Groupe B ===
+'''Classement'''
+
+{{foot classement début|align=left|GA=oui}}
+{{foot classement|GA=oui| 1|[[Football Club d'Antibes|Olympique d'Antibes]] |24|18|10| 4| 4|39|21}}
+{{foot classement|GA=oui| 2|[[Association sportive de Cannes football|AS Cannes]]   |22|18| 8| 6| 4|37|24|bgcolor={{fc|qualifié}}}}
+{{foot classement|GA=oui| 3|[[Football Club Sochaux-Montbéliard|FC Sochaux]]    |22|18| 9| 4| 5|40|31}}
+{{foot classement|GA=oui| 4|[[Montpellier Hérault Sport Club|SO Montpellier]]    |21|18| 9| 3| 6|37|36}}
+{{foot classement|GA=oui| 5|[[Cercle athlétique de Paris|CA Paris]]       |20|18| 8| 4| 6|38|37}}
+{{foot classement|GA=oui| 6|[[Stade rennais football club|Stade rennais UC]]    |18|18| 7| 4| 7|41|36}}
+{{foot classement|GA=oui| 7|[[Sporting Club fivois|SC Fives]]        |17|18| 6| 5| 7|42|48}}
+{{foot classement|GA=oui| 8|[[Red Star Football Club|Red Star Olympique]]     |14|18| 4| 6| 8|38|29|bgcolor={{fc|relégué}}}}
+{{foot classement|GA=oui| 9|[[Football Club de Metz|FC Metz]]        |13|18| 5| 3|10|25|51|bgcolor={{fc|relégué}}}}
+{{foot classement|GA=oui|10|[[Olympique d'Alès en Cévennes|Olympique Alès]]     | 9|18| 2| 5|11|25|49|bgcolor={{fc|relégué}}}}
+{{foot classement fin}}
+
+{{foot classement légende|
+;Résultat
+{{Légende/Début}}
+{{légende|{{fc|qualifié}}|Qualifié pour la finale du championnat{{note|L'Olympique d'Antibes est déclassé juste avant la finale. L'AS Cannes joue la finale contre l'Olympique lillois.}}}}
+{{Légende/Fin}}
+;Relégation
+{{Légende/Début}}
+{{légende|{{fc|relégué}}|'''{{8e}}, {{9e}} et {{10e}}''' : relégation en [[Championnat de France de football D2 1933-1934|Division 2]]}}
+{{Légende/Fin}}
+}}
+{{clr}}
+
+'''Évolution du classement '''
+
+{| border="0" cellpadding="0" class="wikitable sortable" style="font-size:90%;line-height:13px;"
+! rowspan="2"|Clubs / Journées<br /> !! 1<br /> !! 2<br /> !! 3<br /> !! 4<br /> !! 5<br /> !! 6<br /> !! 7<br /> !! 8<br /> !! 9<br /> !! 10<br /> !! 11<br /> !! 12<br /> !! 13<br /> !! 14<br /> !! 15<br /> !! 16<br /> !! 17<br /> !! 18<br /> !! Journées<br />en&nbsp;tête !! Journées<br /> relégable
+|- align="center"
+! !! <br /> !! <br /> !! <br /> !! <br /> !! <br /> !! <br /> !! <br /> !! <br /> !! <br /> !! <br /> !! <br /> !! <br /> !! <br /> !! <br /> !! <br /> !! <br /> !! <br /> !! <br /> !! 
+|- align="center"
+| {{tri|Alès}} [[Olympique d'Alès en Cévennes|Olympique Alès]] || bgcolor={{fc|relégué}}|10 || 7 || bgcolor={{fc|relégué}}|9 || bgcolor={{fc|relégué}}|10 || bgcolor={{fc|relégué}}|10 || bgcolor={{fc|relégué}}|10 || bgcolor={{fc|relégué}}|10 || bgcolor={{fc|relégué}}|10 || bgcolor={{fc|relégué}}|10 || bgcolor={{fc|relégué}}|10 || bgcolor={{fc|relégué}}|10 || bgcolor={{fc|relégué}}|10 || bgcolor={{fc|relégué}}|10 || bgcolor={{fc|relégué}}|10 || bgcolor={{fc|relégué}}|10 || bgcolor={{fc|relégué}}|10 || bgcolor={{fc|relégué}}|10 || bgcolor={{fc|relégué}}|10 || 0 || bgcolor={{fc|relégué}}|17
+|- align="center"
+| {{tri|Antibes}} [[Football Club d'Antibes|Olympique d'Antibes]] || 4 || 4 || 3 || 2 || bgcolor={{fc|qualifié}}|1 || 2 || bgcolor={{fc|qualifié}}|1 || bgcolor={{fc|qualifié}}|1 || 2 || 2 || 2 || bgcolor={{fc|qualifié}}|1 || bgcolor={{fc|qualifié}}|1 || bgcolor={{fc|qualifié}}|1 || bgcolor={{fc|qualifié}}|1 || bgcolor={{fc|qualifié}}|1 || bgcolor={{fc|qualifié}}|1 || bgcolor={{fc|qualifié}}|1 || bgcolor={{fc|qualifié}}|10 || 0
+|- align="center"
+| {{tri|Cannes}} [[Association sportive de Cannes football|AS Cannes]] || 5 || 3 || bgcolor={{fc|qualifié}}|1 || bgcolor={{fc|qualifié}}|1 || 2 || bgcolor={{fc|qualifié}}|1 || 2 || 2 || bgcolor={{fc|qualifié}}|1 || bgcolor={{fc|qualifié}}|1 || bgcolor={{fc|qualifié}}|1 || 3 || 2 || 2 || 2 || 2 || 2 || 2 || 6 || 0 
+|- align="center"
+| {{tri|Fives}} [[Sporting Club fivois|SC Fives]] || 6 || bgcolor={{fc|relégué}}|8 || 5 || 4 || 3 || 3 || 5 || 5 || 6 || 6 || 7 || 7 || 7 || 7 || 7 || 7 || 7 || 7 || 0 || 1
+|- align="center"
+| {{tri|Metz}} [[Football Club de Metz|FC Metz]] || bgcolor={{fc|relégué}}|8 || bgcolor={{fc|relégué}}|10 || bgcolor={{fc|relégué}}|10 || bgcolor={{fc|relégué}}|9 |

@@ -1,0 +1,240 @@
+== Classement final ==
+{|width=100%
+|width=50%|
+{{Foot classement début}}
+{{Foot classement | 1|[[Olympique de Marseille]] {{tenant du titre}} {{C1 (football)}}, déclassé |53|38|22| 9| 7|71|36}}
+{{Foot classement | 2|[[Paris Saint-Germain Football Club|Paris SG]] {{coupe nationale}}|51|38|20|11| 7|61|29|bgcolor={{Foot couleur |c2}}}}
+{{Foot classement | 3|[[Association sportive de Monaco football club|AS Monaco]]|51|38|21| 9| 8|56|29|bgcolor={{Foot couleur |c1}}}}
+{{Foot classement | 4|[[Football Club des Girondins de Bordeaux|Girondins de Bordeaux]] {{promu}}|48|38|18|12| 8|42|25|bgcolor={{Foot couleur |c3}}}}
+{{Foot classement | 5|[[Football Club de Nantes|FC Nantes]]|45|38|17|11|10|54|39|bgcolor={{Foot couleur |c3}}}}
+{{Foot classement | 6|[[Association de la jeunesse auxerroise|AJ Auxerre]]|43| 38|18| 7|13|57|44|bgcolor={{Foot couleur |c3}}}}
+{{Foot classement | 7|[[Association sportive de Saint-Étienne Loire|AS Saint-Étienne]]|43|38|13|17| 8|34|26}}
+{{Foot classement | 8|[[Racing Club de Strasbourg|RC Strasbourg]] {{promu}}|40|38|12|16|10|58|57}}
+{{Foot classement | 9|[[Racing Club de Lens|RC Lens]]|40|38|12|16|10|36|41}}
+{{Foot classement |10|[[Montpellier Hérault Sport Club|Montpellier HSC]]|36|38|12|12|14|36|41}}
+{{Foot classement |11|[[Stade Malherbe Caen Calvados Basse-Normandie|SM Caen]]|35|38|13| 9|16|55|54}}
+{{Foot classement |12|[[Football Club de Metz|FC Metz]]|35|38|11|13|14|44|45}}
+{{Foot classement |13|[[Toulouse Football Club|Toulouse FC]]|34|38|9|16|13|36|45}}
+{{Foot classement |14|[[Olympique lyonnais]]|33|38| 9|15|14|40|45}}
+{{Foot classement |15|[[Le Havre Athletic Club Football Association|Le Havre AC]]|33|38|11|11|16|42|53}}
+{{Foot classement |16|[[Football Club Sochaux-Montbéliard|FC Sochaux]]|32|38|11|10|17|33|50}}
+{{Foot classement |17|[[LOSC Lille Métropole|Lille OSC]]|30|38| 7|16|15|26|48}}
+{{Foot classement |18|[[Valenciennes Football Club|Valenciennes FC]] {{promu}}|29|38| 9|11|18|42|56|bgcolor={{Foot couleur |relégué}}}}
+{{Foot classement |19|[[Sporting Toulon Var]]|25|38| 6|13|19|31|57|bgcolor={{Foot couleur |rétrogradé}}}}
+{{Foot classement |20|[[Nîmes Olympique]]|22|38|3|16|19|32|66|bgcolor={{Foot couleur |relégué}}}}
+|}
+<center><small>Victoire à 2 points</small></center>
+|valign=top align=left width=50%|
+{{Classement fin
+|titre=Légende : Qualifications et relégations
+|couleur1={{fc|c1}}
+|article1=[[Ligue des champions de l'UEFA 1993-1994|Ligue des Champions 1993-1994]] (1/16 de finale)
+|couleur2={{fc|c2}}
+|article2=[[Coupe d'Europe des vainqueurs de coupe de football 1993-1994|Coupe des Coupes 1993-1994]] (1/16 de finale)
+|couleur3={{fc|c3}}
+|article3=[[Coupe UEFA 1993-1994]] (Trente-deuxièmes de finale)
+|couleurR1={{fc|relégué}}
+|relégation1=Relégation en [[Championnat de France de football D2|Division 2]]
+|couleurR2={{fc|rétrogradé}}
+|relégation2=Rétrogradation administrative
+|abréviations={{Tenant du titre}} : [[Championnat de France de football 1991-1992|Tenant du titre 1991-1992]]<br />{{Promu}} : [[Championnat de France de football D2 1991-1992|Promus en 1991-1992]]<br />{{Coupe nationale}} : Vainqueur de la [[Coupe de France de football 1992-1993|Coupe de France]]<br/>{{C1 (football)}} : Vainqueur de la [[Ligue des champions de l'UEFA 1992-1993|Ligue des champions 1992-1993]]
+}}
+|}
+
+<timeline>
+ImageSize = width:1000 height:150 
+PlotArea  = left:20 right:30 bottom:100 top:0
+Legend     = top:50 columnwidth:50 orientation:vertical left:120
+Colors =
+  id:Auxerre   value:skyblue             legend:AJ_Auxerre
+  id:Marseille value:rgb(0.3,0.7,1)      legend:Olympique_de_Marseille
+  id:Monaco    value:red                 legend:AS_Monaco_FC
+  id:Nantes    value:rgb(1,0.9,0)        legend:FC_Nantes
+  id:Paris     value:darkblue            legend:Paris_SG
+
+Period     = from:1 till:38.7
+ScaleMajor = unit:year increment:1 start:1
+
+TimeAxis = orientation:horizontal
+
+PlotData= 
+  anchor:from
+  bar:Leaders width:15 mark:(line,white) align:left fontsize:S
+  from:1  till:2  shift:(2,10)  text:"[[Association sportive de Monaco football club|ASM]]" color:Monaco
+  from:2  till:3  shift:(3,10)  text:"[[Association de la jeunesse auxerroise|AJA]]" color:Auxerre
+  from:3  till:11 shift:(20,10) text:"[[Paris Saint-Germain Football Club]]" color:Paris
+  from:11 till:17 shift:(25,10) text:"[[Football club de Nantes]]" color:Nantes
+  from:17 till:18 shift:(2,10)  text:"[[Paris Saint-Germain Football Club|PSG]]" color:Paris
+  from:18 till:20 shift:(10,10) text:"[[Football club de Nantes|Nantes]]" color:Nantes
+  from:20 till:26 shift:(45,10) text:"[[Association sportive de Monaco football club|AS Monaco]]" color:Monaco
+  from:26 till:27 shift:(5,10)  text:"[[Olympique de Marseille|OM]]" color:Marseille
+  from:27 till:30 shift:(10,10) text:"[[Association sportive de Monaco football club|AS Monaco]]" color:Monaco
+  from:30 till:38 shift:(45,10) text:"[[Olympique de Marseille]]" color:Marseille
+</timeline>
+
+=== Leader par journée ===
+
+== Qualifications européennes ==
+* Monaco : Ligue des champions
+* PSG : Coupe d'Europe des vainqueurs de Coupes
+* Bordeaux : Coupe de l'UEFA
+* Nantes : Coupe de l'UEFA
+* Auxerre : Coupe de l'UEFA
+
+== Relégations/Promotions ==
+Le [[Valenciennes FC]] (après barrage), le [[Sporting Toulon Var]] et le [[Nîmes Olympique]] sont relégués en D2.
+
+L'[[Association sportive de Cannes Football|AS Cannes]], le [[Football Club de Martigues|FC Martigues]] et le [[Angers sporting club de l'Ouest|SCO Angers]] montent en Division 1.
+
+== Buteurs ==
+{| class="wikitable alternance"  style="text-align:center"
+|-
+! width="50px" |Place
+! Joueur
+! Club
+! width="50px" | Buts
+|-align="center"
+| 1
+| align="left"| {{CRO-d}} [[Alen Bokšić]]
+| align="left"| [[Olympique de Marseille]]
+| '''23'''
+|-align="center"
+| 2
+| align="left"| {{FRA-d}} [[Xavier Gravelaine]]
+| align="left"| [[Stade Malherbe Caen Calvados Basse-Normandie|SM Caen]]
+| '''20'''
+|-align="center"
+| 3
+| align="left"| {{GER-d}} [[Jürgen Klinsmann]]
+| align="left"| [[Association sportive de Monaco football club|AS Monaco]]
+| '''19'''
+|-align="center"
+| 4
+| align="left"| {{GER-d}} [[Rudi Völler]]
+| align="left"| [[Olympique de Marseille]]
+| '''18'''
+|-align="center"
+| 5
+| align="left"| {{CIV-d}} [[Joël Tiéhi]]
+| align="left"| [[Le Havre Athletic Club Football Association|Le Havre AC]]
+| '''14'''
+|-align="center"
+| -
+| align="left"| [[Fichier:Flag of Liberia.svg|20px]] [[George Weah]]
+| align="left"| [[Paris Saint-Germain Football Club|Paris SG]]
+| '''14'''
+|-align="center"
+| 7
+| align="left"| {{FRA-d}} [[Nicolas Ouédec]]
+| align="left"| [[Football Club de Nantes|FC Nantes]]
+| '''13'''
+|-align="center"
+| -
+| align="left"| {{FRA-d}} [[Bernard Ferrer]]
+| align="left"| [[Toulouse Football Club|Toulouse FC]]
+| '''13'''
+|-align="center"
+| 9
+| align="left"| {{FRA-d}} [[Franck Sauzée]]
+| align="left"| [[Olympique de Marseille]]
+| '''12'''
+|-align="center"
+| -
+| align="left"| {{FRA-d}} [[Youri Djorkaeff]]
+| align="left"| [[Association sportive de Monaco football club|AS Monaco]]
+| '''12'''
+|-align="center"
+| -
+| align="left"| {{FRA-d}} [[Frank Lebœuf]]
+| align="left"| [[Racing Club de Strasbourg|RC Strasbourg]]
+| '''12'''
+|-align="center"
+| 12
+| align="left"| [[Fichier:Flag of Cameroon.svg|20px]] [[François Omam-Biyik]]
+| align="left"| [[Racing Club de Lens|RC Lens]]
+| '''11'''
+|-align="center"
+| -
+| align="left"| [[Fichier:Flag of Czechoslovakia.svg|20px]] [[Luboš Kubík]]
+| align="left"| [[Football Club de Metz|FC Metz]]
+| '''11'''
+|-align="center"
+| -
+| align="left"| {{FRA-d}} [[Anthony Bancarel]]
+| align="left"| [[Toulouse Football Club|Toulouse FC]]
+| '''11'''
+|-align="center"
+| 15
+| align="left"| {{FRA-d}} [[Zinédine Zidane]]
+| align="left"| [[Football Club des Girondins de Bordeaux|Girondins de Bordeaux]]
+| '''10'''
+|-align="center"
+| -
+| align="left"| {{CHA-d}} [[Japhet N'Doram]]
+| align="left"| [[Football Club de Nantes|FC Nantes]]
+| '''10'''
+|-align="center"
+| -
+| align="left"| {{FRA-d}} [[Lionel Prat]]
+| align="left"| [[Football Club Sochaux-Montbéliard|FC Sochaux]]
+| '''10'''
+|-align="center"
+| -
+| align="left"| {{ARG-d}} [[Jorge Burruchaga]]
+| align="left"| [[Valenciennes Football Club|Valenciennes FC]]
+| '''10'''
+|-align="center"
+| 19
+| align="left"| {{FRA-d}} [[Gérald Baticle]]
+| align="left"| [[Association de la jeunesse auxerroise|AJ Auxerre]]
+| '''9'''
+|-align="center"
+| -
+| align="left"| {{FRA-d}} [[Lilian Laslandes]]
+| align="left"| [[Association de la jeunesse auxerroise|AJ Auxerre]]
+| '''9'''
+|-align="center"
+| -
+| align="left"| {{FRA-d}} [[Stéphane Paille]]
+| align="left"| [[Stade Malherbe Caen Calvados Basse-Normandie|SM Caen]]
+| '''9'''
+|-align="center"
+| -
+| align="left"| {{GEO (1990-2004)-d}} [[Guia Gourouli]]
+| align="left"| [[Le Havre Athletic Club Football Association|Le Havre AC]]
+| '''9'''
+|-align="center"
+| -
+| align="left"| {{FRA-d}} [[Rémi Garde]]
+| align="left"| [[Olympique lyonnais]]
+| '''9'''
+|-align="center"
+| -
+| align="left"| {{FRA-d}} [[Jérôme Gnako]]
+| align="left"| [[Association sportive de Monaco football club|AS Monaco]]
+| '''9'''
+|}
+
+== Anecdotes ==
+Triste saison pour le sport français :
+* Le [[Championnat de France de rugby à XV 1992-1993|championnat de France de rugby à XV]] se termine lui aussi de manière polémique<ref>{{Lien web
+|url=https://actu.fr/sports/rugby/pro/ces-sombres-affaires-ont-entache-reputation-rugby-francais_26233813.html
+|titre=Ces sombres affaires qui ont entaché la réputation du rugby français
+|auteur= Clément Garioud
+|date=1 août 2019
+|site=actu.fr
+|consulté le=5 août 2019
+}}.</ref>, privant [[Jacques Fouroux]], le manager grenoblois, alors en conflit avec le FFR du titre de Champion.
+* En fin d’année, l’[[Équipe de France de football|équipe de France]] manque la qualification pour la [[Coupe du monde de football de 1994|Coupe du monde 1994]].
+
+== Notes et références ==
+<references/>
+
+== Voir aussi ==
+
+{{Palette|Division 1 1992-1993|Saisons du championnat de France de football}} 
+{{Portail|football|années 1990|France}}
+
+[[Catégorie:Championnat de France de football par année|1992-1993]]
+[[Catégorie:Football en France en 1992]]
+[[Catégorie:Football en France en 1993]]
