@@ -7,6 +7,8 @@
   <title>Coupes d'Europe</title>
   <style>
     :root {
+      --app-h: 100vh;
+      --sheet-gap: calc(10px + env(safe-area-inset-top, 0px));
       --bg-main: #0b0f17;
       --bg-card: #151c28;
       --bg-card-hover: #1c2536;
@@ -424,9 +426,12 @@
     }
 
     /* 3. TIROIR MODAL : FICHE DE MATCH COMPLÈTE */
+    @supports (height: 100dvh) { :root { --app-h: 100dvh; } }
+    /* --app-h est recalée en px par JS (visualViewport) : hauteur réellement visible, barre d'adresse comprise */
     .modal-backdrop {
       position: fixed;
-      inset: 0;
+      top: 0; left: 0; right: 0;
+      height: var(--app-h);
       background: rgba(0, 0, 0, 0.75);
       backdrop-filter: blur(4px);
       z-index: 50;
@@ -443,8 +448,7 @@
       background: var(--bg-card);
       width: 100%;
       max-width: 680px;
-      height: 92vh;
-      height: 92dvh;
+      height: calc(var(--app-h) - var(--sheet-gap));
       border-radius: 20px 20px 0 0;
       border-top: 1px solid var(--border);
       display: flex;
@@ -737,12 +741,12 @@
     .r-low { background: #f97316; } .r-bad { background: #ef4444; color: #fff; }
     /* Fiche joueur */
     .player-backdrop {
-      position: fixed; inset: 0; z-index: 60; display: none; align-items: flex-end; justify-content: center;
+      position: fixed; top: 0; left: 0; right: 0; height: var(--app-h); z-index: 60; display: none; align-items: flex-end; justify-content: center;
       background: rgba(0, 0, 0, 0.6);
     }
     .player-backdrop.open { display: flex; }
     .player-sheet {
-      background: var(--bg-card); width: 100%; max-width: 520px; max-height: 88vh; display: flex; flex-direction: column;
+      background: var(--bg-card); width: 100%; max-width: 520px; height: calc(var(--app-h) - var(--sheet-gap)); display: flex; flex-direction: column;
       border-radius: 18px 18px 0 0; border-top: 1px solid var(--border); overflow: hidden; animation: slideUp 0.2s ease-out;
       will-change: transform;
     }
@@ -772,6 +776,27 @@
       border-color: rgba(96, 165, 250, 0.45);
       color: #e0f2fe;
     }
+    /* Info-bulle (composant unique : infoBtn / #info-pop) */
+    .info-btn {
+      display: inline-flex; align-items: center; justify-content: center; vertical-align: middle;
+      width: 32px; height: 32px; margin: -6px 0; padding: 0; border: 0; border-radius: 50%;
+      background: transparent; color: var(--text-muted); font: inherit; font-size: 1rem; line-height: 1;
+      cursor: pointer; -webkit-tap-highlight-color: transparent; touch-action: manipulation;
+    }
+    .info-btn::before {
+      content: "i"; display: block; width: 18px; height: 18px; line-height: 16px; text-align: center;
+      border: 1.5px solid currentColor; border-radius: 50%; font-size: 0.72rem; font-weight: 700; font-style: italic; font-family: Georgia, serif;
+    }
+    .info-btn[aria-expanded="true"] { color: var(--accent-ucl); }
+    .info-row { display: flex; justify-content: flex-end; margin-top: 4px; }
+    #info-pop {
+      position: fixed; z-index: 90; display: none; box-sizing: border-box; padding: 10px 12px;
+      background: var(--bg-elevated); color: var(--text-main, #e2e8f0); border: 1px solid var(--border); border-radius: 10px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5); font-size: 0.78rem; line-height: 1.5; max-height: 60vh; overflow-y: auto;
+      overscroll-behavior: contain;
+    }
+    #info-pop.open { display: block; }
+    #info-pop p { margin: 0 0 6px; } #info-pop p:last-child { margin: 0; }
     .momentum-note, .subs-list {
       font-size: 0.72rem;
       color: var(--text-muted);
@@ -820,7 +845,7 @@
     <section>
       <div class="section-header">
         <h2 class="section-title">Résultats de la soirée</h2>
-        <span class="section-sub">Toucher un match pour les détails</span>
+        <span class="section-sub" id="grid-hint"></span>
       </div>
       <div id="matches-grid-container" class="matches-grid"></div>
     </section>
@@ -884,7 +909,61 @@
     const flag = (t) => t && t.flag
       ? `<img class="flag" src="https://flagcdn.com/w40/${esc(t.flag)}.png" alt="${esc(t.country || '')}" title="${esc(t.country_name || t.country || '')}" loading="lazy" width="18" height="13">`
       : '';
+    // ---------- Hauteur visible réelle (barre d'adresse mobile) : --app-h en px ----------
+    function syncAppHeight() {
+      const h = (window.visualViewport && window.visualViewport.height) || window.innerHeight;
+      if (h) document.documentElement.style.setProperty('--app-h', Math.round(h) + 'px');
+    }
+    syncAppHeight();
+    window.addEventListener('resize', syncAppHeight);
+    if (window.visualViewport) window.visualViewport.addEventListener('resize', syncAppHeight);
+
+    // ---------- Info-bulle unique : infoBtn(html) rend le bouton, #info-pop affiche le texte ----------
+    // Le texte (HTML déjà échappé par l'appelant) est conservé dans INFO_TEXTS ; le bouton ne porte que l'indice.
+    const INFO_TEXTS = [];
+    function infoBtn(html, label) {
+      let i = INFO_TEXTS.indexOf(html);
+      if (i < 0) { INFO_TEXTS.push(html); i = INFO_TEXTS.length - 1; }
+      return `<button type="button" class="info-btn" data-info="${i}" aria-label="${esc(label || 'Informations')}" aria-expanded="false" aria-haspopup="true"></button>`;
+    }
+    let infoOpenBtn = null;
+    function closeInfo() {
+      const pop = document.getElementById('info-pop');
+      if (pop) pop.classList.remove('open');
+      if (infoOpenBtn) infoOpenBtn.setAttribute('aria-expanded', 'false');
+      infoOpenBtn = null;
+    }
+    function openInfo(btn) {
+      let pop = document.getElementById('info-pop');
+      if (!pop) {
+        pop = document.createElement('div');
+        pop.id = 'info-pop'; pop.setAttribute('role', 'dialog');
+        document.body.appendChild(pop);
+      }
+      closeInfo();
+      pop.innerHTML = INFO_TEXTS[Number(btn.dataset.info)] || '';
+      pop.style.visibility = 'hidden'; pop.classList.add('open');
+      const vw = document.documentElement.clientWidth, vh = (window.visualViewport && window.visualViewport.height) || window.innerHeight;
+      const w = Math.min(320, vw - 16);
+      pop.style.width = w + 'px';
+      const r = btn.getBoundingClientRect(), ph = pop.offsetHeight;
+      const left = Math.max(8, Math.min(r.left + r.width / 2 - w / 2, vw - w - 8));
+      let top = r.bottom + 6;
+      if (top + ph > vh - 8) top = Math.max(8, r.top - ph - 6);
+      pop.style.left = left + 'px'; pop.style.top = top + 'px'; pop.style.visibility = '';
+      btn.setAttribute('aria-expanded', 'true');
+      infoOpenBtn = btn;
+    }
+    // Capture : un toucher sur ⓘ ne déclenche pas le clic de la carte / ligne qui le contient.
+    document.addEventListener('click', (e) => {
+      const b = e.target.closest && e.target.closest('.info-btn');
+      if (b) { e.stopPropagation(); e.preventDefault(); if (b === infoOpenBtn) closeInfo(); else openInfo(b); return; }
+      if (infoOpenBtn && !(e.target.closest && e.target.closest('#info-pop'))) closeInfo();
+    }, true);
+    window.addEventListener('resize', closeInfo);
+
     const esc = (v) => String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    document.getElementById('grid-hint').innerHTML = infoBtn('Toucher un match pour ouvrir sa fiche détaillée.', 'Aide');
 
     async function initDashboard() {
       try {
@@ -951,7 +1030,7 @@
               ${goalsHtml ? `<div class="goals-timeline">${goalsHtml}</div>` : ''}
               ${fc.ai_summary ? `<p class="ai-summary-text">${esc(fc.ai_summary)}</p>` : ''}
               <div class="fr-card-footer">
-                <span>${source}</span>
+                <span>${infoBtn(esc(source) + '.', 'Source du résumé')}</span>
                 <span>Fiche complète →</span>
               </div>
             </article>`;
@@ -1097,8 +1176,7 @@
             <div><b style="color:var(--home-color)">Entrés (${esc(m.home_team.short)})</b> : ${subs(L.home_subs || [])}</div>
             <div><b style="color:var(--away-color)">Entrés (${esc(m.away_team.short)})</b> : ${subs(L.away_subs || [])}</div>
             ${(L.home_coach || L.away_coach) ? `<div>Entraîneurs : ${esc(L.home_coach || '—')} / ${esc(L.away_coach || '—')}</div>` : ''}
-            <div style="margin-top:4px">© capitaine · ⭐ homme du match UEFA · ↓ minute de sortie${hasPlayers ? ' · touchez un joueur pour sa fiche' : ''}</div>
-            ${hasPlayers ? `<div style="margin-top:4px">Notes sur 10 calculées à partir des statistiques officielles UEFA (méthode : voir la fiche d'un joueur).</div>` : ''}
+            <div class="info-row">${infoBtn(`<p>© capitaine · ⭐ homme du match UEFA · ↓ minute de sortie${hasPlayers ? ' · touchez un joueur pour sa fiche' : ''}</p>${hasPlayers ? `<p>Notes sur 10 calculées à partir des statistiques officielles UEFA (méthode : voir la fiche d'un joueur).</p>` : ''}`, 'Légende et méthode des compositions')}</div>
           </div>`;
         layoutPitch(document.getElementById('pitch'), m, hasPlayers);
       }
@@ -1267,7 +1345,7 @@
                 <text x="${x.toFixed(1)}" y="${y}" font-size="9" text-anchor="middle" dominant-baseline="middle">⚽</text>`;
       }).join('');
       return `
-        <h4 class="st-sec">Momentum</h4>
+        <h4 class="st-sec">Momentum ${infoBtn(`<p>⚽ but · MT mi-temps · au-dessus de la ligne : pression de ${esc(m.home_team.short)}, en dessous : ${esc(m.away_team.short)}.</p><p>Indice de pression minute par minute (lissé sur environ 5 min), calculé à partir des actions officielles UEFA : buts, tirs, attaques dangereuses, corners, arrêts adverses, hors-jeu et coups francs obtenus.</p>`, 'Comment lire le momentum')}</h4>
         <div class="momentum-box">
           <div class="momentum-legend">
             <span style="color:var(--home-ink)">▲ ${esc(m.home_team.short)}</span>
@@ -1288,8 +1366,6 @@
             ${goals}${ticks}
             <line id="momentum-cursor" x1="0" y1="2" x2="0" y2="${BOTTOM}" stroke="#e2e8f0" stroke-width="0.5" visibility="hidden" />
           </svg>
-          <div class="momentum-key">⚽ but · MT mi-temps · au-dessus de la ligne : pression de ${esc(m.home_team.short)}, en dessous : ${esc(m.away_team.short)}</div>
-          <p class="momentum-note" style="padding:0 4px">Indice de pression minute par minute (lissé sur environ 5 min), calculé à partir des actions officielles UEFA : buts, tirs, attaques dangereuses, corners, arrêts adverses, hors-jeu et coups francs obtenus.</p>
         </div>`;
     }
 
@@ -1377,14 +1453,13 @@
       const rest = items.filter(s => !used.has(s.key));
       const restHtml = rest.length ? `<h4 class="st-sec">Autres</h4>${rest.map(row).join('')}` : '';
       const note = period !== 'all' ? 'Par mi-temps : décompte des actions officielles UEFA de la période.' : 'Source : statistiques officielles UEFA.';
-      return `<h4 class="st-sec">Statistiques</h4>${pills}
+      return `<h4 class="st-sec">Statistiques ${infoBtn(`<p>${esc(note)}</p>`, 'Source des statistiques')}</h4>${pills}
         <div class="st-wrap">
           <div class="st-head">
             <span class="st-team home"><i class="sw"></i>${flag(m.home_team)}<span>${esc(m.home_team.short || m.home_team.name)}</span></span>
             <span class="st-team away"><span>${esc(m.away_team.short || m.away_team.name)}</span>${flag(m.away_team)}<i class="sw"></i></span>
           </div>
           ${possHtml}${groups}${restHtml}
-          <p class="momentum-note">${note}</p>
         </div>`;
     }
 
@@ -1400,7 +1475,7 @@
         const head = !!e.target.closest(headSel);
         const inBody = scroller.contains(e.target);
         if (!head && !(inBody && scroller.scrollTop <= 0)) return;
-        st = { x: e.touches[0].clientX, y: e.touches[0].clientY, t: Date.now(), head, drag: false, dy: 0 };
+        st = { x: e.touches[0].clientX, y: e.touches[0].clientY, t: Date.now(), head, drag: false, dy: 0, top: scroller.scrollTop };
         sheet.classList.remove('settle');
       }, { passive: true });
       sheet.addEventListener('touchmove', (e) => {
@@ -1410,14 +1485,21 @@
           if (!(dy > 8 && dy > 1.5 * Math.abs(dx))) { if (Math.abs(dx) > 12 || dy < -8) st = null; return; }
           if (!st.head && scroller.scrollTop > 0) { st = null; return; }
           st.drag = true;
+          // Le glissement de feuille possède tout le reste du geste : le contenu ne défile plus jusqu'au relâchement.
+          scroller.style.overflowY = 'hidden';
+          closeInfo();
         }
+        if (e.cancelable) e.preventDefault();
+        scroller.scrollTop = st.top;
         st.dy = Math.max(0, dy);
         sheet.style.transform = `translateY(${st.dy}px)`;
-      }, { passive: true });
+      }, { passive: false });
       const end = () => {
         if (!st) return;
         const s = st; st = null;
         if (!s.drag) return;
+        scroller.style.overflowY = '';
+        scroller.scrollTop = s.top;
         const v = s.dy / Math.max(1, Date.now() - s.t);
         const close = s.dy > sheet.offsetHeight * 0.25 || (v > 0.4 && s.dy > 30);
         const done = () => { sheet.classList.remove('settle'); sheet.style.transform = ''; };
@@ -1536,6 +1618,7 @@
         p.subbed_out ? `Remplacé à la ${p.subbed_out}` : '', `${p.minutes || 0} min jouées`,
         p.captain ? 'Capitaine' : '', p.potm ? '⭐ Homme du match UEFA' : '',
       ].filter(Boolean).map(t => `<span class="ps-tag">${esc(t)}</span>`).join('');
+      const noteInfo = infoBtn(`<p>Note sur 10 (échelle de 3 à 10, moyenne autour de 6,9) calculée à partir des statistiques officielles UEFA : pondérations issues de l'étude de Ball, Huynh & Varley (2025) sur les notes FotMob, Sofascore et WhoScored, bonus pour les buts et passes décisives, composante « résultat pendant le temps de jeu » (Wolf et al., 2020).</p><p>Les valeurs + / − de « Ce qui fait la note » sont la contribution de chaque facteur à la note.</p>`, 'Méthode de la note');
       const photo = p.photo ? `<img class="ps-photo" src="${esc(p.photo)}" alt="" onerror="this.style.visibility='hidden'">` : `<div class="ps-photo"></div>`;
       document.getElementById('player-body').innerHTML = `
         <div class="modal-close-row">
@@ -1553,9 +1636,8 @@
           </div>
         </div>
         <div class="ps-tags">${tags}</div>
-        ${factors ? `<div class="ps-section"><h4>Ce qui fait la note</h4>${factors}</div>` : ''}
-        ${groups || '<div class="empty-state" style="margin-top:12px">Statistiques individuelles indisponibles.</div>'}
-        <p class="momentum-note">Note sur 10 (échelle de 3 à 10, moyenne autour de 6,9) calculée à partir des statistiques officielles UEFA : pondérations issues de l'étude de Ball, Huynh & Varley (2025) sur les notes FotMob, Sofascore et WhoScored, bonus pour les buts et passes décisives, composante « résultat pendant le temps de jeu » (Wolf et al., 2020).</p>`;
+        ${factors ? `<div class="ps-section"><h4>Ce qui fait la note ${noteInfo}</h4>${factors}</div>` : `<div class="info-row">${noteInfo}</div>`}
+        ${groups || '<div class="empty-state" style="margin-top:12px">Statistiques individuelles indisponibles.</div>'}`;
       document.getElementById('player-modal').classList.add('open');
       document.getElementById('player-body').scrollTop = 0;
     }
@@ -1566,6 +1648,7 @@
 
     document.addEventListener('keydown', e => {
       if (e.key !== 'Escape') return;
+      if (infoOpenBtn) { closeInfo(); return; }
       if (document.getElementById('player-modal').classList.contains('open')) closePlayer(); else closeMatchModal();
     });
     initDashboard();
