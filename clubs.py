@@ -10,12 +10,18 @@ Sources (aucune valeur n'est devinée : ce qu'une source ne donne pas reste abse
            validés à la main pour les clubs sans P7361) : fondation, surnom, site officiel, ville du siège, article FR
   Wikipédia FR  introduction de l'article (API MediaWiki, par lots de 20 titres lus dans le lien Wikidata, jamais devinés), CC BY-SA 4.0
 
+Couleurs : `couleurs` de chaque club de `index.json` = {principale, secondaire, maillot, nb_matchs, source} calculées par
+`couleurs.couleurs_clubs` depuis les maillots PORTÉS (compositions UEFA des matchs terminés de la saison : `shirtColor` et code du
+maillot `pl01` / `pl02` / `pl03` lu dans `kitImageUrl`). Chaque composition n'est lue qu'une fois : `clubs/couleurs.json` garde
+{match: {d, e: {club: [maillot, hex]}}} (jamais de valeur déduite : une composition sans couleur reste sans couleur).
+
 Cache : Wikidata et Wikipédia ne sont relus que si la valeur date de plus de 30 jours (ou manque) ; un échec ne remplace
 jamais une valeur déjà obtenue. L'effectif inscrit n'est relu que lors d'une mise à jour complète.
 
 Usage :
   python clubs.py --tous                  mise à jour complète des fiches (hebdomadaire)
   python clubs.py --clubs 52747,52277     certains clubs seulement
+  python clubs.py --couleurs              couleurs des clubs seules (clubs/couleurs.json + champ `couleurs` de l'index)
   python clubs.py --test                  tests purs (sans réseau)
 Options : --dossier clubs  --saison 2027  --sans-wiki (ni Wikidata ni Wikipédia)
 """
@@ -34,6 +40,7 @@ import urllib.request
 from collections import Counter
 from typing import Any, Dict, List, Optional, Tuple
 
+import couleurs
 import uefa
 from netutil import FLAG_CODES, fetch_json, fr, to_number
 
@@ -41,6 +48,8 @@ DOSSIER = "clubs"
 INDEX = "index.json"
 ETAT = "etat.json"
 ALIAS = "alias_clubs_wikidata.json"
+COULEURS = "couleurs.json"   # maillots portés observés, par match (cache de la couleur principale des clubs)
+MAX_LINEUPS_PASSAGE = 60    # passage de soirée : au plus ce nombre de compositions lues pour les couleurs (le rattrapage complet n'a pas de limite)
 COMP_NOMS = {"ucl": "Ligue des Champions", "uel": "Ligue Europa", "uecl": "Ligue Conférence"}
 COMP_COURT = {"ucl": "LDC", "uel": "LE", "uecl": "LC"}
 JOURS_CACHE_WIKI = 30
@@ -545,6 +554,44 @@ def _sans_maj(x: Any, garder: bool = False) -> Any:
     return x
 
 
+def observer_maillots(m: Dict[str, Any], lineups: Dict[str, Any]) -> Dict[str, Any]:
+    """Maillots portés dans un match terminé : {d: date, e: {club: [code maillot | None, hex | None]}}. Rien n'est déduit :
+    une composition sans `shirtColor` / `kitImageUrl` donne None."""
+    kits = uefa.kit_info(lineups)
+    obs: Dict[str, Any] = {}
+    for cote, cle in (("home", "homeTeam"), ("away", "awayTeam")):
+        tid = str((m.get(cle) or {}).get("id") or "")
+        if not tid:
+            continue
+        k = kits.get(cote) or {}
+        obs[tid] = [couleurs.code_maillot(k.get("kit_image")), k.get("shirt_color")]
+    return {"d": ((m.get("kickOffTime") or {}).get("date") or "")[:10], "e": obs}
+
+
+def collecter_couleurs(ctx: "Contexte", dossier: str, max_nouveaux: Optional[int] = None) -> Dict[str, Dict[str, Any]]:
+    """Complète `clubs/couleurs.json` avec les compositions des matchs terminés pas encore lus (au plus `max_nouveaux`,
+    les plus récents d'abord ; None = tous) et renvoie les observations. Une composition illisible n'est pas notée (relue
+    au passage suivant) ; une composition lue sans couleur l'est (inutile de la relire)."""
+    chemin = os.path.join(dossier, COULEURS)
+    obs = lire(chemin, {}) or {}
+    vus = 0
+    a_lire = [m for comp in uefa.COMPETITION_IDS for m in ctx.matchs_uefa.get(comp, [])
+              if m.get("status") == "FINISHED" and str(m.get("id")) not in obs]
+    a_lire.sort(key=lambda m: (m.get("kickOffTime") or {}).get("dateTime") or "", reverse=True)
+    for m in a_lire:
+        if max_nouveaux is not None and vus >= max_nouveaux:
+            break
+        vus += 1
+        lineups = uefa.fetch_lineups(str(m.get("id")))
+        if not lineups:
+            continue
+        obs[str(m.get("id"))] = observer_maillots(m, lineups)
+    if a_lire:
+        print(f"[CLUBS] couleurs : {vus} composition(s) lue(s), {len(a_lire) - vus} restante(s) pour un prochain passage")
+        ecrire(chemin, dict(sorted(obs.items())))
+    return obs
+
+
 def soirees_disponibles(dossier_soirees: str = "soirees") -> set:
     try:
         return {f[:-5] for f in os.listdir(dossier_soirees) if re.match(r"^\d{4}-\d{2}-\d{2}\.json$", f)}
@@ -815,6 +862,11 @@ def mettre_a_jour(ids: Optional[List[str]] = None, saison: Optional[int] = None,
     voulus = [i for i in voulus if i in par_id]
     fiches = {i: construire_fiche(ctx, par_id[i], anciens.get(i), maintenant, complet) for i in voulus}
     completer_stats_joueurs(ctx, fiches)
+    try:
+        coul = couleurs.couleurs_clubs(collecter_couleurs(ctx, dossier, None if (complet or patient) else MAX_LINEUPS_PASSAGE))
+    except Exception as e:  # jamais bloquant : les couleurs déjà écrites sont conservées
+        print(f"[WARN] Couleurs des clubs : erreur {type(e).__name__} : {e}")
+        coul = {}
     ecrits = 0
 
     def sauver(i: str) -> None:
@@ -829,13 +881,59 @@ def mettre_a_jour(ids: Optional[List[str]] = None, saison: Optional[int] = None,
             rafraichir_wiki(fiches, maintenant, lire_alias(), sauver=sauver, echecs_max=3 if patient else 1, essais=3 if patient else 1)
     finally:
         # l'index est écrit même si Wikipédia / Wikidata ont échoué ou ont été interrompus
-        if complet or not os.path.exists(os.path.join(dossier, INDEX)):
+        chemin_index = os.path.join(dossier, INDEX)
+        if complet or not os.path.exists(chemin_index):
             for c in index:
                 qid = ((fiches.get(c["id"]) or anciens.get(c["id"]) or {}).get("wikidata") or {}).get("qid")
                 if qid:
                     c["qid"] = qid
-            ecrire(os.path.join(dossier, INDEX), {"saison": ctx.saison, "maj": maintenant, "clubs": index})
+                if c["id"] in coul:
+                    c["couleurs"] = coul[c["id"]]
+            ecrire(chemin_index, {"saison": ctx.saison, "maj": maintenant, "clubs": index})
+        elif coul:
+            # passage de soirée : l'index existant n'est pas reconstruit, seules les couleurs sont complétées
+            courant = lire(chemin_index) or {}
+            changes = False
+            for c in courant.get("clubs") or []:
+                if c.get("id") in coul and c.get("couleurs") != coul[c["id"]]:
+                    c["couleurs"] = coul[c["id"]]
+                    changes = True
+            if changes:
+                courant["maj"] = maintenant
+                ecrire(chemin_index, courant)
     print(f"[CLUBS] {len(fiches)} club(s) traités, {ecrits} fichier(s) modifié(s) (saison {ctx.saison})")
+    return 0
+
+
+def mettre_a_jour_couleurs(saison: Optional[int] = None, dossier: str = DOSSIER, dossier_soirees: str = "soirees") -> int:
+    """Couleurs seules (`--couleurs`) : lit les compositions pas encore vues, réécrit `clubs/couleurs.json` et le champ
+    `couleurs` de `clubs/index.json` ; ne touche ni aux fiches ni à Wikidata / Wikipédia. 0 = succès, 1 = échec (rien écrit)."""
+    saison = saison or uefa.season_year_for(dt.date.today())
+    chemin_index = os.path.join(dossier, INDEX)
+    courant = lire(chemin_index)
+    if not courant or not courant.get("clubs"):
+        print("[ERREUR] clubs/index.json absent : lancer d'abord --tous")
+        return 1
+    ctx = Contexte(saison, dossier, dossier_soirees)
+    uefa._SAISONS.clear()
+    for comp in uefa.COMPETITION_IDS:
+        ms = uefa.fetch_season_matches(comp, saison)
+        if ms is None:
+            print(f"[ERREUR] Liste de saison {comp} {saison} illisible : couleurs non mises à jour")
+            return 1
+        ctx.matchs_uefa[comp] = ms
+    coul = couleurs.couleurs_clubs(collecter_couleurs(ctx, dossier, None))
+    n = 0
+    for c in courant["clubs"]:
+        if c.get("id") in coul and c.get("couleurs") != coul[c["id"]]:
+            c["couleurs"] = coul[c["id"]]
+            n += 1
+    if n:
+        courant["maj"] = maintenant_iso()
+        ecrire(chemin_index, courant)
+    sans = [c["id"] for c in courant["clubs"] if "couleurs" not in c]
+    print(f"[CLUBS] couleurs : {n} club(s) mis à jour, {len(courant['clubs']) - len(sans)}/{len(courant['clubs'])} avec couleurs"
+          + (f" ; sans maillot lisible : {', '.join(sans)}" if sans else ""))
     return 0
 
 
@@ -1020,12 +1118,22 @@ def _tests() -> None:
                             "uel": [{"team": {"id": "10", "internationalName": "Dom", "countryCode": "FRA", "translations": {}}}]},
                            {"10": {"wikidata": {"qid": "Q100"}}})
     check(len(idx) == 1 and idx[0]["competitions"] == ["ucl", "uel"] and idx[0]["qid"] == "Q100" and idx[0]["francais"], "index : un club dans deux compétitions")
+    # --- couleurs : observation d'un match (jamais de valeur déduite) puis agrégation
+    lu = {"homeTeam": {"shirtColor": "#FFFFFF", "kitImageUrl": "https://img.uefa.com/imgml/teamkits/1/2027/10/Kits/pl02.png"},
+          "awayTeam": {"kitImageUrl": "https://img.uefa.com/imgml/teamkits/1/2027/20/Kits/pl01.png"}}
+    o = observer_maillots(m1, lu)
+    check(o["e"] == {"10": ["pl02", "#ffffff"], "20": ["pl01", None]} and o["d"] == "2026-11-04", f"observation : {o}")
+    check(observer_maillots(m1, {"homeTeam": {"shirtColor": "pas un hex"}})["e"]["10"] == [None, None], "hex invalide ignoré")
+    agr = couleurs.couleurs_clubs({"1": o, "2": {"d": "2026-11-11", "e": {"10": ["pl01", "#c8102e"], "20": ["pl01", "#0000ff"]}}})
+    check(agr["10"]["principale"] == "#c8102e" and agr["10"]["secondaire"] == "#ffffff" and agr["10"]["nb_matchs"] == 1, "couleurs du club 10")
+    check(agr["20"]["principale"] == "#0000ff" and agr["20"]["secondaire"] is None, "club 20 sans pl02 : pas de secondaire inventée")
     print(f"[OK] clubs.py : {ok} contrôles")
 
 
 def main() -> None:
     p = argparse.ArgumentParser(description="Fiches de club")
     p.add_argument("--tous", action="store_true", help="mise à jour complète (effectifs, Wikidata, Wikipédia si cache périmé)")
+    p.add_argument("--couleurs", action="store_true", help="couleurs des clubs seules (compositions UEFA), sans toucher aux fiches")
     p.add_argument("--clubs", help="identifiants UEFA séparés par des virgules")
     p.add_argument("--saison", type=int)
     p.add_argument("--dossier", default=DOSSIER)
@@ -1035,8 +1143,10 @@ def main() -> None:
     if a.test:
         _tests()
         return
+    if a.couleurs:
+        sys.exit(mettre_a_jour_couleurs(a.saison, a.dossier))
     if not a.tous and not a.clubs:
-        p.error("--tous ou --clubs requis")
+        p.error("--tous, --clubs ou --couleurs requis")
     ids = [x.strip() for x in a.clubs.split(",") if x.strip()] if a.clubs else None
     sys.exit(mettre_a_jour(ids, a.saison, a.dossier, complet=a.tous, avec_wiki=not a.sans_wiki))
 

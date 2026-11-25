@@ -33,6 +33,9 @@ python soirees.py --test && python publication.py --test && bash tools/test_veil
 python clubs.py --test                                  # fiches de club : extraction, agrégats, alias, valeur absente = absente (sans réseau)
 python clubs.py --tous                                  # mise à jour complète de clubs/ (UEFA + Wikidata + Wikipédia, ~10 min)
 python clubs.py --clubs 52747,52277                     # certains clubs seulement (identifiants UEFA)
+python clubs.py --couleurs                              # couleurs des clubs seules (compositions UEFA -> clubs/couleurs.json + champ `couleurs` de clubs/index.json)
+node tools/test_couleurs_ui.js http://localhost:8765 /tmp/caps   # Playwright 390 x 844 : 40 soirées (ΔE, contrastes), rendu compos / stats / momentum / fiche de club, captures (serveur : python -m http.server 8765)
+python couleurs.py --test                               # règle des couleurs : ΔE76, contraste, choix, agrégation + parité Python / JS (Node) du bloc COULEURS d'index.html
 python classement.py --test && python historique.py --test && python reconstitution.py --test   # classement recalculé (cas réel LDC), soirees/ + index + data.json, reconstitution et rattrapage IA (doublures, sans réseau)
 ```
 
@@ -58,7 +61,8 @@ run_pipeline.py ─┬─ collector.py ── uefa.py   (source principale, offi
                  ├─ agents_flash.py (dossier factuel → Gemini rédacteur → Gemini contrôleur, repli déterministe)
                  ├─ historique.py (soirees/<date>.json + soirees/index.json ; data.json = soirée la plus récente)
                  ├─ classement.py (classement de phase de ligue RECALCULÉ depuis les scores, pour une soirée passée)
-                 ├─ clubs.py (fiches de club clubs/<id UEFA>.json + clubs/index.json : UEFA, Wikidata, Wikipédia FR)
+                 ├─ clubs.py (fiches de club clubs/<id UEFA>.json + clubs/index.json : UEFA, Wikidata, Wikipédia FR ; couleurs principales)
+                 ├─ couleurs.py (règle des couleurs d'équipe, fonctions pures ; jumeau du bloc COULEURS d'index.html)
                  ├─ reconstitution.py (--reconstituer : soirées passées ; --rattraper-ia : résumés Gemini par lots)
                  └─ notify.py (publication JSON ntfy)
 index.html  : page unique (CSS + JS inline), lit soirees/index.json + soirees/<date>.json (repli : data.json) + clubs/ ; aucune étape de build
@@ -151,7 +155,7 @@ fiches club, couleurs, historique européen.
 ### Fiches de club (`clubs.py`, `clubs/`, étape 3)
 
 Décisions du propriétaire du 25/11/2026 (`docs/etude_fiches_clubs.md`) : entraîneur non affiché ; historique européen complet = plus tard (étape 5) ;
-couleurs = étape 4 séparée ; 5 alias Wikidata validés. Règle cardinale inchangée : valeur absente = absente (pas d'extrait, pas de stade : rien n'est affiché).
+couleurs = étape 4 (§ Couleurs des équipes) ; 5 alias Wikidata validés. Règle cardinale inchangée : valeur absente = absente (pas d'extrait, pas de stade : rien n'est affiché).
 - **Fichiers** (JSON compact, jamais édités à la main) : `clubs/index.json` `{saison, maj, clubs[]}` (108 clubs = les 36 du classement de chaque coupe : `id` UEFA, `nom`,
   `nom_officiel`, `nom_court`, `pays`, `code_pays`, `drapeau`, `francais`, `logos{70,240,700}` (liens UEFA, rien n'est copié dans le dépôt), `competitions[]`, `qid` si
   rapproché, `fichier`) et `clubs/<id UEFA>.json` : `stade` (le plus fréquent à domicile : nom, ville, capacité, ouverture, coordonnées, `source: "UEFA"`), `wikidata`
@@ -193,6 +197,36 @@ couleurs = étape 4 séparée ; 5 alias Wikidata validés. Règle cardinale inch
 - **Poids mesuré** : voir la section « Mesures » de `docs/etude_fiches_clubs.md` (étape 3).
 - **Premier lancement après fusion** : `gh workflow run clubs.yml --ref main` seulement si `clubs/` n'a pas été commité (il l'est avec cette étape ; le cron du lundi suit).
 
+### Couleurs des équipes (`couleurs.py`, bloc `COULEURS` d'`index.html`, étape 4)
+
+Règle validée par le propriétaire le 25/11/2026 (`docs/etude_fiches_clubs.md`, § Couleurs et § Décisions) : couleur d'une équipe dans un match = (1) maillot PORTÉ
+dans ce match (`shirt_color` de `home_team` / `away_team`) ; sinon (2) couleur principale du club (`clubs/index.json` → `couleurs`) ; sinon (3) repli neutre (bleu
+`#38bdf8` domicile, rouge `#f43f5e` extérieur, les anciennes couleurs). Jamais de couleur inventée : le repli est une couleur d'interface, pas une donnée.
+- **Garde-fou de proximité** : ΔE76 (CIELAB D65) < 25 entre les deux couleurs d'un match : l'équipe à l'EXTÉRIEUR prend sa secondaire (maillot `pl02`), à défaut le repli
+  neutre (rouge, puis bleu si le rouge est lui aussi trop proche) ; le domicile ne change jamais. Mesuré : avec les maillots portés le seuil ne se déclenche jamais sur les
+  40 soirées ; il sert aux soirées sans `shirt_color` (couleurs « club ») et aux données futures.
+- **Lisibilité** (WCAG 2.x, calculée à l'exécution contre les fonds réels `--bg-card` / `--bg-main` / `--bg-elevated`, jamais figée dans le JSON) : `texte` = blanc ou NOIR PUR sur
+  l'aplat (le pire fond, luminance 0,179, donne 4,58 : >= 4,5 toujours ; avec `#111` ce serait 4,34) ; `bord` (liseré) seulement pour un aplat quasi blanc (luminance > 0,85) ou
+  quasi noir (< 0,04), choisi parmi `#e2e8f0` / `#7c8799` / `#1e293b` pour le meilleur contraste au pire avec l'aplat et la page ; `encre` = la couleur éclaircie (mélange par pas de
+  5 % vers le texte de la page) jusqu'à 4,5 sur tous les fonds, pour les chiffres et noms colorés (`--home-ink` / `--away-ink`).
+- **UNE fonction JS `couleursMatch(m)`** → `{home, away}` = `{fond, texte, bord, encre, source}` (`source` : `maillot` / `club` / `secondaire` / `neutre`) ; `couleurClub(id)` pour une
+  fiche de club. Utilisée PARTOUT où deux équipes sont colorées, par variables CSS `--home-color/-ink/-on/-bord` et `--away-…` posées en ligne (`coulPoserMatch(el, m)` sur
+  `#match-modal`, `coulStyleMatch(m)` sur tuiles et cartes) : pastilles des compos (`.player-dot`, classe `lis` = liseré), momentum (dégradés, traits de but, légende ; trait de
+  contour des aires si liseré), barres / valeurs / en-tête des stats, pastilles `.sw-eq` (légende des compos, tuiles), bandeau `.duo-bar` (en-tête de fiche, cartes françaises).
+  Une nouvelle vue à deux équipes lit ces variables, jamais de couleur codée. **Fiche de club** : `coulPoserClub` pose `--club-color/-ink/-on/-bord` sur `#club-sheet`
+  (bandeau d'en-tête, soulignement de l'onglet actif, rang, pastille D / E) avec la même règle de lisibilité ; sans couleur : accent bleu de la page.
+- **Parité Python / JS** : `couleurs.py` et le bloc `// ===== COULEURS : début / fin =====` d'`index.html` sont deux implémentations de la même règle ; `python couleurs.py --test`
+  extrait le bloc, l'exécute avec Node et compare des centaines de couleurs et de matchs. Toute modification se fait des deux côtés.
+- **Couleur principale d'un club** (`clubs.py`, `couleurs.couleurs_clubs`) : depuis les compositions UEFA (`lineups`) des matchs TERMINÉS de la saison (tours préliminaires compris) :
+  `shirtColor` + code du maillot lu dans `kitImageUrl` (`…/Kits/pl01.png`). `principale` = hex le plus fréquent des maillots `pl01` (à défaut `pl02`, puis `pl03` ; à égalité le
+  plus récent), `secondaire` = idem pour `pl02` (seulement si la principale vient de `pl01` ; sinon `pl03`), `maillot` = code d'origine, `nb_matchs` = matchs qui fondent la
+  principale, `source: "compositions_uefa"`. Un club sans maillot lisible n'a pas de `couleurs`. Cache `clubs/couleurs.json` `{match_id: {d, e: {club: [maillot|null, hex|null]}}}` :
+  chaque composition n'est lue qu'une fois (passage de soirée : 60 au plus, les plus récentes d'abord ; `--tous` / `--couleurs` : toutes). Mises à jour avec les fiches (`apres_soiree`,
+  `clubs.yml`) ; `python clubs.py --couleurs` ne touche ni aux fiches ni à Wikidata / Wikipédia. Le hex d'un même maillot varie d'un match à l'autre (saisie manuelle UEFA : Liverpool
+  #c63349 puis #ff0000) : on prend le mode, et les maillots rayés restent approximatifs (c'est l'hex déclaré, pas un calcul sur l'image).
+- **Vérifié** (Playwright 390 x 844 tactile, 40 soirées) : aucune paire de couleurs d'un match sous ΔE 25, contraste du texte posé sur un aplat >= 4,5, encre >= 4,5 sur la page, 0 erreur
+  console, 0 débordement horizontal.
+
 ### Schéma de `data.json` (ce que lit `index.html`)
 
 `competitions.{ucl,uel,uecl}` → `matches[]`, `standings[]` (36 lignes, `zone` = top8 / playoff / eliminated ; absente d'un
@@ -203,7 +237,7 @@ et `ia_tentatives` pour le rattrapage). Niveau soirée : `reconstituee` / `recon
 `amorcee` (data.json conservé tel quel dans `soirees/`).
 Chaque match porte aussi `stage` (`league` / `qualifying` / `knockout`), `round` (`name`, `type` UEFA), `matchday_short`, `leg`, et, dans
 `home_team` / `away_team`, `shirt_color` (hex du maillot PORTÉ dans ce match, compositions UEFA) et `kit_image` quand l'UEFA les donne
-(collectés pour la future règle des couleurs, pas encore affichés ; absents = absents).
+(utilisés par la règle des couleurs, § Couleurs des équipes ; absents = absents).
 Chaque match : `home_team`/`away_team` (`flag`, `is_french`, `formation`…), `events[]` et `goals[]` (avec
 `player_id`, `scorer_id`, `assist_id`), `momentum[]` (un point par minute : `minute`, `label`, `phase`, `home`,
 `away`, `value` ∈ [-100, 100]), `stats.{all,1st,2nd}`, `lineups` (positions x/y en %, `id` des joueurs) et
