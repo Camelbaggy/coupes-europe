@@ -30,6 +30,10 @@ Tout ce qui suit est fusionné sur `main` et en ligne (https://camelbaggy.github
 - **Documentation** (25/11) : `CLAUDE.md` complété (vue d'ensemble des sources / workflows / secrets, collecte pas à pas, méthodes de calcul :
   momentum, mi-temps, notes), README remis à jour.
 
+- **Championnats nationaux (big 5)** : étude des sources faite le 25/11 (`docs/etude_championnats.md`) : ESPN (flux Opta complet
+  pour toute la saison 2026-27 des 5 championnats), journée via football-data.org / OpenLigaDB, contrôle croisé football-data.co.uk.
+  **En attente des décisions du propriétaire (§ 9 de l'étude)** avant tout développement.
+
 ## À vérifier à la reprise
 
 1. `completer_xg.yml` : run terminé en succès, soirées avec xG (ouvrir une fiche de match d'une soirée passée, onglet Stats).
