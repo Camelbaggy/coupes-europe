@@ -23,6 +23,9 @@
       --zone-elim: #ef4444;
       --home-color: #38bdf8;
       --away-color: #f43f5e;
+      /* Variantes lisibles (contraste AA) des couleurs d'équipe pour le texte */
+      --home-ink: color-mix(in srgb, var(--home-color) 80%, var(--text-main));
+      --away-ink: color-mix(in srgb, var(--away-color) 55%, var(--text-main));
     }
 
     * {
@@ -440,7 +443,8 @@
       background: var(--bg-card);
       width: 100%;
       max-width: 680px;
-      max-height: 90vh;
+      height: 92vh;
+      height: 92dvh;
       border-radius: 20px 20px 0 0;
       border-top: 1px solid var(--border);
       display: flex;
@@ -454,8 +458,19 @@
       to { transform: translateY(0); }
     }
 
+    .sheet-handle {
+      flex-shrink: 0; height: 22px; background: var(--bg-elevated); touch-action: none; position: relative;
+    }
+    .sheet-handle::after {
+      content: ""; position: absolute; left: 50%; top: 8px; width: 40px; height: 4px; margin-left: -20px;
+      border-radius: 99px; background: var(--text-muted); opacity: 0.6;
+    }
+    .modal-sheet { will-change: transform; }
+    .modal-sheet.settle { transition: transform 0.22s ease-out; }
+    @media (prefers-reduced-motion: reduce) { .modal-sheet.settle { transition: none; } }
     .modal-header {
-      padding: 14px 16px;
+      touch-action: none;
+      padding: 4px 16px 14px;
       background: var(--bg-elevated);
       border-bottom: 1px solid var(--border);
     }
@@ -480,7 +495,7 @@
 
     .modal-subtabs {
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
+      grid-template-columns: repeat(3, 1fr);
       background: var(--bg-main);
       border-bottom: 1px solid var(--border);
     }
@@ -505,6 +520,8 @@
       padding: 16px;
       overflow-y: auto;
       flex: 1;
+      min-height: 0;
+      overscroll-behavior: contain;
     }
 
     /* VUE 1 : ÉVÉNEMENTS */
@@ -532,22 +549,25 @@
       min-width: 34px;
     }
 
-    /* VUE 2 : MOMENTUM (GRAPHIQUE PRESSION SVG) */
+    /* MOMENTUM (en tête de l'onglet Stats) */
     .momentum-box {
       background: var(--bg-main);
       border: 1px solid var(--border);
       border-radius: 12px;
-      padding: 12px;
+      padding: 10px 8px 12px;
     }
     .momentum-legend {
       display: flex;
       justify-content: space-between;
+      gap: 6px;
       font-size: 0.76rem;
       margin-bottom: 8px;
       font-weight: 600;
+      padding: 0 4px;
     }
+    .momentum-key { font-size: 0.7rem; color: var(--text-muted); padding: 0 4px; margin-top: 6px; }
 
-    /* VUE 3 : TERRAIN TACTIQUE */
+    /* VUE 3 : TERRAIN TACTIQUE (positions calculées en JS : lignes déduites de la formation + anti-collision) */
     .pitch-container {
       position: relative;
       width: 100%;
@@ -580,17 +600,19 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      width: 64px;
+      width: max-content;
+      padding: 8px 12px 0;
       text-align: center;
     }
     .player-dot {
-      width: 28px;
-      height: 28px;
+      position: relative;
+      width: var(--dot, 26px);
+      height: var(--dot, 26px);
       border-radius: 50%;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 0.74rem;
+      font-size: 0.72rem;
       font-weight: 800;
       color: #fff;
       border: 2px solid #fff;
@@ -601,34 +623,44 @@
     .player-label {
       font-size: 0.65rem;
       font-weight: 600;
+      line-height: 1.25;
       background: rgba(11, 15, 23, 0.82);
-      padding: 1px 5px;
+      padding: 1px 4px;
       border-radius: 4px;
       margin-top: 2px;
       white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
-    .player-rating {
-      font-size: 0.62rem;
-      font-weight: 800;
-      padding: 0 4px;
-      border-radius: 3px;
-      margin-top: 1px;
-      background: #10b981;
-      color: #052e16;
+    .pn-rating {
+      position: absolute; top: -7px; right: -12px;
+      font-size: 0.58rem; line-height: 1.3; padding: 0 3px; border-radius: 4px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
+    }
+    .pn-out {
+      font-size: 0.55rem; line-height: 1.3; padding: 0 4px; border-radius: 4px; font-weight: 700; margin-top: 1px;
+      background: rgba(11, 15, 23, 0.9); color: var(--text-main); white-space: nowrap;
     }
 
-    /* VUE 4 : STATISTIQUES DÉTAILLÉES */
+    /* VUE 4 : STATISTIQUES */
+    .st-sec {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 0.72rem; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase;
+      color: var(--text-muted); margin: 18px 0 8px;
+    }
+    .st-sec::after { content: ""; flex: 1; height: 1px; background: var(--border); }
+    .st-sec:first-child { margin-top: 0; }
     .period-pills {
       display: flex;
       gap: 6px;
-      margin-bottom: 14px;
+      margin: 0 0 12px;
       justify-content: center;
     }
     .period-btn {
       background: var(--bg-main);
       border: 1px solid var(--border);
       color: var(--text-muted);
-      padding: 5px 12px;
+      padding: 6px 12px;
       border-radius: 99px;
       font-size: 0.75rem;
       font-weight: 600;
@@ -639,26 +671,47 @@
       color: #0b0f17;
       border-color: var(--accent-ucl);
     }
-    .stat-item {
-      margin-bottom: 12px;
+    .st-head {
+      position: sticky; top: -16px; z-index: 5;
+      margin: 0 -16px 8px; padding: 10px 16px;
+      display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+      background: var(--bg-card); border-bottom: 1px solid var(--border);
     }
-    .stat-row-labels {
-      display: flex;
-      justify-content: space-between;
-      font-size: 0.8rem;
-      margin-bottom: 4px;
-      font-weight: 600;
-    }
-    .stat-bars {
-      display: flex;
-      height: 7px;
-      border-radius: 99px;
-      overflow: hidden;
-      background: var(--bg-main);
-      gap: 3px;
-    }
-    .stat-bar-home { background: var(--home-color); }
-    .stat-bar-away { background: var(--away-color); }
+    .st-team { display: flex; align-items: center; gap: 6px; font-weight: 800; font-size: 0.85rem; min-width: 0; }
+    .st-team.away { justify-content: flex-end; }
+    .st-team .sw { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
+    .st-team.home .sw { background: var(--home-color); } .st-team.away .sw { background: var(--away-color); }
+    .st-team.home { color: var(--home-ink); } .st-team.away { color: var(--away-ink); }
+    .poss { background: var(--bg-main); border: 1px solid var(--border); border-radius: 12px; padding: 12px 14px 14px; margin-bottom: 4px; }
+    .poss-lbl { text-align: center; font-size: 0.72rem; font-weight: 700; color: var(--text-muted); letter-spacing: 0.05em; text-transform: uppercase; }
+    .poss-vals { display: flex; justify-content: space-between; align-items: baseline; margin: 2px 0 8px; font-variant-numeric: tabular-nums; }
+    .poss-v { font-size: 1.9rem; font-weight: 800; line-height: 1.1; }
+    .poss-v.home { color: var(--home-ink); } .poss-v.away { color: var(--away-ink); }
+    .poss-bar { display: flex; height: 10px; border-radius: 99px; overflow: hidden; gap: 3px; }
+    .poss-bar i { display: block; height: 100%; }
+    .poss-bar .h { background: var(--home-color); } .poss-bar .a { background: var(--away-color); }
+    .st-row { padding: 8px 0 7px; border-bottom: 1px solid var(--border); }
+    .st-row:last-child { border-bottom: none; }
+    .st-top { display: grid; grid-template-columns: 1fr minmax(0, 2.2fr) 1fr; align-items: baseline; gap: 6px; font-variant-numeric: tabular-nums; }
+    .st-v { font-size: 0.95rem; font-weight: 500; color: var(--text-muted); }
+    .st-v.away { text-align: right; }
+    .st-v.dom, .st-v.eq { font-weight: 800; }
+    .st-v.eq { color: var(--text-main); }
+    .st-v.home.dom { color: var(--home-ink); } .st-v.away.dom { color: var(--away-ink); }
+    .st-l { text-align: center; font-size: 0.76rem; color: var(--text-muted); line-height: 1.25; }
+    .st-bar { display: grid; grid-template-columns: 1fr 1fr; gap: 3px; margin-top: 5px; }
+    .st-half { display: flex; height: 5px; border-radius: 99px; background: var(--bg-elevated); overflow: hidden; }
+    .st-half.l { justify-content: flex-end; }
+    .st-half i { display: block; height: 100%; }
+    .st-half.l i { background: var(--home-color); } .st-half.r i { background: var(--away-color); }
+    .st-half i.dim { opacity: 0.4; }
+
+    /* Glissement entre onglets */
+    .modal-body.slide-l { animation: slideInL 0.2s ease-out; }
+    .modal-body.slide-r { animation: slideInR 0.2s ease-out; }
+    @keyframes slideInL { from { transform: translateX(28px); opacity: 0.4; } to { transform: none; opacity: 1; } }
+    @keyframes slideInR { from { transform: translateX(-28px); opacity: 0.4; } to { transform: none; opacity: 1; } }
+    @media (prefers-reduced-motion: reduce) { .modal-body.slide-l, .modal-body.slide-r { animation: none; } }
 
     img.flag {
       width: 18px;
@@ -677,10 +730,6 @@
     }
     .plink:hover { color: #fff; text-decoration-color: currentColor; }
     .player-node { cursor: pointer; }
-    .player-node .player-rating {
-      position: absolute; top: -7px; left: calc(50% + 8px); margin: 0; font-size: 0.6rem; line-height: 1.35;
-      padding: 0 3px; border-radius: 4px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
-    }
     .player-node:hover .player-dot { transform: scale(1.12); }
     .player-dot { transition: transform 0.12s ease; }
     .rating-badge { display: inline-block; font-weight: 800; border-radius: 4px; padding: 0 5px; color: #0b0f17; }
@@ -693,9 +742,14 @@
     }
     .player-backdrop.open { display: flex; }
     .player-sheet {
-      background: var(--bg-card); width: 100%; max-width: 520px; max-height: 88vh; overflow-y: auto;
-      border-radius: 18px 18px 0 0; border-top: 1px solid var(--border); padding: 16px; animation: slideUp 0.2s ease-out;
+      background: var(--bg-card); width: 100%; max-width: 520px; max-height: 88vh; display: flex; flex-direction: column;
+      border-radius: 18px 18px 0 0; border-top: 1px solid var(--border); overflow: hidden; animation: slideUp 0.2s ease-out;
+      will-change: transform;
     }
+    .player-sheet.settle { transition: transform 0.22s ease-out; }
+    @media (prefers-reduced-motion: reduce) { .player-sheet.settle { transition: none; } }
+    .player-sheet .sheet-handle { background: var(--bg-card); }
+    .player-body { padding: 4px 16px 16px; overflow-y: auto; flex: 1; min-height: 0; overscroll-behavior: contain; }
     .ps-head { display: flex; gap: 12px; align-items: center; }
     .ps-photo { width: 64px; height: 64px; border-radius: 50%; object-fit: cover; background: var(--bg-elevated);
       border: 2px solid var(--border); flex-shrink: 0; }
@@ -787,7 +841,8 @@
 
   <!-- 3. TIROIR MODAL : FICHE DE MATCH -->
   <div class="modal-backdrop" id="match-modal" onclick="closeModalOnBackdrop(event)">
-    <div class="modal-sheet">
+    <div class="modal-sheet" id="modal-sheet">
+      <div class="sheet-handle" aria-hidden="true"></div>
       <div class="modal-header">
         <div class="modal-close-row">
           <span class="section-sub" id="modal-comp-label">Fiche de match</span>
@@ -802,7 +857,6 @@
 
       <div class="modal-subtabs">
         <button class="subtab-btn active" data-view="events" onclick="switchModalView('events')">Déroulé</button>
-        <button class="subtab-btn" data-view="momentum" onclick="switchModalView('momentum')">Momentum</button>
         <button class="subtab-btn" data-view="lineups" onclick="switchModalView('lineups')">Compos</button>
         <button class="subtab-btn" data-view="stats" onclick="switchModalView('stats')">Stats</button>
       </div>
@@ -813,7 +867,10 @@
 
   <!-- FICHE JOUEUR (au-dessus de la fiche de match) -->
   <div class="player-backdrop" id="player-modal" onclick="if (event.target.id === 'player-modal') closePlayer()">
-    <div class="player-sheet" id="player-sheet"></div>
+    <div class="player-sheet" id="player-sheet">
+      <div class="sheet-handle" aria-hidden="true"></div>
+      <div class="player-body" id="player-body"></div>
+    </div>
   </div>
 
   <script>
@@ -975,14 +1032,20 @@
       if (e.target.id === 'match-modal') closeMatchModal();
     }
 
-    function switchModalView(viewName) {
+    function switchModalView(viewName, slide) {
       currentModalView = viewName;
       document.querySelectorAll('.subtab-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.view === viewName));
+      const body = document.getElementById('modal-body-content');
+      body.classList.remove('slide-l', 'slide-r');
+      body.scrollTop = 0;
       renderModalContent();
+      if (slide) { void body.offsetWidth; body.classList.add(slide); }
     }
 
+    let statsScrollKeep = false;
     function switchStatsPeriod(periodKey) {
       currentStatsPeriod = periodKey;
+      statsScrollKeep = true;
       renderModalContent();
     }
 
@@ -1012,76 +1075,6 @@
           </div>`).join('');
       }
 
-      else if (currentModalView === 'momentum') {
-        const pts = m.momentum || [];
-        if (pts.length === 0) {
-          container.innerHTML = `<div class="empty-state">Actions du match indisponibles : pas de graphique de pression pour cette rencontre.</div>`;
-          return;
-        }
-        const W = 300, X0 = 5, MID = 66, AMP = 60, BOTTOM = 132;
-        const n = pts.length;
-        const xOf = (i) => X0 + (n > 1 ? i * W / (n - 1) : W / 2);
-        const yOf = (v) => MID - Math.max(-100, Math.min(100, Number(v) || 0)) / 100 * AMP;
-        const labelOf = (p) => p.label || `${p.minute}'`;
-        const idxOfLabel = (lbl, minute) => {
-          let i = pts.findIndex(p => labelOf(p) === lbl);
-          if (i < 0) i = pts.reduce((best, p, j) => Math.abs(p.minute - minute) < Math.abs(pts[best].minute - minute) ? j : best, 0);
-          return i;
-        };
-        const line = pts.map((p, i) => `${xOf(i).toFixed(2)},${yOf(p.value).toFixed(2)}`).join(' L ');
-        const area = `M ${xOf(0).toFixed(2)},${MID} L ${line} L ${xOf(n - 1).toFixed(2)},${MID} Z`;
-        const htIdx = pts.findIndex(p => p.phase === 'SECOND_HALF');
-        const htX = htIdx > 0 ? (xOf(htIdx - 1) + xOf(htIdx)) / 2 : null;
-        const ticks = [15, 30, 45, 60, 75, 90].filter(mn => !(mn === 45 && htIdx > 0)).map(mn => {
-          const i = pts.findIndex(p => p.minute === mn && !String(labelOf(p)).includes('+'));
-          return i < 0 ? '' : `<text x="${xOf(i).toFixed(1)}" y="${BOTTOM + 8}" font-size="6.5" fill="#64748b" text-anchor="middle">${mn}'</text>`;
-        }).join('');
-        const goals = (m.events || []).filter(e => e.type === 'goal').map(e => {
-          const x = xOf(idxOfLabel(e.minute_label, e.minute));
-          const home = e.team === 'home';
-          const y = home ? 4 : BOTTOM - 2;
-          return `<line x1="${x.toFixed(1)}" y1="${home ? 8 : MID}" x2="${x.toFixed(1)}" y2="${home ? MID : BOTTOM - 6}" stroke="${home ? '#38bdf8' : '#f43f5e'}" stroke-opacity="0.35" stroke-width="0.6" stroke-dasharray="1.5,1.5" />
-                  <text x="${x.toFixed(1)}" y="${y}" font-size="6.5" text-anchor="middle" dominant-baseline="middle">⚽</text>`;
-        }).join('');
-        container.innerHTML = `
-          <div class="momentum-box">
-            <div class="momentum-legend">
-              <span style="color:var(--home-color)">▲ ${esc(m.home_team.short)}</span>
-              <span id="momentum-readout" style="color:var(--text-muted);font-weight:500">Touchez le graphique</span>
-              <span style="color:var(--away-color)">▼ ${esc(m.away_team.short)}</span>
-            </div>
-            <svg id="momentum-svg" viewBox="0 0 310 ${BOTTOM + 12}" style="width:100%;height:auto;touch-action:pan-y">
-              <defs>
-                <clipPath id="clip-home"><rect x="0" y="0" width="310" height="${MID}" /></clipPath>
-                <clipPath id="clip-away"><rect x="0" y="${MID}" width="310" height="${BOTTOM - MID}" /></clipPath>
-                <linearGradient id="grad-home" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#38bdf8" stop-opacity="0.95"/><stop offset="1" stop-color="#38bdf8" stop-opacity="0.25"/></linearGradient>
-                <linearGradient id="grad-away" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f43f5e" stop-opacity="0.25"/><stop offset="1" stop-color="#f43f5e" stop-opacity="0.95"/></linearGradient>
-              </defs>
-              ${htX !== null ? `<line x1="${htX.toFixed(1)}" y1="2" x2="${htX.toFixed(1)}" y2="${BOTTOM}" stroke="#475569" stroke-dasharray="2,2" stroke-width="0.6" /><text x="${htX.toFixed(1)}" y="${BOTTOM + 8}" font-size="6.5" fill="#94a3b8" text-anchor="middle">MT</text>` : ''}
-              <path d="${area}" fill="url(#grad-home)" clip-path="url(#clip-home)" />
-              <path d="${area}" fill="url(#grad-away)" clip-path="url(#clip-away)" />
-              <line x1="0" y1="${MID}" x2="310" y2="${MID}" stroke="#475569" stroke-width="0.6" />
-              ${goals}${ticks}
-              <line id="momentum-cursor" x1="0" y1="2" x2="0" y2="${BOTTOM}" stroke="#e2e8f0" stroke-width="0.5" visibility="hidden" />
-            </svg>
-            <p class="momentum-note">Indice de pression minute par minute (lissé sur environ 5 min), calculé à partir des actions officielles UEFA : buts, tirs, attaques dangereuses, corners, arrêts adverses, hors-jeu et coups francs obtenus.</p>
-          </div>`;
-        const svg = document.getElementById('momentum-svg');
-        const readout = document.getElementById('momentum-readout');
-        const cursor = document.getElementById('momentum-cursor');
-        const show = (evt) => {
-          const r = svg.getBoundingClientRect();
-          const x = (evt.clientX - r.left) / r.width * 310;
-          const i = Math.max(0, Math.min(n - 1, Math.round((x - X0) / (n > 1 ? W / (n - 1) : 1))));
-          const p = pts[i];
-          const who = p.value > 15 ? `pression ${m.home_team.short}` : p.value < -15 ? `pression ${m.away_team.short}` : 'équilibré';
-          readout.textContent = `${labelOf(p)} · ${who}`;
-          cursor.setAttribute('x1', xOf(i)); cursor.setAttribute('x2', xOf(i)); cursor.setAttribute('visibility', 'visible');
-        };
-        svg.addEventListener('pointermove', show);
-        svg.addEventListener('pointerdown', show);
-      }
-
       else if (currentModalView === 'lineups') {
         const L = m.lineups || {};
         const homePlayers = L.home || [], awayPlayers = L.away || [];
@@ -1090,64 +1083,382 @@
           return;
         }
         const hasPlayers = m.players && Object.keys(m.players).length > 0;
-        const renderNodes = (list, side) => list.map(p => `
-          <div class="player-node" style="left:${p.x ?? 50}%;top:${p.y ?? 50}%" ${hasPlayers && p.id ? `onclick="openPlayer('${esc(p.id)}')" role="button" title="Voir la fiche de ${esc(p.name)}"` : ''}>
-            <div class="player-dot ${side}">${esc(p.number)}</div>
-            <span class="player-label">${p.captain ? '© ' : ''}${p.potm ? '⭐ ' : ''}${esc(p.name)}${p.subbed_out ? ' 🔻' + esc(p.subbed_out) : ''}</span>
-            ${p.rating ? `<span class="player-rating rating-badge ${ratingClass(p.rating)}">${esc(Number(p.rating).toFixed(1))}</span>` : ''}
-          </div>`).join('');
         const subs = (list) => list.length ? list.map(p => `${esc(p.number)} ${p.potm ? '⭐ ' : ''}${plink(p.id, p.name)}${p.minute ? ' (' + esc(p.minute) + ')' : ''}${p.rating ? ` <span class="rating-badge ${ratingClass(p.rating)}" style="font-size:0.68rem">${esc(Number(p.rating).toFixed(1))}</span>` : ''}`).join(', ') : '—';
         container.innerHTML = `
           <div style="display:flex;justify-content:space-between;font-size:0.78rem;color:var(--text-muted);margin-bottom:8px">
             <span>🔵 ${esc(m.home_team.short)} ${esc(m.home_team.formation || '')}</span>
             <span>🔴 ${esc(m.away_team.short)} ${esc(m.away_team.formation || '')}</span>
           </div>
-          <div class="pitch-container">
+          <div class="pitch-container" id="pitch">
             <div class="pitch-midline"></div>
             <div class="pitch-circle"></div>
-            ${renderNodes(homePlayers, 'home')}
-            ${renderNodes(awayPlayers, 'away')}
           </div>
           <div class="subs-list">
             <div><b style="color:var(--home-color)">Entrés (${esc(m.home_team.short)})</b> : ${subs(L.home_subs || [])}</div>
             <div><b style="color:var(--away-color)">Entrés (${esc(m.away_team.short)})</b> : ${subs(L.away_subs || [])}</div>
             ${(L.home_coach || L.away_coach) ? `<div>Entraîneurs : ${esc(L.home_coach || '—')} / ${esc(L.away_coach || '—')}</div>` : ''}
-            <div style="margin-top:4px">© capitaine · ⭐ homme du match UEFA · 🔻 minute de sortie${hasPlayers ? ' · touchez un joueur pour sa fiche' : ''}</div>
+            <div style="margin-top:4px">© capitaine · ⭐ homme du match UEFA · ↓ minute de sortie${hasPlayers ? ' · touchez un joueur pour sa fiche' : ''}</div>
             ${hasPlayers ? `<div style="margin-top:4px">Notes sur 10 calculées à partir des statistiques officielles UEFA (méthode : voir la fiche d'un joueur).</div>` : ''}
           </div>`;
+        layoutPitch(document.getElementById('pitch'), m, hasPlayers);
       }
 
       else if (currentModalView === 'stats') {
-        const statsObj = m.stats || {};
-        const hasHalves = (statsObj['1st'] || []).length > 0 && (statsObj['2nd'] || []).length > 0;
-        const period = hasHalves ? currentStatsPeriod : 'all';
-        const items = statsObj[period] || [];
-        const barsHtml = items.map(s => {
-          const total = (Number(s.home) + Number(s.away)) || 1;
-          const homePct = Math.round((Number(s.home) / total) * 100);
-          return `
-            <div class="stat-item">
-              <div class="stat-row-labels">
-                <span style="color:var(--home-color)">${esc(s.home)}</span>
-                <span style="color:var(--text-muted)">${esc(s.label)}</span>
-                <span style="color:var(--away-color)">${esc(s.away)}</span>
-              </div>
-              <div class="stat-bars">
-                <div class="stat-bar-home" style="width:${homePct}%"></div>
-                <div class="stat-bar-away" style="width:${100 - homePct}%"></div>
-              </div>
-            </div>`;
-        }).join('');
-        const pills = hasHalves ? `
-          <div class="period-pills">
-            <button class="period-btn ${period === 'all' ? 'active' : ''}" onclick="switchStatsPeriod('all')">Match complet</button>
-            <button class="period-btn ${period === '1st' ? 'active' : ''}" onclick="switchStatsPeriod('1st')">1re mi-temps</button>
-            <button class="period-btn ${period === '2nd' ? 'active' : ''}" onclick="switchStatsPeriod('2nd')">2e mi-temps</button>
-          </div>` : '';
-        const note = period !== 'all' ? '<p class="momentum-note">Par mi-temps : décompte des actions officielles UEFA de la période.</p>' : '<p class="momentum-note">Source : statistiques officielles UEFA.</p>';
-        container.innerHTML = pills + (barsHtml || '<div class="empty-state">Statistiques indisponibles.</div>') + (barsHtml ? note : '');
+        const keep = container.scrollTop;
+        container.innerHTML = momentumHtml(m) + statsHtml(m);
+        bindMomentum(m);
+        if (statsScrollKeep) { container.scrollTop = keep; statsScrollKeep = false; }
       }
     }
+
+    // ---------- Compos : lignes déduites de la formation + anti-collision ----------
+    // Chaque ligne = un rang vertical (gardien, puis un rang par nombre de la formation UEFA). Les joueurs sont
+    // rangés par profondeur UEFA (y), puis découpés selon la formation ; dans une ligne, ils sont répartis
+    // régulièrement dans l'ordre de leur x UEFA. Aucun joueur n'est changé de ligne ni inventé.
+    function lineupRows(list, formation, side) {
+      const depth = (p) => side === 'home' ? (p.y ?? 50) : 100 - (p.y ?? 50);
+      let gk = list.find(p => p.pos === 'GOALKEEPER');
+      if (!gk && list.length) gk = list.reduce((b, p) => depth(p) < depth(b) ? p : b, list[0]);
+      const out = list.filter(p => p !== gk).sort((a, b) => depth(a) - depth(b) || (a.x ?? 50) - (b.x ?? 50));
+      const counts = String(formation || '').split('-').map(Number);
+      let rows = [];
+      if (counts.length && counts.every(n => n > 0) && counts.reduce((a, b) => a + b, 0) === out.length) {
+        let i = 0;
+        counts.forEach(n => { rows.push(out.slice(i, i + n)); i += n; });
+      } else {
+        out.forEach(p => {
+          const last = rows[rows.length - 1];
+          if (last && depth(p) - depth(last[last.length - 1]) <= 3.5) last.push(p); else rows.push([p]);
+        });
+      }
+      rows = rows.map(r => r.slice().sort((a, b) => (a.x ?? 50) - (b.x ?? 50)));
+      return gk ? [[gk], ...rows] : rows;
+    }
+
+    function layoutPitch(pitch, m, hasPlayers) {
+      const W = pitch.clientWidth - 4;           // bordure de 2 px
+      const dot = W < 360 ? 24 : 26;
+      pitch.style.setProperty('--dot', dot + 'px');
+      const L = m.lineups || {};
+      const sides = [
+        { side: 'home', rows: lineupRows(L.home || [], m.home_team.formation || L.home_formation, 'home') },
+        { side: 'away', rows: lineupRows(L.away || [], m.away_team.formation || L.away_formation, 'away') },
+      ];
+      const nodes = [];
+      sides.forEach(S => S.rows.forEach((row, r) => row.forEach((p, i) => {
+        const el = document.createElement('div');
+        el.className = 'player-node';
+        if (hasPlayers && p.id) { el.setAttribute('onclick', `openPlayer('${esc(p.id)}')`); el.setAttribute('role', 'button'); }
+        const full = (hasPlayers && m.players[p.id] && m.players[p.id].name) || p.name;
+        el.title = full;
+        el.innerHTML = `<div class="player-dot ${S.side}">${esc(p.number)}`
+          + (p.rating ? `<span class="pn-rating rating-badge ${ratingClass(p.rating)}">${esc(Number(p.rating).toFixed(1))}</span>` : '')
+          + `</div><span class="player-label"></span>`
+          + (p.subbed_out ? `<span class="pn-out">↓${esc(p.subbed_out)}</span>` : '');
+        pitch.appendChild(el);
+        nodes.push({ el, p, side: S.side, row: r, k: row.length, i, full, label: el.querySelector('.player-label'), R: S.rows.length });
+      })));
+      // noms : le plus long qui tient dans la place d'un joueur de sa ligne (nom, initiale + nom, ellipse en dernier recours)
+      nodes.forEach(n => {
+        const pre = (n.p.captain ? '© ' : '') + (n.p.potm ? '⭐ ' : '');
+        const maxW = Math.min(96, Math.max(48, (W - 8) / n.k - 14));
+        const words = String(n.full).trim().split(/\s+/);
+        const cands = [n.p.name];
+        if (words.length > 1) {
+          cands.push(words[0][0] + '. ' + words.slice(1).join(' '));
+          cands.push(words[0][0] + '. ' + words[words.length - 1]);
+          cands.push(words[words.length - 1]);
+        }
+        if (/\S-\S/.test(cands[cands.length - 1])) cands.push(cands[cands.length - 1].replace(/-(\S)\S*$/, '-$1.'));
+        let chosen = null;
+        for (const c of cands) {
+          n.label.textContent = pre + c;
+          if (n.label.scrollWidth <= maxW) { chosen = c; break; }
+        }
+        if (chosen === null) {
+          n.label.textContent = pre + cands[0]; n.label.style.fontSize = '0.57rem';
+          if (n.label.scrollWidth > maxW) { n.label.style.fontSize = ''; n.label.textContent = pre + cands[cands.length - 1]; n.label.style.maxWidth = maxW + 'px'; }
+        }
+      });
+      const H = Math.max(...nodes.map(n => n.el.offsetHeight));
+      const sizes = nodes.map(n => ({ w: n.el.offsetWidth, h: n.el.offsetHeight }));
+      const Rmax = Math.max(...sides.map(S => S.rows.length));
+      let Hh = Math.max(260, 10 + H + 36 * (Rmax - 1));
+      for (let attempt = 0; attempt < 14; attempt++, Hh += 24) {
+        const Hc = Hh * 2;
+        const pts = nodes.map((n, idx) => {
+          const c0 = H / 2 + 5, c1 = Hh - H / 2 - 5;
+          const yr = n.R > 1 ? c0 + (c1 - c0) * n.row / (n.R - 1) : c0;
+          const y0 = n.side === 'home' ? yr : Hc - yr;
+          let x;
+          if (n.k === 1) x = Math.max(0.2, Math.min(0.8, (n.p.x ?? 50) / 100)) * W;
+          else x = W * (0.13 + 0.74 * n.i / (n.k - 1));
+          const hw = sizes[idx].w / 2;
+          return { x: Math.max(hw + 2, Math.min(W - hw - 2, x)), y: y0, y0, hw, hh: sizes[idx].h / 2, side: n.side };
+        });
+        const gap = 3;
+        for (let it = 0; it < 120; it++) {
+          let moved = false;
+          for (let a = 0; a < pts.length; a++) for (let b = a + 1; b < pts.length; b++) {
+            const A = pts[a], B = pts[b];
+            const dx = B.x - A.x, dy = B.y - A.y;
+            const ox = A.hw + B.hw + gap - Math.abs(dx), oy = A.hh + B.hh + gap - Math.abs(dy);
+            if (ox > 0 && oy > 0) {
+              moved = true;
+              if (ox <= oy * 1.4 || Math.abs(dy) < 6) {
+                const s = dx === 0 ? (a % 2 ? 1 : -1) : Math.sign(dx);
+                A.x -= s * ox / 2; B.x += s * ox / 2;
+              } else {
+                const s = Math.sign(dy);
+                A.y -= s * oy / 2; B.y += s * oy / 2;
+              }
+            }
+          }
+          pts.forEach(P => {
+            P.x = Math.max(P.hw + 2, Math.min(W - P.hw - 2, P.x));
+            const lim = 16;
+            P.y = Math.max(P.y0 - lim, Math.min(P.y0 + lim, P.y));
+            P.y = P.side === 'home' ? Math.min(P.y, Hh - P.hh - 2) : Math.max(P.y, Hh + P.hh + 2);
+            P.y = Math.max(P.hh + 2, Math.min(Hc - P.hh - 2, P.y));
+          });
+          if (!moved) break;
+        }
+        let bad = false;
+        for (let a = 0; a < pts.length && !bad; a++) for (let b = a + 1; b < pts.length; b++) {
+          const A = pts[a], B = pts[b];
+          if (A.hw + B.hw - Math.abs(B.x - A.x) > 0.5 && A.hh + B.hh - Math.abs(B.y - A.y) > 0.5) { bad = true; break; }
+        }
+        pitch.style.height = (Hc + 4) + 'px';
+        nodes.forEach((n, idx) => { n.el.style.left = pts[idx].x.toFixed(1) + 'px'; n.el.style.top = pts[idx].y.toFixed(1) + 'px'; });
+        if (!bad) break;
+      }
+    }
+
+    // ---------- Momentum (en tête de l'onglet Stats) ----------
+    const MO = { W: 300, X0: 5, MID: 66, AMP: 60, BOTTOM: 132 };
+    function momentumHtml(m) {
+      const pts = m.momentum || [];
+      if (pts.length === 0) {
+        return `<h4 class="st-sec">Momentum</h4><div class="empty-state">Actions du match indisponibles : pas de graphique de pression pour cette rencontre.</div>`;
+      }
+      const { W, X0, MID, AMP, BOTTOM } = MO;
+      const n = pts.length;
+      const xOf = (i) => X0 + (n > 1 ? i * W / (n - 1) : W / 2);
+      const yOf = (v) => MID - Math.max(-100, Math.min(100, Number(v) || 0)) / 100 * AMP;
+      const labelOf = (p) => p.label || `${p.minute}'`;
+      const idxOfLabel = (lbl, minute) => {
+        let i = pts.findIndex(p => labelOf(p) === lbl);
+        if (i < 0) i = pts.reduce((best, p, j) => Math.abs(p.minute - minute) < Math.abs(pts[best].minute - minute) ? j : best, 0);
+        return i;
+      };
+      const line = pts.map((p, i) => `${xOf(i).toFixed(2)},${yOf(p.value).toFixed(2)}`).join(' L ');
+      const area = `M ${xOf(0).toFixed(2)},${MID} L ${line} L ${xOf(n - 1).toFixed(2)},${MID} Z`;
+      const htIdx = pts.findIndex(p => p.phase === 'SECOND_HALF');
+      const htX = htIdx > 0 ? (xOf(htIdx - 1) + xOf(htIdx)) / 2 : null;
+      const ticks = [15, 30, 45, 60, 75, 90].filter(mn => !(mn === 45 && htIdx > 0)).map(mn => {
+        const i = pts.findIndex(p => p.minute === mn && !String(labelOf(p)).includes('+'));
+        return i < 0 ? '' : `<text x="${xOf(i).toFixed(1)}" y="${BOTTOM + 9}" font-size="8" fill="#94a3b8" text-anchor="middle">${mn}'</text>`;
+      }).join('');
+      const goals = (m.events || []).filter(e => e.type === 'goal').map(e => {
+        const x = xOf(idxOfLabel(e.minute_label, e.minute));
+        const home = e.team === 'home';
+        const y = home ? 6 : BOTTOM - 4;
+        return `<line x1="${x.toFixed(1)}" y1="${home ? 12 : MID}" x2="${x.toFixed(1)}" y2="${home ? MID : BOTTOM - 10}" stroke="${home ? '#38bdf8' : '#f43f5e'}" stroke-opacity="0.4" stroke-width="0.6" stroke-dasharray="1.5,1.5" />
+                <text x="${x.toFixed(1)}" y="${y}" font-size="9" text-anchor="middle" dominant-baseline="middle">⚽</text>`;
+      }).join('');
+      return `
+        <h4 class="st-sec">Momentum</h4>
+        <div class="momentum-box">
+          <div class="momentum-legend">
+            <span style="color:var(--home-ink)">▲ ${esc(m.home_team.short)}</span>
+            <span id="momentum-readout" style="color:var(--text-muted);font-weight:500">Touchez le graphique</span>
+            <span style="color:var(--away-ink)">▼ ${esc(m.away_team.short)}</span>
+          </div>
+          <svg id="momentum-svg" data-noswipe="1" viewBox="0 0 310 ${BOTTOM + 14}" style="width:100%;height:auto;touch-action:pan-y;display:block">
+            <defs>
+              <clipPath id="clip-home"><rect x="0" y="0" width="310" height="${MID}" /></clipPath>
+              <clipPath id="clip-away"><rect x="0" y="${MID}" width="310" height="${BOTTOM - MID}" /></clipPath>
+              <linearGradient id="grad-home" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#38bdf8" stop-opacity="0.95"/><stop offset="1" stop-color="#38bdf8" stop-opacity="0.25"/></linearGradient>
+              <linearGradient id="grad-away" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f43f5e" stop-opacity="0.25"/><stop offset="1" stop-color="#f43f5e" stop-opacity="0.95"/></linearGradient>
+            </defs>
+            ${htX !== null ? `<line x1="${htX.toFixed(1)}" y1="2" x2="${htX.toFixed(1)}" y2="${BOTTOM}" stroke="#475569" stroke-dasharray="2,2" stroke-width="0.6" /><text x="${htX.toFixed(1)}" y="${BOTTOM + 9}" font-size="8" fill="#94a3b8" text-anchor="middle">MT</text>` : ''}
+            <path d="${area}" fill="url(#grad-home)" clip-path="url(#clip-home)" />
+            <path d="${area}" fill="url(#grad-away)" clip-path="url(#clip-away)" />
+            <line x1="0" y1="${MID}" x2="310" y2="${MID}" stroke="#475569" stroke-width="0.6" />
+            ${goals}${ticks}
+            <line id="momentum-cursor" x1="0" y1="2" x2="0" y2="${BOTTOM}" stroke="#e2e8f0" stroke-width="0.5" visibility="hidden" />
+          </svg>
+          <div class="momentum-key">⚽ but · MT mi-temps · au-dessus de la ligne : pression de ${esc(m.home_team.short)}, en dessous : ${esc(m.away_team.short)}</div>
+          <p class="momentum-note" style="padding:0 4px">Indice de pression minute par minute (lissé sur environ 5 min), calculé à partir des actions officielles UEFA : buts, tirs, attaques dangereuses, corners, arrêts adverses, hors-jeu et coups francs obtenus.</p>
+        </div>`;
+    }
+
+    function bindMomentum(m) {
+      const svg = document.getElementById('momentum-svg');
+      if (!svg) return;
+      const pts = m.momentum || [], n = pts.length;
+      const { W, X0, BOTTOM } = MO;
+      const xOf = (i) => X0 + (n > 1 ? i * W / (n - 1) : W / 2);
+      const readout = document.getElementById('momentum-readout');
+      const cursor = document.getElementById('momentum-cursor');
+      const show = (evt) => {
+        const r = svg.getBoundingClientRect();
+        const x = (evt.clientX - r.left) / r.width * 310;
+        const i = Math.max(0, Math.min(n - 1, Math.round((x - X0) / (n > 1 ? W / (n - 1) : 1))));
+        const p = pts[i];
+        const who = p.value > 15 ? `pression ${m.home_team.short}` : p.value < -15 ? `pression ${m.away_team.short}` : 'équilibré';
+        readout.textContent = `${p.label || p.minute + "'"} · ${who}`;
+        cursor.setAttribute('x1', xOf(i)); cursor.setAttribute('x2', xOf(i)); cursor.setAttribute('visibility', 'visible');
+      };
+      svg.addEventListener('pointermove', show);
+      svg.addEventListener('pointerdown', show);
+    }
+
+    // ---------- Stats : rubriques, possession en grand, lignes à barre divergente ----------
+    const STAT_GROUPS = [
+      ['Tirs', ['attempts', 'attempts_on_target', 'attempts_off_target', 'attempts_blocked', 'shot_in_penalty_area']],
+      ['Construction / passes', ['passes_completed', 'passes_accuracy', 'key_passes', 'delivery_into_penalty_area', 'cross_attempted']],
+      ['Attaque', ['attacks', 'counterattack', 'corners', 'offsides']],
+      ['Défense / gardien', ['saves', 'recovered_ball']],
+      ['Discipline', ['fouls_committed', 'yellow_cards', 'red_cards']],
+      ['Physique', ['distance_covered', 'top_speed', 'sprints']],
+    ];
+    const fmtStat = (v, pct) => {
+      const n = Number(v);
+      const t = Number.isFinite(n) ? n.toLocaleString('fr-FR', { maximumFractionDigits: 1 }) : String(v ?? '—');
+      return pct ? t + ' %' : t;
+    };
+
+    function statsHtml(m) {
+      const statsObj = m.stats || {};
+      const hasHalves = (statsObj['1st'] || []).length > 0 && (statsObj['2nd'] || []).length > 0;
+      const period = hasHalves ? currentStatsPeriod : 'all';
+      const items = statsObj[period] || [];
+      const pills = hasHalves ? `
+        <div class="period-pills">
+          <button class="period-btn ${period === 'all' ? 'active' : ''}" onclick="switchStatsPeriod('all')">Match complet</button>
+          <button class="period-btn ${period === '1st' ? 'active' : ''}" onclick="switchStatsPeriod('1st')">1re mi-temps</button>
+          <button class="period-btn ${period === '2nd' ? 'active' : ''}" onclick="switchStatsPeriod('2nd')">2e mi-temps</button>
+        </div>` : '';
+      if (!items.length) return `<h4 class="st-sec">Statistiques</h4>${pills}<div class="empty-state">Statistiques indisponibles.</div>`;
+      const row = (s) => {
+        const h = Number(s.home), a = Number(s.away);
+        const pct = /\(%\)/.test(s.label || '');
+        const label = String(s.label || '').replace(/\s*\(%\)/, '');
+        const total = (Number.isFinite(h) ? h : 0) + (Number.isFinite(a) ? a : 0);
+        const hp = total > 0 ? Math.round(h / total * 100) : 0, ap = total > 0 ? 100 - hp : 0;
+        const dh = h > a ? 'dom' : h === a ? 'eq' : '', da = a > h ? 'dom' : h === a ? 'eq' : '';
+        return `
+          <div class="st-row">
+            <div class="st-top">
+              <span class="st-v home ${dh}">${esc(fmtStat(s.home, pct))}</span>
+              <span class="st-l">${esc(label)}</span>
+              <span class="st-v away ${da}">${esc(fmtStat(s.away, pct))}</span>
+            </div>
+            <div class="st-bar">
+              <span class="st-half l"><i class="${a > h ? 'dim' : ''}" style="width:${hp}%"></i></span>
+              <span class="st-half r"><i class="${h > a ? 'dim' : ''}" style="width:${ap}%"></i></span>
+            </div>
+          </div>`;
+      };
+      const poss = items.find(s => s.key === 'ball_possession' && Number.isFinite(Number(s.home)) && Number.isFinite(Number(s.away)) && Number(s.home) + Number(s.away) > 0);
+      const possHtml = poss ? (() => {
+        const t = Number(poss.home) + Number(poss.away), hp = Number(poss.home) / t * 100;
+        return `<div class="poss"><div class="poss-lbl">Possession</div>
+          <div class="poss-vals"><span class="poss-v home">${esc(fmtStat(poss.home, true))}</span><span class="poss-v away">${esc(fmtStat(poss.away, true))}</span></div>
+          <div class="poss-bar"><i class="h" style="width:${hp.toFixed(1)}%"></i><i class="a" style="width:${(100 - hp).toFixed(1)}%"></i></div></div>`;
+      })() : '';
+      const used = new Set(poss ? ['ball_possession'] : []);
+      const groups = STAT_GROUPS.map(([title, keys]) => {
+        const rows = items.filter(s => keys.includes(s.key));
+        rows.forEach(s => used.add(s.key));
+        return rows.length ? `<h4 class="st-sec">${esc(title)}</h4>${rows.map(row).join('')}` : '';
+      }).join('');
+      const rest = items.filter(s => !used.has(s.key));
+      const restHtml = rest.length ? `<h4 class="st-sec">Autres</h4>${rest.map(row).join('')}` : '';
+      const note = period !== 'all' ? 'Par mi-temps : décompte des actions officielles UEFA de la période.' : 'Source : statistiques officielles UEFA.';
+      return `<h4 class="st-sec">Statistiques</h4>${pills}
+        <div class="st-wrap">
+          <div class="st-head">
+            <span class="st-team home"><i class="sw"></i>${flag(m.home_team)}<span>${esc(m.home_team.short || m.home_team.name)}</span></span>
+            <span class="st-team away"><span>${esc(m.away_team.short || m.away_team.name)}</span>${flag(m.away_team)}<i class="sw"></i></span>
+          </div>
+          ${possHtml}${groups}${restHtml}
+          <p class="momentum-note">${note}</p>
+        </div>`;
+    }
+
+    // ---------- Fermeture d'une feuille par glissement vers le bas (fiche de match ET fiche joueur) ----------
+    // Part de la poignée / de l'en-tête (headSel), ou du contenu déjà tout en haut (scrollTop = 0) ; la feuille suit
+    // le doigt, se ferme au-delà de 25 % de sa hauteur ou d'un geste rapide, sinon revient en place.
+    function attachSheetDrag(sheet, scroller, headSel, onClose) {
+      let st = null;
+      const reduce = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      sheet.addEventListener('touchstart', (e) => {
+        st = null;
+        if (e.touches.length !== 1) return;
+        const head = !!e.target.closest(headSel);
+        const inBody = scroller.contains(e.target);
+        if (!head && !(inBody && scroller.scrollTop <= 0)) return;
+        st = { x: e.touches[0].clientX, y: e.touches[0].clientY, t: Date.now(), head, drag: false, dy: 0 };
+        sheet.classList.remove('settle');
+      }, { passive: true });
+      sheet.addEventListener('touchmove', (e) => {
+        if (!st) return;
+        const dx = e.touches[0].clientX - st.x, dy = e.touches[0].clientY - st.y;
+        if (!st.drag) {
+          if (!(dy > 8 && dy > 1.5 * Math.abs(dx))) { if (Math.abs(dx) > 12 || dy < -8) st = null; return; }
+          if (!st.head && scroller.scrollTop > 0) { st = null; return; }
+          st.drag = true;
+        }
+        st.dy = Math.max(0, dy);
+        sheet.style.transform = `translateY(${st.dy}px)`;
+      }, { passive: true });
+      const end = () => {
+        if (!st) return;
+        const s = st; st = null;
+        if (!s.drag) return;
+        const v = s.dy / Math.max(1, Date.now() - s.t);
+        const close = s.dy > sheet.offsetHeight * 0.25 || (v > 0.4 && s.dy > 30);
+        const done = () => { sheet.classList.remove('settle'); sheet.style.transform = ''; };
+        if (reduce()) { if (close) onClose(); done(); return; }
+        sheet.classList.add('settle');
+        sheet.style.transform = close ? 'translateY(100%)' : 'translateY(0)';
+        setTimeout(() => { if (close) onClose(); done(); }, 230);
+      };
+      sheet.addEventListener('touchend', end, { passive: true });
+      sheet.addEventListener('touchcancel', end, { passive: true });
+    }
+    attachSheetDrag(document.getElementById('modal-sheet'), document.getElementById('modal-body-content'), '.sheet-handle, .modal-header', () => closeMatchModal());
+    attachSheetDrag(document.getElementById('player-sheet'), document.getElementById('player-body'), '.sheet-handle, .ps-head', () => closePlayer());
+
+    // ---------- Glissement horizontal entre onglets ----------
+    const MODAL_VIEWS = ['events', 'lineups', 'stats'];
+    (function initSwipe() {
+      let sx = 0, sy = 0, ok = false;
+      const zone = () => document.getElementById('modal-body-content');
+      const scrollsX = (el, stop) => {
+        for (; el && el !== stop; el = el.parentElement) {
+          if (el.dataset && el.dataset.noswipe) return true;
+          if (el.scrollWidth > el.clientWidth + 1 && /(auto|scroll)/.test(getComputedStyle(el).overflowX)) return true;
+        }
+        return false;
+      };
+      document.addEventListener('touchstart', (e) => {
+        const z = zone();
+        ok = !!(z && e.touches.length === 1 && z.contains(e.target) && !scrollsX(e.target, z.parentElement));
+        if (ok) { sx = e.touches[0].clientX; sy = e.touches[0].clientY; }
+      }, { passive: true });
+      document.addEventListener('touchend', (e) => {
+        if (!ok) return;
+        ok = false;
+        const t = e.changedTouches[0], dx = t.clientX - sx, dy = t.clientY - sy;
+        if (Math.abs(dx) < 56 || Math.abs(dx) < 1.5 * Math.abs(dy)) return;
+        const i = MODAL_VIEWS.indexOf(currentModalView), j = i + (dx < 0 ? 1 : -1);
+        if (j < 0 || j >= MODAL_VIEWS.length) return;
+        switchModalView(MODAL_VIEWS[j], dx < 0 ? 'slide-l' : 'slide-r');
+      }, { passive: true });
+    })();
 
     // ---------- Joueurs : liens, notes, fiche individuelle ----------
     function ratingClass(r) {
@@ -1226,7 +1537,7 @@
         p.captain ? 'Capitaine' : '', p.potm ? '⭐ Homme du match UEFA' : '',
       ].filter(Boolean).map(t => `<span class="ps-tag">${esc(t)}</span>`).join('');
       const photo = p.photo ? `<img class="ps-photo" src="${esc(p.photo)}" alt="" onerror="this.style.visibility='hidden'">` : `<div class="ps-photo"></div>`;
-      document.getElementById('player-sheet').innerHTML = `
+      document.getElementById('player-body').innerHTML = `
         <div class="modal-close-row">
           <span class="section-sub">${flag(team)} ${esc(team.name)}</span>
           <button class="btn-close" onclick="closePlayer()">✕</button>
@@ -1246,6 +1557,7 @@
         ${groups || '<div class="empty-state" style="margin-top:12px">Statistiques individuelles indisponibles.</div>'}
         <p class="momentum-note">Note sur 10 (échelle de 3 à 10, moyenne autour de 6,9) calculée à partir des statistiques officielles UEFA : pondérations issues de l'étude de Ball, Huynh & Varley (2025) sur les notes FotMob, Sofascore et WhoScored, bonus pour les buts et passes décisives, composante « résultat pendant le temps de jeu » (Wolf et al., 2020).</p>`;
       document.getElementById('player-modal').classList.add('open');
+      document.getElementById('player-body').scrollTop = 0;
     }
 
     function closePlayer() {
