@@ -145,6 +145,11 @@
     .home-btn .back { font-size: 1.1rem; color: var(--text-muted); }
     header.accueil .home-btn .back { display: none; }
     .espace-t { color: var(--text-muted); font-weight: 600; }
+    /* Lien vers le dashboard cyclisme (Camelbaggy/courses-cyclistes), sur l'accueil seulement */
+    .sport-lien { display: none; margin-left: 4px; padding: 4px 10px; border: 1px solid var(--border); border-radius: 99px; color: var(--text-main); font-size: 0.78rem; font-weight: 600; text-decoration: none; white-space: nowrap; min-height: 32px; align-items: center; }
+    header.accueil .sport-lien { display: inline-flex; }
+    .sport-lien:hover { background: var(--bg-card-hover); }
+    .sport-lien:focus-visible { outline: 2px solid var(--accent-ucl); outline-offset: 2px; }
 
     /* Accueil : derniers résultats + tuiles des compétitions */
     #accueil h2.acc-h { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); margin: 4px 0 10px; font-weight: 700; }
@@ -1080,6 +1085,7 @@
         <button type="button" class="home-btn" id="home-btn" onclick="goAccueil()" aria-label="Accueil">
           <span class="back" aria-hidden="true">‹</span><span>⚽ Football</span><span class="espace-t" id="espace-titre"></span>
         </button>
+        <a class="sport-lien" id="lien-cyclisme" href="https://camelbaggy.github.io/courses-cyclistes/" aria-label="Dashboard cyclisme">🚴 Cyclisme</a>
       </div>
       <span class="badge-live" id="last-updated-badge">Chargement…</span>
     </div>
