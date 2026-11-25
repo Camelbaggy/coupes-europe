@@ -261,7 +261,8 @@ Option B (décision du 25/11) : UNE seule application (`index.html`), aucune URL
   (`attachTabSwipe`, onglets de l'espace courant ; aucun sur l'accueil). Journées : `buildToursLigue` depuis `index.json`
   (`par_journee` {n: matchs} de chaque jour, `sans_journee`) ; un jour qui mêle deux journées (match reporté) est filtré par `journee` ;
   tour « Autres matchs » pour les matchs sans journée. Pas de focus clubs français ni de surlignage « FRA » (tous les clubs sont du même
-  pays). Classement : légende construite depuis les zones ESPN (`legendeLigue`, `ZONES_FR`, plages de rangs lues), séparateur entre
+  pays) ; **le logo du club remplace le drapeau** (demande du 25/11 : `flag()` rend le logo ESPN réduit à 40 px par le service
+  `a.espncdn.com/combiner` pour tout club dont le logo est chez ESPN ; les coupes gardent le drapeau). Classement : légende construite depuis les zones ESPN (`legendeLigue`, `ZONES_FR`, plages de rangs lues), séparateur entre
   zones ; info-bulle de source. Sources affichées selon le match (`m.source`) : « ESPN (données Opta) » au lieu de « UEFA » (stats,
   momentum, compos, méthode de la note). Nouvelles stats Opta rangées dans les rubriques (`STAT_GROUPS`, `PLAYER_STAT_GROUPS` : xG / xGOT /
   xA en 2 décimales, grosses occasions, ballons touchés, interceptions, duels, buts évités…) ; aucune clé dans « Autres ».

@@ -21,6 +21,7 @@ const { chromium, devices } = require('playwright');
   const ok = (cond, msg) => { console.log((cond ? '[OK] ' : '[ÉCHEC] ') + msg); if (!cond) echecs++; };
   const debord = async () => page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
   const q = `donnees=${encodeURIComponent(donnees)}`;
+  const images = async () => { try { await page.waitForFunction(() => [...document.images].every(i => i.complete), null, { timeout: 8000 }); } catch (e) { /* images lentes : capture quand même */ } };
 
   // 1. Accueil
   await page.goto(`${base}/?${q}`);
@@ -30,6 +31,7 @@ const { chromium, devices } = require('playwright');
   const blocs = await page.$$eval('#accueil .acc-bloc-h b', els => els.map(e => e.textContent));
   ok(blocs.length > 0, `derniers résultats : ${blocs.join(', ')}`);
   ok(await debord() <= 0, 'accueil : pas de débordement horizontal');
+  await images();
   await page.screenshot({ path: `${out}/01-accueil.png`, fullPage: true });
 
   // 2. Match ouvert depuis l'accueil
@@ -48,6 +50,8 @@ const { chromium, devices } = require('playwright');
   ok(!(await page.isVisible('#focus-section')), 'pas de focus clubs français en championnat');
   ok(await page.textContent('#tour-btn .tour-t').then(t => /^Journée \d+$/.test(t)), 'menu des journées : ' + await page.textContent('#tour-btn .tour-t'));
   ok(await debord() <= 0, 'championnat : pas de débordement horizontal');
+  ok(await page.$$eval('#comp-view img.logo-club', l => l.length > 0), 'championnat : logos des clubs à la place des drapeaux');
+  await images();
   await page.screenshot({ path: `${out}/03-ligue1.png`, fullPage: true });
 
   // 4. Fiche de match : Stats (momentum, xG), Compos

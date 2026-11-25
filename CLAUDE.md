@@ -345,7 +345,7 @@ nationalité, photo). La compo et le déroulé référencent les joueurs par `id
 - **Interface** (étude § 12) : une seule application ; sans paramètre = ACCUEIL (`afficherAccueil` : derniers résultats en date, 8 tuiles) ;
   `?c=ucl|uel|uecl` / `?soiree=` = coupes (inchangé) ; `?c=fl1|pl|liga|sa|bl&tour=jN` = championnat (mêmes composants, `LIGUE_KEYS`,
   `buildToursLigue`, `loadJourLigue`, `DONNEES` = Pages de donnees-football ou `?donnees=`). `entrer` (pushState) / `goAccueil` / `route`
-  (popstate). En championnat : pas de focus ni de surlignage français, légende des zones ESPN (`legendeLigue`), sources « ESPN (Opta) »
+  (popstate). En championnat : logo du club à la place du drapeau (`flag()` / `logoEspn`), pas de focus ni de surlignage français, légende des zones ESPN (`legendeLigue`), sources « ESPN (Opta) »
   selon `m.source`. Essai : `node tools/test_accueil_ui.js <url> <dossier> [donnees/]` ; les autres essais Playwright ouvrent `index.html?c=ucl`.
 - À venir (étude § 8) : collecte quotidienne + notification commune (étape 3), reconstitution de 2026-27, fiches club / joueur uniques,
   historique des classements (Wikipédia).
