@@ -44,6 +44,14 @@ PAGES = {
     "liga": ("fr", "Championnat d'Espagne de football {a}-{b}"),
     "bl": ("fr", "Championnat d'Allemagne de football {a}-{b}"),
     "fl2": ("fr", "Championnat de France de football de deuxième division {a}-{b}"),
+    # Secondaires (26/11/2026) : pages FR de la saison ; sans tableau {{Foot résultat}} lisible, les matchs restent sans journée
+    "por": ("fr", "Championnat du Portugal de football {a}-{b}"),
+    "ned": ("fr", "Championnat des Pays-Bas de football {a}-{b}"),
+    "bel": ("fr", "Championnat de Belgique de football {a}-{b}"),
+    "tur": ("fr", "Championnat de Turquie de football {a}-{b}"),
+    "aut": ("fr", "Championnat d'Autriche de football {a}-{b}"),
+    "gre": ("fr", "Championnat de Grèce de football {a}-{b}"),
+    "nor": ("fr", "Championnat de Norvège de football {a}"),
     "sa": ("it", "Serie A {a}-{b}"),
 }
 # Pages LOCALES de secours (demande du propriétaire du 25/11/2026 : « prendre les pages locales si les données FR ne sont pas

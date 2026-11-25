@@ -52,9 +52,48 @@ LIGUES: Dict[str, Dict[str, Any]] = {
     # « reduit » : ni momentum, ni stats par mi-temps, ni notes (des valeurs calculées sur ces données seraient fausses).
     "fl2": {"slug": "fra.2", "name": "Ligue 2", "short_name": "L2", "country": "FRA", "country_name": "France", "flux": "reduit"},
 }
+# Championnats SECONDAIRES (décision du 26/11/2026 : championnats hors big 5 représentés en LDC 2026-27 ; mesuré le 26/11/2026) :
+# Portugal et Pays-Bas = flux Opta complet SANS xG ; Belgique, Turquie, Autriche, Grèce, Norvège = actions clés seulement (« reduit »).
+# Pas chez ESPN : Slovaquie, Ukraine, Azerbaïdjan (HTTP 400) ; Tchéquie (`cze.1` vide). Norvège : saison sur l'année civile.
+LIGUES.update({
+    "por": {"slug": "por.1", "name": "Liga Portugal", "short_name": "POR", "country": "POR", "country_name": "Portugal"},
+    "ned": {"slug": "ned.1", "name": "Eredivisie", "short_name": "NED", "country": "NED", "country_name": "Pays-Bas"},
+    "bel": {"slug": "bel.1", "name": "Pro League", "short_name": "BEL", "country": "BEL", "country_name": "Belgique", "flux": "reduit"},
+    "tur": {"slug": "tur.1", "name": "Süper Lig", "short_name": "TUR", "country": "TUR", "country_name": "Turquie", "flux": "reduit"},
+    "aut": {"slug": "aut.1", "name": "Bundesliga autrichienne", "short_name": "AUT", "country": "AUT", "country_name": "Autriche",
+            "flux": "reduit"},
+    "gre": {"slug": "gre.1", "name": "Super League grecque", "short_name": "GRE", "country": "GRE", "country_name": "Grèce", "flux": "reduit"},
+    "nor": {"slug": "nor.1", "name": "Eliteserien", "short_name": "NOR", "country": "NOR", "country_name": "Norvège", "flux": "reduit",
+            "annee_civile": True},
+})
 # Championnats qui entrent dans la notification commune du jour et les alertes d'échec (décision du 26/11/2026 : big 5 +
 # Ligue 2 ; tout championnat ajouté ensuite est « secondaire » : collecté et affiché, jamais notifié ni alerté).
 PRINCIPAUX = ["fl1", "pl", "liga", "sa", "bl", "fl2"]
+SECONDAIRES = [k for k in LIGUES if k not in PRINCIPAUX]
+# Familles de collecte : chacune a son workflow (donnees-football) et son fichier d'état ; seuls les principaux ont une alerte d'échec
+FAMILLES = {
+    "principaux": {"ligues": PRINCIPAUX, "workflow": "collecte_championnats.yml", "etat": "etat_championnats.json"},
+    "secondaires": {"ligues": SECONDAIRES, "workflow": "collecte_secondaires.yml", "etat": "etat_secondaires.json"},
+}
+
+
+def famille(ligue: str) -> str:
+    return "principaux" if ligue in PRINCIPAUX else "secondaires"
+
+
+def saison_de(jour: str, ligue: Optional[str] = None) -> int:
+    """Année de début de la saison du jour : 1er juillet -> 30 juin ; championnat sur l'année civile (Norvège) : l'année."""
+    d = date.fromisoformat(jour)
+    if ligue and LIGUES.get(ligue, {}).get("annee_civile"):
+        return d.year
+    return d.year if d.month >= 7 else d.year - 1
+
+
+def libelle_saison(annee: int, ligue: Optional[str] = None) -> str:
+    """« 2026-27 » ; championnat sur l'année civile : « 2026 »."""
+    if ligue and LIGUES.get(ligue, {}).get("annee_civile"):
+        return str(annee)
+    return f"{annee}-{str(annee + 1)[2:]}"
 
 
 def flux_reduit(ligue: str) -> bool:

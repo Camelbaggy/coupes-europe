@@ -18,6 +18,8 @@ Coût : 2 requêtes ESPN (scoreboard) par championnat et par jour examiné, tout
     python veille_ligues.py --boucle 330   # battement (relance battement.yml à la fin)
     python veille_ligues.py --test
 Environnement : GH_TOKEN (jeton du dépôt de données, actions: write), REPO (Camelbaggy/donnees-football), WF (collecte_championnats.yml).
+Deux familles (ligues.FAMILLES, 26/11/2026) : principaux (etat_championnats.json -> WF) et secondaires (etat_secondaires.json ->
+collecte_secondaires.yml, sans alerte d'échec) ; mêmes règles, passages indépendants.
 """
 
 import argparse
@@ -93,9 +95,9 @@ def gh(methode: str, chemin: str, corps: Optional[Dict[str, Any]] = None, brut: 
         return json.loads(txt) if txt else None
 
 
-def etat_publie(repo: str) -> Optional[Dict[str, Any]]:
+def etat_publie(repo: str, fichier: str = "etat_championnats.json") -> Optional[Dict[str, Any]]:
     try:
-        return gh("GET", f"/repos/{repo}/contents/etat_championnats.json?ref=main", brut=True) or {}
+        return gh("GET", f"/repos/{repo}/contents/{fichier}?ref=main", brut=True) or {}
     except urllib.error.HTTPError as e:
         return {} if e.code == 404 else None
     except Exception:
@@ -118,11 +120,11 @@ def lancer(repo: str, wf: str, inputs: Dict[str, str]) -> bool:
         return False
 
 
-def matchs_espn(jour: str) -> Optional[List[Dict[str, Any]]]:
+def matchs_espn(jour: str, lgs: Optional[List[str]] = None) -> Optional[List[Dict[str, Any]]]:
     import ligues
     out, vus = [], set()
     veille = (dt.date.fromisoformat(jour) - dt.timedelta(days=1)).isoformat()
-    for lg in ligues.LIGUES:
+    for lg in lgs or ligues.PRINCIPAUX:
         for j in (veille, jour):
             evs, st = ligues.scoreboard(lg, j)
             if st != "ok":
@@ -136,13 +138,24 @@ def matchs_espn(jour: str) -> Optional[List[Dict[str, Any]]]:
 
 
 def un_passage(repo: str, wf: str, maintenant: Optional[dt.datetime] = None) -> None:
+    """Un passage pour chaque famille (principaux : `wf`, alerte d'échec ; secondaires : collecte_secondaires.yml, sans alerte)."""
+    import ligues
+    for nom, fam in ligues.FAMILLES.items():
+        print(f"[VEILLE-LIGUES] — {nom} —")
+        try:
+            passage_famille(repo, wf if nom == "principaux" else fam["workflow"], fam["etat"], fam["ligues"], maintenant)
+        except Exception as e:
+            print(f"[VEILLE-LIGUES] {nom} : passage en erreur ({e})")
+
+
+def passage_famille(repo: str, wf: str, fichier_etat: str, lgs: List[str], maintenant: Optional[dt.datetime] = None) -> None:
     maintenant = maintenant or dt.datetime.now(dt.timezone.utc)
-    etat = etat_publie(repo)
+    etat = etat_publie(repo, fichier_etat)
     if etat is None:
-        print("[VEILLE-LIGUES] etat_championnats.json illisible : rien à faire")
+        print(f"[VEILLE-LIGUES] {fichier_etat} illisible : rien à faire")
         return
     for jour in jours_a_examiner(maintenant):
-        ms = matchs_espn(jour)
+        ms = matchs_espn(jour, lgs)
         ok, raison = a_lancer(jour, maintenant, etat, None if ms is None else prets_espn(ms, maintenant))
         print(f"[VEILLE-LIGUES] {raison}")
         if not ok:

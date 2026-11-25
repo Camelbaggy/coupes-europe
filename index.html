@@ -26,6 +26,8 @@
       --accent-sa: #22d3ee;
       --accent-bl: #a3e635;
       --accent-fl2: #fb7185;
+      --accent-por: #4ade80; --accent-ned: #fb923c; --accent-bel: #fde047; --accent-tur: #f87171;
+      --accent-aut: #fca5a5; --accent-gre: #60a5fa; --accent-nor: #93c5fd;
       --zone-ucl: #38bdf8;
       --zone-uel: #fb923c;
       --zone-uecl: #34d399;
@@ -142,6 +144,8 @@
     .tabs-bar.n5 .tab-btn { font-size: 0.74rem; padding: 10px 1px; }
     .tabs-bar.n6 { grid-template-columns: repeat(6, 1fr); gap: 1px; }
     .tabs-bar.n6 .tab-btn { font-size: 0.7rem; padding: 10px 0; letter-spacing: -0.01em; }
+    .tabs-bar.n7 { grid-template-columns: repeat(7, 1fr); gap: 0; }
+    .tabs-bar.n7 .tab-btn { font-size: 0.64rem; padding: 10px 0; letter-spacing: -0.02em; }
     .tabs-bar[hidden] { display: none; }
     header.accueil { padding-bottom: 12px; }
     header.accueil .header-top { margin-bottom: 0; }
@@ -1321,13 +1325,21 @@
     // ---------- Soirées : soirees/index.json (menu) + soirees/<date>.json ; repli sur data.json sans index ----------
     const COMP_KEYS = ['ucl', 'uel', 'uecl'];
     const COMP_FULL = { ucl: 'Ligue des Champions', uel: 'Ligue Europa', uecl: 'Ligue Conférence',
-      fl1: 'Ligue 1', fl2: 'Ligue 2', pl: 'Premier League', liga: 'Liga', sa: 'Serie A', bl: 'Bundesliga' };
+      fl1: 'Ligue 1', fl2: 'Ligue 2', pl: 'Premier League', liga: 'Liga', sa: 'Serie A', bl: 'Bundesliga',
+      por: 'Liga Portugal', ned: 'Eredivisie', bel: 'Pro League (Belgique)', tur: 'Süper Lig', aut: 'Bundesliga (Autriche)',
+      gre: 'Super League (Grèce)', nor: 'Eliteserien' };
     // Championnats nationaux : données du dépôt Camelbaggy/donnees-football (GitHub Pages) ; ?donnees=<url ou dossier> pour un essai local
-    const LIGUE_KEYS = ['fl1', 'fl2', 'pl', 'liga', 'sa', 'bl'];
-    const LIGUE_COURT = { fl1: 'Ligue 1', fl2: 'Ligue 2', pl: 'Premier L.', liga: 'Liga', sa: 'Serie A', bl: 'Bundesliga' };
-    const ESPACES = { coupes: { titre: "Coupes d'Europe", keys: COMP_KEYS }, championnats: { titre: 'Championnats', keys: LIGUE_KEYS } };
+    // Championnats majeurs (notifiés) et autres championnats (décision du 26/11/2026 : collectés et affichés de la même façon, sans
+    // notification ni place dans les « Derniers résultats » de l'accueil)
+    const LIGUE_MAJEURS = ['fl1', 'fl2', 'pl', 'liga', 'sa', 'bl'];
+    const LIGUE_AUTRES = ['por', 'ned', 'bel', 'tur', 'aut', 'gre', 'nor'];
+    const LIGUE_KEYS = [...LIGUE_MAJEURS, ...LIGUE_AUTRES];
+    const LIGUE_COURT = { fl1: 'Ligue 1', fl2: 'Ligue 2', pl: 'Premier L.', liga: 'Liga', sa: 'Serie A', bl: 'Bundesliga',
+      por: 'Portugal', ned: 'Pays-Bas', bel: 'Belgique', tur: 'Turquie', aut: 'Autriche', gre: 'Grèce', nor: 'Norvège' };
+    const ESPACES = { coupes: { titre: "Coupes d'Europe", keys: COMP_KEYS }, championnats: { titre: 'Championnats majeurs', keys: LIGUE_MAJEURS },
+      autres: { titre: 'Autres championnats', keys: LIGUE_AUTRES } };
     const estLigue = (k) => LIGUE_KEYS.includes(k);
-    const espaceDe = (k) => estLigue(k) ? 'championnats' : 'coupes';
+    const espaceDe = (k) => LIGUE_AUTRES.includes(k) ? 'autres' : estLigue(k) ? 'championnats' : 'coupes';
     const DONNEES = (() => {
       const v = new URLSearchParams(location.search).get('donnees');
       const b = v || 'https://camelbaggy.github.io/donnees-football/';
@@ -1335,7 +1347,12 @@
     })();
     // Saison en cours (1er juillet -> 30 juin) : « 2026-27 »
     const SAISON_LIGUES = (() => { const d = new Date(); const y = d.getUTCMonth() >= 6 ? d.getUTCFullYear() : d.getUTCFullYear() - 1; return `${y}-${String(y + 1).slice(2)}`; })();
-    const ligueBase = (k) => `${DONNEES}championnats/${k}/${SAISON_LIGUES}/`;
+    // Dossier de la saison en cours de chaque championnat (championnats/saisons.json, écrit par la collecte : « 2026-27 », ou « 2026 »
+    // pour un championnat sur l'année civile) ; repli sur la saison juillet-juin du jour
+    let SAISONS = null;
+    const chargerSaisons = () => SAISONS || (SAISONS = fetchJson(DONNEES + 'championnats/saisons.json').then(d => d || {}));
+    const saisonDe = {};
+    const ligueBase = (k) => `${DONNEES}championnats/${k}/${saisonDe[k] || SAISON_LIGUES}/`;
     const ligueIndex = {};          // clé -> lignes d'index (date décroissante) ; [] = pas encore de données
     let soireeIndex = null;        // lignes de l'index (plus récente d'abord) ; null = pas d'index : pas de menu
     const soireeCache = new Map();
@@ -1443,6 +1460,7 @@
     }
     async function loadLigueIndex(k) {
       if (ligueIndex[k]) return ligueIndex[k];
+      if (!saisonDe[k]) saisonDe[k] = (await chargerSaisons())[k] || SAISON_LIGUES;
       const idx = await fetchJson(ligueBase(k) + 'index.json');
       ligueIndex[k] = Array.isArray(idx) ? idx.filter(l => l && /^\d{4}-\d{2}-\d{2}$/.test(l.date)).sort((a, b) => b.date.localeCompare(a.date)) : [];
       buildToursLigue(k);
@@ -1700,7 +1718,8 @@
     function renderTabs(espace) {
       const bar = document.getElementById('tabs-bar'), keys = ESPACES[espace].keys;
       bar.classList.toggle('n5', keys.length === 5 || keys.length === 4);
-      bar.classList.toggle('n6', keys.length >= 6);
+      bar.classList.toggle('n6', keys.length === 6);
+      bar.classList.toggle('n7', keys.length >= 7);
       bar.innerHTML = keys.map(k => `<button class="tab-btn ${k === currentComp ? 'active' : ''}" data-comp="${k}" style="--tab-accent: var(--accent-${k})" onclick="switchCompetition('${k}')">${esc(keys.length > 3 ? LIGUE_COURT[k] : COMP_FULL[k])}</button>`).join('');
     }
     function afficherVue(v) {
@@ -1711,7 +1730,7 @@
       document.getElementById('tabs-bar').hidden = acc;
       document.getElementById('app-header').classList.toggle('accueil', acc);
       document.getElementById('home-btn').setAttribute('aria-label', acc ? 'Accueil' : 'Retour à l\'accueil');
-      document.getElementById('espace-titre').textContent = acc ? '' : '· ' + ESPACES[espaceDe(currentComp)].titre;
+      document.getElementById('espace-titre').textContent = acc ? '' : '· ' + (espaceDe(currentComp) === 'coupes' ? ESPACES.coupes.titre : 'Championnats');
       if (!acc) renderTabs(espaceDe(currentComp));
       document.title = acc ? 'Football · Coupes d\'Europe et championnats' : COMP_FULL[currentComp] + ' · Football';
     }
@@ -1766,7 +1785,7 @@
       box.innerHTML = '<div class="acc-note">Chargement…</div>';
       await Promise.all(LIGUE_KEYS.map(loadLigueIndex));
       if (vue !== 'accueil') return;
-      const toutes = [...COMP_KEYS, ...LIGUE_KEYS];
+      const toutes = [...COMP_KEYS, ...LIGUE_MAJEURS];   // derniers résultats : coupes et championnats majeurs seulement
       const dates = Object.fromEntries(toutes.map(k => [k, derniereDate(k)]));
       const jour = Object.values(dates).filter(Boolean).sort().pop() || null;
       let html = '';
@@ -1796,9 +1815,10 @@
         return `<button type="button" class="acc-tuile" style="--c-accent: var(--accent-${k})" onclick="entrer('${k}', ${t ? `'${esc(t.id)}'` : 'null'})"><b>${esc(COMP_FULL[k])}</b>${desc}</button>`;
       };
       html += `<h2 class="acc-h">Coupes d'Europe</h2><div class="acc-grille">${COMP_KEYS.map(tuile).join('')}</div>`;
-      html += `<h2 class="acc-h">Championnats</h2><div class="acc-grille">${LIGUE_KEYS.map(tuile).join('')}</div>`;
+      html += `<h2 class="acc-h">Championnats majeurs</h2><div class="acc-grille">${LIGUE_MAJEURS.map(tuile).join('')}</div>`;
+      html += `<h2 class="acc-h">Autres championnats</h2><div class="acc-grille">${LIGUE_AUTRES.map(tuile).join('')}</div>`;
       box.innerHTML = html;
-      const maj = [soireeIndex && soireeIndex[0] && soireeIndex[0].maj, ...LIGUE_KEYS.map(k => (ligueIndex[k][0] || {}).maj)].filter(Boolean).sort().pop();
+      const maj = [soireeIndex && soireeIndex[0] && soireeIndex[0].maj, ...LIGUE_MAJEURS.map(k => (ligueIndex[k][0] || {}).maj)].filter(Boolean).sort().pop();
       if (maj) updateBadge({ last_updated: maj });
     }
 
@@ -2032,6 +2052,8 @@
 
     // Classement d'un championnat recalculé depuis les scores (classement_ligue.py) : critères appliqués selon le championnat
     const CRITERES_LIGUE = {
+      ned: 'points, différence de buts, buts marqués', nor: 'points, différence de buts, buts marqués', aut: 'points, différence de buts, buts marqués',
+      por: 'points seulement', bel: 'points seulement', tur: 'points seulement', gre: 'points seulement',
       fl2: 'points, différence de buts, buts marqués', pl: 'points, différence de buts, buts marqués', bl: 'points, différence de buts, buts marqués', fl1: 'points, différence de buts, buts marqués',
       liga: 'points, confrontations directes (points puis différence de buts, seulement si l\'aller et le retour ont été joués), différence de buts, buts marqués',
       sa: 'points, confrontations directes (points puis différence de buts, seulement si l\'aller et le retour ont été joués), différence de buts, buts marqués',
@@ -2040,7 +2062,7 @@
       const d = at ? new Date(at + 'T12:00:00Z').toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' }) : '';
       return `<p><b>Classement calculé</b> d'après les scores des matchs terminés${d ? ' jusqu\'au ' + esc(d) + ' inclus' : ''} : ESPN ne donne que le classement actuel, jamais celui d'une date passée.</p>
         <p>Départage appliqué, dans l'ordre : ${esc(CRITERES_LIGUE[k] || 'points, différence de buts, buts marqués')}. Les critères suivants du règlement ne sont pas appliqués : les clubs encore à égalité portent le même rang, suivi de =.</p>
-        <p>Vérifié : le calcul à la date du jour est identique au classement officiel ESPN des cinq championnats. Les zones (Europe, relégation) ne sont pas indiquées : elles décrivent la fin de saison.</p>`;
+        ${['fl1', 'pl', 'liga', 'sa', 'bl'].includes(k) ? '<p>Vérifié : le calcul à la date du jour est identique au classement officiel ESPN des cinq grands championnats.</p><p>' : '<p>'}Les zones (Europe, relégation) ne sont pas indiquées : elles décrivent la fin de saison.</p>`;
     }
 
     // Légende des zones d'un championnat (codes ESPN ; libellé traduit, plage de rangs lue dans le classement)

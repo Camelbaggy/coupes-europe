@@ -408,6 +408,17 @@ nationalité, photo). La compo et le déroulé référencent les joueurs par `id
 - **Championnats principaux / secondaires** (décision du 26/11/2026) : `ligues.PRINCIPAUX` (big 5 + Ligue 2, = `notification_jour.LIGUES`, contrôlé par
   `notification_jour.py --test`) entrent dans la notification commune du jour ; tout championnat ajouté ensuite est secondaire : collecté et affiché,
   jamais nommé dans la notification (et à collecter par un workflow sans alerte d'échec).
+- **Championnats secondaires** (décision du 26/11/2026 : hors big 5, pays représentés en LDC 2026-27) : `ligues.SECONDAIRES` = `por` (Liga Portugal),
+  `ned` (Eredivisie) : flux Opta complet SANS xG (momentum, mi-temps, notes) ; `bel`, `tur`, `aut`, `gre`, `nor` : flux réduit (comme la Ligue 2).
+  Sans source ESPN : Tchéquie (`cze.1` vide), Slovaquie, Ukraine, Azerbaïdjan (HTTP 400). Norvège : saison sur l'ANNÉE CIVILE (`annee_civile`,
+  `ligues.saison_de(jour, ligue)` / `libelle_saison` -> dossier `championnats/nor/2026/`) ; `run_ligues` écrit `championnats/saisons.json` {ligue: libellé}
+  que la page lit (`chargerSaisons`, `saisonDe`, `ligueBase`). Familles (`ligues.FAMILLES`) : principaux = `collecte_championnats.yml` +
+  `etat_championnats.json` (alerte, notification) ; secondaires = `collecte_secondaires.yml` + `etat_secondaires.json` (`run_ligues.fichier_etat`),
+  ni alerte ni notification ; `veille_ligues.un_passage` traite les deux familles. Classement recalculé : `points, gd, gf` pour ned / nor / aut, points
+  SEULS pour por / bel / tur / gre (règlements non vérifiés : égalité de points = même rang + « = », jamais de départage deviné). Journées : pages FR
+  de saison (`journees_wiki.PAGES`). Interface : accueil « Championnats majeurs » (`LIGUE_MAJEURS`) puis « Autres championnats » (`LIGUE_AUTRES`,
+  espace `autres`, 7 onglets `n7`) ; les « Derniers résultats » de l'accueil ne montrent que coupes + majeurs. À faire : historique des classements
+  des secondaires ; formules à poules finales (Belgique, Autriche, Grèce : points divisés / groupes) à traiter avant la fin de leur phase régulière.
 
 ## API UEFA : pièges vérifiés sur les données réelles
 

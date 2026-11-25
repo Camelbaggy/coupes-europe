@@ -59,10 +59,26 @@ def statut_jour(bilan: Dict[str, Any]) -> str:
     return "complet" if any(s == "complet" for s in st) else "aucun_match"
 
 
+def fichier_etat(lgs: List[str]) -> str:
+    """etat_championnats.json (championnats principaux, lu par la notification) ; etat_secondaires.json si TOUS les championnats
+    demandés sont secondaires (collecte séparée, jamais notifiée ni alertée)."""
+    return ligues.FAMILLES["secondaires"]["etat"] if lgs and all(ligues.famille(l) == "secondaires" for l in lgs) else ETAT
+
+
+def ecrire_saisons(donnees: str, lgs: List[str], jour: str) -> None:
+    """championnats/saisons.json {ligue: libellé de la saison en cours} : la page y lit le dossier de chaque championnat (saisons
+    sur deux années ou sur l'année civile)."""
+    chemin = os.path.join(donnees, "championnats", "saisons.json")
+    d = _lire(chemin) or {}
+    for lg in lgs:
+        d[lg] = libelle_saison(saison_de(jour, lg), lg)
+    ecrire_si_change(chemin, dict(sorted(d.items())))
+
+
 def ecrire_etat(donnees: str, jour: str, bilan: Dict[str, Any], maintenant: datetime) -> Dict[str, Any]:
     """etat_championnats.json : {jour: {statut, ligues: {clé: {statut, matchs, termines}}, maj, alertes?}} (60 jours gardés).
     `matchs` exclut les reportés / annulés ; `termines` = terminés ET collectés en entier."""
-    chemin = os.path.join(donnees, ETAT)
+    chemin = os.path.join(donnees, fichier_etat(list(bilan)))
     etat = _lire(chemin) or {}
     ancien = etat.get(jour) or {}
     ligues_etat = dict(ancien.get("ligues") or {})
@@ -99,14 +115,13 @@ def alerter(jour: str, cause: str, donnees: str, url_run: str = "") -> int:
     return 0
 
 
-def saison_de(jour: str) -> int:
-    """Année de début de la saison (1er juillet -> 30 juin)."""
-    d = date.fromisoformat(jour)
-    return d.year if d.month >= 7 else d.year - 1
+def saison_de(jour: str, ligue: Optional[str] = None) -> int:
+    """Année de début de la saison (1er juillet -> 30 juin ; année civile pour les championnats `annee_civile`)."""
+    return ligues.saison_de(jour, ligue)
 
 
-def libelle_saison(annee: int) -> str:
-    return f"{annee}-{str(annee + 1)[2:]}"
+def libelle_saison(annee: int, ligue: Optional[str] = None) -> str:
+    return ligues.libelle_saison(annee, ligue)
 
 
 def _lire(chemin: str) -> Optional[Any]:
@@ -177,10 +192,10 @@ def collecter(jour: str, donnees: str, ligues_demandees: List[str], avec_wiki: b
               maintenant: Optional[datetime] = None, reconstituee: bool = False,
               forcer_calcul: bool = False) -> Dict[str, Any]:
     maintenant = maintenant or datetime.now(timezone.utc)
-    annee = saison_de(jour)
     bilan: Dict[str, Any] = {}
     for lg in ligues_demandees:
-        dossier = os.path.join(donnees, "championnats", lg, libelle_saison(annee))
+        annee = saison_de(jour, lg)
+        dossier = os.path.join(donnees, "championnats", lg, libelle_saison(annee, lg))
         chemin = os.path.join(dossier, f"{jour}.json")
         precedent = _lire(chemin) or {}
         deja = {m["espn_id"]: m for m in ((precedent.get("competitions") or {}).get(lg) or {}).get("matches", [])
@@ -252,7 +267,7 @@ def collecter(jour: str, donnees: str, ligues_demandees: List[str], avec_wiki: b
             "incomplet": incomplet, **({"standings_at": calc_at} if calc_at else {}),
         }
         sortie = {"last_updated": maintenant.strftime("%Y-%m-%dT%H:%M:%SZ"), "target_dates": [jour],
-                  "source": ligues.SOURCE + " ; journées : Wikipédia", "saison": libelle_saison(annee),
+                  "source": ligues.SOURCE + " ; journées : Wikipédia", "saison": libelle_saison(annee, lg),
                   "competitions": {lg: comp}}
         if reconstituee or precedent.get("reconstituee"):
             sortie["reconstituee"] = True
@@ -282,14 +297,14 @@ def a_reconstituer(donnees: str, ligues_demandees: List[str], maintenant: dateti
     """(jour, ligue) à reconstituer : jours (heure de Paris) avec au moins un match terminé, antérieurs à aujourd'hui, sans
     fichier publié ; du plus récent au plus ancien."""
     auj = maintenant.astimezone(ligues._PARIS).date().isoformat()
-    annee = saison_de(auj)
     out = []
     for lg in ligues_demandees:
+        annee = saison_de(auj, lg)
         ms = matchs_saison(lg, annee)
         if ms is None:
             print(f"[WARN] {lg} : calendrier de la saison illisible ; rien à reconstituer ce passage")
             continue
-        dossier = os.path.join(donnees, "championnats", lg, libelle_saison(annee))
+        dossier = os.path.join(donnees, "championnats", lg, libelle_saison(annee, lg))
         jours = {classement_ligue.jour_paris(m["date_utc"]) for m in ms if m.get("score") is not None}
         for j in jours:
             if not j or j >= auj:
@@ -316,6 +331,7 @@ def reconstituer(donnees: str, ligues_demandees: List[str], budget_min: float) -
         collecter(jour, donnees, [lg], True, reconstituee=nouveau, forcer_calcul=not nouveau)
         faits += 1
     restants = len(todo) - faits
+    ecrire_saisons(donnees, ligues_demandees, debut.astimezone(ligues._PARIS).date().isoformat())
     print(f"[RECONSTITUTION] {faits} fait(s), {restants} restant(s)")
     sortie = os.environ.get("GITHUB_OUTPUT")
     if sortie:
@@ -356,5 +372,6 @@ if __name__ == "__main__":
         jours = [a.date or datetime.now(timezone.utc).date().isoformat()]
     for j in jours:
         b = collecter(j, a.donnees, a.ligues.split(","), not a.sans_journees)
+        ecrire_saisons(a.donnees, a.ligues.split(","), j)
         if a.etat:
             ecrire_etat(a.donnees, j, b, datetime.now(timezone.utc))
