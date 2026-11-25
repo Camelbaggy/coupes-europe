@@ -834,5 +834,119 @@
   "reconstituee": true,
   "maj": "2026-11-25T01:42:46Z",
   "fichier": "soirees/2026-08-18.json"
+ },
+ {
+  "date": "2026-08-14",
+  "statut": "complet",
+  "matchs": 1,
+  "termines": 1,
+  "competitions": {
+   "uel": {
+    "matchs": 1,
+    "stage": "qualifying",
+    "tour": "T3 retour"
+   }
+  },
+  "francais": [],
+  "resumes": {
+   "gemini": 0,
+   "deterministe": 0,
+   "a_rattraper": 0
+  },
+  "reconstituee": true,
+  "maj": "2026-11-25T01:42:56Z",
+  "fichier": "soirees/2026-08-14.json"
+ },
+ {
+  "date": "2026-08-13",
+  "statut": "complet",
+  "matchs": 36,
+  "termines": 36,
+  "competitions": {
+   "uel": {
+    "matchs": 11,
+    "stage": "qualifying",
+    "tour": "T3 retour"
+   },
+   "uecl": {
+    "matchs": 25,
+    "stage": "qualifying",
+    "tour": "T3 retour"
+   }
+  },
+  "francais": [],
+  "resumes": {
+   "gemini": 0,
+   "deterministe": 0,
+   "a_rattraper": 0
+  },
+  "reconstituee": true,
+  "maj": "2026-11-25T01:42:58Z",
+  "fichier": "soirees/2026-08-13.json"
+ },
+ {
+  "date": "2026-08-12",
+  "statut": "complet",
+  "matchs": 3,
+  "termines": 3,
+  "competitions": {
+   "uecl": {
+    "matchs": 3,
+    "stage": "qualifying",
+    "tour": "T3 retour"
+   }
+  },
+  "francais": [],
+  "resumes": {
+   "gemini": 0,
+   "deterministe": 0,
+   "a_rattraper": 0
+  },
+  "reconstituee": true,
+  "maj": "2026-11-25T01:43:47Z",
+  "fichier": "soirees/2026-08-12.json"
+ },
+ {
+  "date": "2026-08-11",
+  "statut": "complet",
+  "matchs": 13,
+  "termines": 13,
+  "competitions": {
+   "ucl": {
+    "matchs": 10,
+    "stage": "qualifying",
+    "tour": "T3 retour"
+   },
+   "uel": {
+    "matchs": 1,
+    "stage": "qualifying",
+    "tour": "T3 retour"
+   },
+   "uecl": {
+    "matchs": 2,
+    "stage": "qualifying",
+    "tour": "T3 retour"
+   }
+  },
+  "francais": [
+   {
+    "comp": "ucl",
+    "match_id": "2049118",
+    "home": "Lyon",
+    "away": "Sparta Praha",
+    "home_fr": true,
+    "away_fr": false,
+    "score": "3-0",
+    "statut": "Terminé"
+   }
+  ],
+  "resumes": {
+   "gemini": 0,
+   "deterministe": 1,
+   "a_rattraper": 0
+  },
+  "reconstituee": true,
+  "maj": "2026-11-25T01:43:52Z",
+  "fichier": "soirees/2026-08-11.json"
  }
 ]
