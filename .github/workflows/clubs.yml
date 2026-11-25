@@ -5,6 +5,9 @@ name: Fiches de club (mise à jour complète hebdomadaire)
 # manquent). Pas de notification, aucun Gemini ; ne touche ni à data.json, ni à soirees/, ni à etat_soirees.json (publier.sh --clubs).
 # Les clubs qui ont joué sont déjà mis à jour à chaque passage du soir (update_dashboard.yml) : ce passage rattrape le reste
 # (effectifs, prochains matchs, soirées reconstituées depuis, Wikidata / Wikipédia).
+# Historique européen (clubs/historique/<id>.json, histoire.py) : premier remplissage de ce qui manque (reprenable : un club qui a
+# déjà son fichier est sauté, ~10 min pour les 108 clubs la première fois), puis mise à jour de la SAISON COURANTE seulement (matchs
+# depuis le 20 juin ; les matchs passés ne changent pas). Le JSON brut UEFA n'est jamais gardé (pas de --cache).
 # Premier remplissage ou à la demande : gh workflow run clubs.yml --ref main
 on:
   schedule:
@@ -33,6 +36,13 @@ jobs:
         env:
           PYTHONUNBUFFERED: "1"
         run: python clubs.py --tous
+
+      - name: Historique européen des clubs (remplissage de ce qui manque, puis saison courante)
+        env:
+          PYTHONUNBUFFERED: "1"
+        run: |
+          python clubs.py --historique || echo "::warning::Historique européen incomplet : repris au prochain passage (reprenable)"
+          python clubs.py --historique --saison-courante || echo "::warning::Saison courante de l'historique incomplète : reprise au prochain passage"
 
       - name: Publication de clubs/ (si modifié)
         run: bash .github/scripts/publier.sh --clubs
