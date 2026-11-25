@@ -7,8 +7,10 @@ Notification ntfy APRÈS publication vérifiée : le push ne part que lorsqu'on 
   (a) origin/main contient un data.json au moins aussi récent que le local et contenant la soirée ;
   (b) la page publique (`<DASHBOARD_URL>/data.json?t=…`) est à jour : `last_updated` >= celui du data.json local
       ET la soirée figure dans ses `target_dates` ; sondée toutes les 20 s, 10 min au plus ;
-  (c) seulement alors, règle de `soirees.doit_notifier` puis envoi du push ;
-  (d) la soirée passe à `notifie: true` dans etat_soirees.json (publié ensuite par le workflow).
+  (c) seulement alors, règle de `soirees.doit_notifier` ;
+  (d) la soirée passe à `notifie: true` dans etat_soirees.json (= REMISE au notificateur du jour, publié ensuite par le
+      workflow) et `notification_jour.notifier` est tenté : le push commun (« Nouveaux résultats disponibles en LDC et
+      Ligue 1 ») ne part que si les championnats du même jour sont prêts aussi ; sinon le battement s'en charge plus tard.
 Page non à jour au bout du délai : aucun push, `notifie` reste faux, sortie en erreur (le battement relance).
 
 Fonctions pures (`url_donnees`, `donnees_a_jour`, `decider`) + I/O injectables ; tests : `python publication.py --test`.
@@ -129,7 +131,11 @@ def notifier(jour, renotifier=False, maintenant=None, data_chemin="data.json", e
     topic = notify.NTFY_TOPIC if topic is None else topic
     origin = origin or lire_origin
     fetch = fetch or fetch_http
-    envoyer = envoyer or (lambda: notify.send_ntfy_notification(data_path=data_chemin))
+    # Notification commune du jour (25/11/2026) : la soirée n'envoie plus son propre push ; une fois la page vérifiée, elle
+    # est REMISE au notificateur du jour (notification_jour.py), qui pousse quand toutes les compétitions jouées ce jour-là
+    # (coupes + championnats) sont prêtes. `envoyer` (tests) reste le point d'injection de cette remise.
+    remise_par_defaut = envoyer is None
+    envoyer = envoyer or (lambda: True)
 
     etat = soirees.charger(etat_chemin)
     local = _lire_json(data_chemin)
@@ -167,7 +173,13 @@ def notifier(jour, renotifier=False, maintenant=None, data_chemin="data.json", e
     e = etat[jour]
     soirees.enregistrer(etat, jour, e.get("statut"), e.get("matchs", 0), e.get("termines", 0), maintenant,
                         notifie=True, chemin=etat_chemin)
-    print(f"[OK] Soirée {jour} marquée notifiée dans {etat_chemin}.")
+    print(f"[OK] Soirée {jour} remise au notificateur du jour (notifie: true dans {etat_chemin}).")
+    if remise_par_defaut:
+        try:
+            import notification_jour
+            notification_jour.notifier(jour, maintenant=maintenant, etat_soirees=soirees.charger(etat_chemin))
+        except Exception as e:   # le battement (notification_jour.yml) retentera : la soirée est publiée et remise
+            print(f"[WARN] Notification du jour non tentée : {e}")
     return 0
 
 

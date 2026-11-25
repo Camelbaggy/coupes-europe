@@ -39,6 +39,10 @@ Tout ce qui suit est fusionné sur `main` et en ligne (https://camelbaggy.github
 
 ## À vérifier à la reprise
 
+00. Étape 3 (25/11) : notification commune du jour et collecte quotidienne des championnats. Vérifier la 1re notification commune
+    (soirée LDC du 25/11, puis week-end du 28-30/11 avec les 5 championnats), les battements des DEUX dépôts, et ajouter le secret
+    `NTFY_TOPIC` dans donnees-football (alertes d'échec des championnats).
+
 0. Championnats : essai Actions réussi (run 45622687373) ; journées L1 300/306, PL 380/380, Liga 371/379, SA 380/380, BL 306/306 ;
    écart Málaga-Villarreal (Wikipédia 1-2 / ESPN 1-3) à recouper. Après fusion : lancer `collecte_championnats.yml` (donnees-football)
    sur quelques jours pour remplir l'accueil, puis étape 3 (collecte quotidienne, notification commune).

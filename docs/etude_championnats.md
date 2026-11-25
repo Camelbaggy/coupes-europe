@@ -273,3 +273,29 @@ Option B (décision du 25/11) : UNE seule application (`index.html`), aucune URL
   fiche de match (xG, momentum, 22 titulaires, fiche joueur), menu des journées, retour à l'accueil, anciens liens `?c=ucl&tour=j5` et
   `?soiree=` ; 0 erreur console, 0 débordement. Tests existants (`test_couleurs_ui.js`, `test_histoire_ui.js`) inchangés et verts
   (ils ouvrent désormais `index.html?c=ucl`).
+
+## 13. Étape 3 livrée : collecte quotidienne et notification commune (25/11/2026)
+
+**Notification commune** (`notification_jour.py`) : une par jour où des matchs ont été joués, toutes compétitions, titre « Nouveaux résultats
+disponibles », message « Nouveaux résultats disponibles en LDC et Ligue 1 », lien vers l'accueil (`DASHBOARD_URL`).
+- Coupes : la chaîne actuelle (collecte, publication, vérification de la page) est inchangée jusqu'à la vérification ; elle REMET ensuite la soirée
+  (`notifie: true` = remise, d'où l'arrêt des relances de `veille.sh`) et tente la notification du jour au lieu de pousser son propre message.
+- Championnats : `etat_championnats.json` (racine de donnees-football) `{jour: {statut, ligues: {clé: {statut, matchs, termines}}, maj, alertes?}}` ;
+  la notification vérifie en plus que l'`index.json` publié sur Pages compte les mêmes matchs terminés.
+- Règle `decider` (pure, testée) : toutes les compétitions jouées le jour J prêtes (complètes et publiées ; partielles admises à partir de 12 h UTC
+  le lendemain) ; une famille sans état est attendue jusqu'à 13 h UTC le lendemain, puis réputée sans match ; une seule notification par jour
+  (`etat_notifications.json`, 60 jours). Déclencheurs : la chaîne des coupes après sa vérification, et la veille du battement des coupes
+  (`veille_notification.sh`, toutes les 10 min, + `veille_secours.yml`) qui relance `notification_jour.yml` pour un jour prêt (hier, avant-hier,
+  aujourd'hui) ; ce workflow refait la décision sur une copie fraîche de main avant de pousser.
+
+**Collecte quotidienne** (dépôt donnees-football, code d'ici) : `battement.yml` (~330 min, toutes les 10 min, se relance) + `veille_secours.yml`
+(cron horaire :37, relance le battement s'il ne tourne pas) exécutent `veille_ligues.py` : pour aujourd'hui (Paris) et hier jusqu'à 12 h UTC,
+relance `collecte_championnats.yml -f date=J` (1) pour le premier relevé du jour à partir de 9 h UTC (le jour existe alors dans l'état, au besoin
+`aucun_match` : la notification sait qu'elle n'a pas à attendre), (2) dès qu'ESPN compte plus de matchs prêts que l'état publié. Un match est
+« prêt » 2 h après son coup d'envoi s'il est terminé (`DELAI_APRES_COUP_MIN` : Opta complète ses statistiques après le coup de sifflet ; un match
+collecté n'est jamais recollecté) ; reportés et annulés ne bloquent pas un jour. Garde-fous : aucun passage en cours, 15 min entre deux passages.
+Coût : 10 requêtes ESPN par passage de veille (2 par championnat). Échec de la collecte : alerte ntfy « Échec de mise à jour des championnats »
+(une par jour et par cause), avec le secret `NTFY_TOPIC` à ajouter dans donnees-football (sans lui : simulation dans le journal).
+
+**Premier lancement** : donnees-football : « Run workflow » de `battement.yml` (puis il se relance seul) ; coupes-europe : relancer `battement.yml`
+(ses scripts ont changé : `veille_notification.sh`).

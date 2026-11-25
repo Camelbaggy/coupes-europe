@@ -2,7 +2,8 @@ name: Veille de secours (relance du battement)
 
 # Secours du battement : GitHub saute souvent les crons, mais celui-ci finit par passer. Chaque heure (à :52) :
 #   1. exécute le contrôle de veille.sh (relance update_dashboard.yml pour la soirée en cours si elle n'est pas terminée) ;
-#   2. relance battement.yml s'il n'est ni en file ni en cours (relance_battement.sh).
+#   2. relance notification_jour.yml si un jour est prêt à notifier (veille_notification.sh) ;
+#   3. relance battement.yml s'il n'est ni en file ni en cours (relance_battement.sh).
 # Lecture de la liste des exécutions, de etat_soirees.json et déclenchements seulement (jeton du dépôt).
 on:
   schedule:
@@ -25,12 +26,21 @@ jobs:
       - name: Checkout des scripts
         uses: actions/checkout@v4
         with:
-          sparse-checkout: .github/scripts
+          sparse-checkout: |
+            .github/scripts
+            notification_jour.py
+          sparse-checkout-cone-mode: false
       - name: Relance d'update_dashboard.yml si une soirée n'est pas terminée
         env:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
         run: bash .github/scripts/veille.sh
+      - name: Notification commune du jour (coupes + championnats) si un jour est prêt
+        if: ${{ !cancelled() }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: bash .github/scripts/veille_notification.sh
       - name: Relance du battement s'il ne tourne pas
         if: ${{ !cancelled() }}
         env:
