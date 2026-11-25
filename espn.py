@@ -30,6 +30,8 @@ XG_STATS = [
 ]
 XG_CLES = [k for k, _, _ in XG_STATS]
 ESPN_SLUGS = {"ucl": "uefa.champions", "uel": "uefa.europa", "uecl": "uefa.europa.conf"}
+# Tours préliminaires et barrages : autre ligue ESPN (même API, mêmes statistiques xG)
+ESPN_SLUGS_QUAL = {"ucl": "uefa.champions_qual", "uel": "uefa.europa_qual", "uecl": "uefa.europa.conf_qual"}
 
 _SCOREBOARDS: Dict[str, List[Dict[str, Any]]] = {}
 REQUETES = {"scoreboard": 0, "stats": 0}   # requêtes réseau réellement émises (mesure, journal)
@@ -47,12 +49,12 @@ def _sort_key(display: str) -> float:
     return (nums[0] + (nums[1] / 100 if len(nums) > 1 else 0)) if nums else 0.0
 
 
-def _scoreboard_ex(comp_key: str, ymd: str) -> Tuple[List[Dict[str, Any]], str]:
+def _scoreboard_ex(slug: str, ymd: str) -> Tuple[List[Dict[str, Any]], str]:
     """(événements, statut) ; un échec réseau n'est jamais mis en cache (statut « erreur »)."""
-    key = f"{comp_key}_{ymd}"
+    key = f"{slug}_{ymd}"
     if key not in _SCOREBOARDS:
         REQUETES["scoreboard"] += 1
-        data, statut = fetch_json_ex(f"{ESPN_SITE}/{ESPN_SLUGS[comp_key]}/scoreboard?dates={ymd}",
+        data, statut = fetch_json_ex(f"{ESPN_SITE}/{slug}/scoreboard?dates={ymd}",
                                      raw_name=f"espn_scoreboard_{key}.json")
         if statut == "erreur":
             return [], "erreur"
@@ -61,7 +63,7 @@ def _scoreboard_ex(comp_key: str, ymd: str) -> Tuple[List[Dict[str, Any]], str]:
 
 
 def _scoreboard(comp_key: str, ymd: str) -> List[Dict[str, Any]]:
-    return _scoreboard_ex(comp_key, ymd)[0]
+    return _scoreboard_ex(ESPN_SLUGS[comp_key], ymd)[0]
 
 
 _TRANSLIT = str.maketrans({"ø": "o", "Ø": "O", "æ": "ae", "Æ": "AE", "ł": "l", "Ł": "L", "đ": "d", "Đ": "D", "ß": "ss", "œ": "oe"})
@@ -155,16 +157,30 @@ def _jour_utc(iso: str) -> Optional[dt.date]:
 
 
 def trouver_evenement_strict(comp_key: str, date_str: str, home_names: List[str], away_names: List[str],
-                             home_score: int, away_score: int) -> Tuple[Optional[Dict[str, str]], str]:
+                             home_score: int, away_score: int, stage: str = "") -> Tuple[Optional[Dict[str, str]], str]:
     """Rapprochement STRICT d'un match UEFA terminé avec un événement ESPN : même jour (UTC, à un jour près), événement
     terminé, score identique, les DEUX équipes reconnues, UN SEUL candidat (deux candidats = ambigu = aucun).
     Gère un domicile / extérieur inversé (terrain neutre) en reportant les identifiants dans l'ordre UEFA.
-    Retourne ({event_id, home_id, away_id}, "ok") ou (None, "non_trouve" | "erreur")."""
+    La ligue ESPN principale puis celle des tours préliminaires (ou l'inverse pour un match `qualifying`) : on s'arrête à
+    la première où un candidat existe ; un seul scoreboard supplémentaire (en cache) pour les matchs introuvables.
+    Retourne ({slug, event_id, home_id, away_id}, "ok") ou (None, "non_trouve" | "erreur")."""
+    slugs = [ESPN_SLUGS[comp_key], ESPN_SLUGS_QUAL[comp_key]]
+    if stage == "qualifying":
+        slugs.reverse()
+    for slug in slugs:
+        ev, statut = _trouver_dans(slug, date_str, home_names, away_names, home_score, away_score)
+        if ev or statut == "erreur":
+            return ev, statut
+    return None, "non_trouve"
+
+
+def _trouver_dans(slug: str, date_str: str, home_names: List[str], away_names: List[str],
+                  home_score: int, away_score: int) -> Tuple[Optional[Dict[str, str]], str]:
     try:
         jour = dt.date.fromisoformat(date_str)
     except ValueError:
         return None, "non_trouve"
-    evenements, statut = _scoreboard_ex(comp_key, date_str.replace("-", ""))
+    evenements, statut = _scoreboard_ex(slug, date_str.replace("-", ""))
     if statut == "erreur":
         return None, "erreur"
     candidats = []
@@ -185,7 +201,7 @@ def trouver_evenement_strict(comp_key: str, date_str: str, home_names: List[str]
         for a, b, sa_, sb_ in ((cs["home"], cs["away"], sh, sa), (cs["away"], cs["home"], sa, sh)):
             if (sa_, sb_) == (home_score, away_score) and _noms_concordent(home_names, _noms_espn(a)) \
                     and _noms_concordent(away_names, _noms_espn(b)):
-                candidats.append({"event_id": str(ev.get("id") or ""), "home_id": str(a.get("id") or ""),
+                candidats.append({"slug": slug, "event_id": str(ev.get("id") or ""), "home_id": str(a.get("id") or ""),
                                   "away_id": str(b.get("id") or "")})
                 break
     if len(candidats) == 1 and all(candidats[0].values()):
@@ -193,17 +209,17 @@ def trouver_evenement_strict(comp_key: str, date_str: str, home_names: List[str]
     return None, "non_trouve"
 
 
-def _stats_equipe(comp_key: str, event_id: str, team_id: str) -> Tuple[Optional[Dict[str, float]], str]:
+def _stats_equipe(slug: str, event_id: str, team_id: str) -> Tuple[Optional[Dict[str, float]], str]:
     """Statistiques d'équipe d'un match ESPN (nom -> valeur) ; statut « ok » | « absent » | « erreur »."""
     global _ERREURS_DE_SUITE
-    cle = f"{comp_key}/{event_id}/{team_id}"
+    cle = f"{slug}/{event_id}/{team_id}"
     if cle in _STATS_EQUIPES:
         return _STATS_EQUIPES[cle]
     if _ERREURS_DE_SUITE >= MAX_ERREURS_DE_SUITE:
         return None, "erreur"
     time.sleep(PAUSE_XG_S)
     REQUETES["stats"] += 1
-    data, statut = fetch_json_ex(f"{ESPN_CORE}/{ESPN_SLUGS[comp_key]}/events/{event_id}/competitions/{event_id}"
+    data, statut = fetch_json_ex(f"{ESPN_CORE}/{slug}/events/{event_id}/competitions/{event_id}"
                                  f"/competitors/{team_id}/statistics", raw_name=f"espn_stats_{event_id}_{team_id}.json")
     if statut == "erreur":
         _ERREURS_DE_SUITE += 1
@@ -223,8 +239,8 @@ def _stats_equipe(comp_key: str, event_id: str, team_id: str) -> Tuple[Optional[
 def lire_xg(comp_key: str, ev: Dict[str, str]) -> Tuple[Optional[Dict[str, Any]], str]:
     """xG des deux équipes d'un événement ESPN rapproché. Retourne ({stats, note}, "ok") ou (None, "absent" | "erreur").
     Il faut l'xG des DEUX équipes (sinon rien) ; xGOT / xA / xG hors penalty seulement s'ils existent pour les deux."""
-    h, sh = _stats_equipe(comp_key, ev["event_id"], ev["home_id"])
-    a, sa = _stats_equipe(comp_key, ev["event_id"], ev["away_id"])
+    h, sh = _stats_equipe(ev["slug"], ev["event_id"], ev["home_id"])
+    a, sa = _stats_equipe(ev["slug"], ev["event_id"], ev["away_id"])
     if sh == "erreur" or sa == "erreur":
         return None, "erreur"
     if not h or not a or "expectedGoals" not in h or "expectedGoals" not in a:
@@ -256,7 +272,8 @@ def ajouter_xg(comp_key: str, match: Dict[str, Any], aujourdhui: Optional[dt.dat
         return "non_termine"
     h, a = match["home_team"], match["away_team"]
     ev, statut = trouver_evenement_strict(comp_key, match["date"], [h["name"], h.get("official_name", "")],
-                                          [a["name"], a.get("official_name", "")], h["score"], a["score"])
+                                          [a["name"], a.get("official_name", "")], h["score"], a["score"],
+                                          match.get("stage") or "")
     xg = None
     if ev:
         xg, statut = lire_xg(comp_key, ev)
@@ -264,12 +281,13 @@ def ajouter_xg(comp_key: str, match: Dict[str, Any], aujourdhui: Optional[dt.dat
         return "erreur"   # rien n'est modifié : une panne ne détruit pas un xG déjà enregistré
     stats = match.setdefault("stats", {"all": [], "1st": [], "2nd": []})
     stats["all"] = [s for s in stats.get("all", []) if s.get("key") not in XG_CLES]
-    for k in ("xg_source", "xg_espn_id", "xg_note", "xg_statut", "xg_essai"):
+    for k in ("xg_source", "xg_espn_id", "xg_espn_ligue", "xg_note", "xg_statut", "xg_essai"):
         match.pop(k, None)
     if xg:
         stats["all"].extend(xg["stats"])
         match["xg_source"] = XG_SOURCE
         match["xg_espn_id"] = ev["event_id"]
+        match["xg_espn_ligue"] = ev["slug"]
         if xg["note"]:
             match["xg_note"] = xg["note"]
         return "ok"
@@ -352,6 +370,10 @@ def _test():
         assert ajouter_xg("uel", m6) == "ok"
         m7 = match("Crvena Zvezda", "FK Crvena Zvezda", 2, "Inter Escaldes", "Inter Club d'Escaldes", 1, "2026-11-05")
         assert ajouter_xg("uecl", m7) == "ok"
+        # tour préliminaire : ligue ESPN « _qual » (Bodø/Glimt 3-2 Union Saint-Gilloise, 11/08/2026), stage qualifying ou non
+        for stage in ("qualifying", "league"):
+            mq = dict(match("Bodø/Glimt", "FK Bodø/Glimt", 3, "Union SG", "Royale Union Saint-Gilloise", 2, "2026-08-11"), stage=stage)
+            assert ajouter_xg("ucl", mq) == "ok" and mq["xg_espn_ligue"] == "uefa.champions_qual" and mq["xg_espn_id"] == "401898018", stage
         # match non terminé : rien
         m8 = dict(m, finished=False)
         assert ajouter_xg("ucl", m8) == "non_termine"
@@ -366,6 +388,7 @@ def _test():
         reinitialiser()
         panne["on"] = False
         cle = "uefa.champions/401915380/4411"
+        assert cle in fx["stats"]
         for cat in fx["stats"][cle]["splits"]["categories"]:
             for s in cat["stats"]:
                 if s["name"] == "expectedGoalsConceded":
@@ -378,7 +401,7 @@ def _test():
         global _ERREURS_DE_SUITE
         _ERREURS_DE_SUITE = MAX_ERREURS_DE_SUITE
         n = len(appels)
-        assert _stats_equipe("ucl", "1", "2") == (None, "erreur") and len(appels) == n
+        assert _stats_equipe("uefa.champions", "1", "2") == (None, "erreur") and len(appels) == n
     finally:
         fetch_json_ex, PAUSE_XG_S = reel, ancien_pause
         reinitialiser()

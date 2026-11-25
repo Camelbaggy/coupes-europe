@@ -291,7 +291,7 @@ terminés (l'UEFA n'en publie aucun : 430 clés `team-statistics`, rien dans `pl
 
 - **Source** : ESPN (modèle Opta), API core `sports.core.api.espn.com/v2/sports/soccer/leagues/<uefa.champions|uefa.europa|uefa.europa.conf>/events/<ev>/competitions/<ev>/competitors/<équipe ESPN>/statistics`
   (une requête par équipe ; la réponse porte directement `splits.categories[].stats[]`, pas de `$ref` à suivre). Les identifiants viennent du scoreboard
-  `site.api.espn.com/apis/site/v2/sports/soccer/<ligue>/scoreboard?dates=AAAAMMJJ` (le `summary` ne contient PAS l'xG). Stats lues : `expectedGoals` (xG),
+  `site.api.espn.com/apis/site/v2/sports/soccer/<ligue>/scoreboard?dates=AAAAMMJJ` (ligue principale, puis `uefa.champions_qual` / `uefa.europa_qual` / `uefa.europa.conf_qual` pour les tours préliminaires et barrages : mêmes statistiques ; `xg_espn_ligue` garde la ligue retenue) (le `summary` ne contient PAS l'xG). Stats lues : `expectedGoals` (xG),
   `expectedGoalsOnTarget` (xGOT), `expectedGoalsNonPenalty` (gardé seulement s'il diffère de l'xG), `expectedAssists` (xA) ; `expectedGoalsConceded` ne sert qu'au contrôle.
 - **Rapprochement STRICT** (`trouver_evenement_strict`) : événement terminé, jour UTC à ±1, score identique, les DEUX équipes reconnues (mot distinctif commun, noms
   normalisés égaux, translittération ø æ ł ß…, alias courts `_ALIAS_MOTS` : Crvena Zvezda / Red Star, Copenhagen / København), UN SEUL candidat ; domicile / extérieur
