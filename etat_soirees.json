@@ -8,8 +8,8 @@
   },
   "2026-11-25": {
     "statut": "complet",
-    "notifie": false,
-    "maj": "2026-11-25T22:22:15Z",
+    "notifie": true,
+    "maj": "2026-11-25T22:24:48Z",
     "matchs": 9,
     "termines": 9
   }
