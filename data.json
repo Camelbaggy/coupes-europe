@@ -1,9 +1,10 @@
 {
   "last_updated": "2026-11-25T00:13:06Z",
-  "source": "UEFA (données officielles) + ESPN (fil de commentaires)",
   "target_dates": [
     "2026-11-24"
   ],
+  "amorcee": true,
+  "source": "UEFA (données officielles) + ESPN (fil de commentaires)",
   "notification": {
     "title": "Coupes d'Europe : Résultats et classements à jour",
     "summary": "Défaite de Lens 3-1 à Leipzig, classements à jour.",
@@ -3403,6 +3404,24 @@
                 "label": "Sprints",
                 "home": 155,
                 "away": 145
+              },
+              {
+                "key": "xg",
+                "label": "Buts attendus (xG)",
+                "home": 1.228,
+                "away": 0.265
+              },
+              {
+                "key": "xgot",
+                "label": "xG des tirs cadrés (xGOT)",
+                "home": 0.556,
+                "away": 0.0
+              },
+              {
+                "key": "xa",
+                "label": "Passes décisives attendues (xA)",
+                "home": 1.611,
+                "away": 0.371
               }
             ],
             "1st": [
@@ -3458,7 +3477,10 @@
               }
             ]
           },
-          "is_french_match": false
+          "is_french_match": false,
+          "xg_source": "ESPN (Opta)",
+          "xg_espn_id": "401915380",
+          "xg_espn_ligue": "uefa.champions"
         },
         {
           "match_id": "2049631",
@@ -6831,6 +6853,24 @@
                 "label": "Sprints",
                 "home": 158,
                 "away": 123
+              },
+              {
+                "key": "xg",
+                "label": "Buts attendus (xG)",
+                "home": 0.532,
+                "away": 0.599
+              },
+              {
+                "key": "xgot",
+                "label": "xG des tirs cadrés (xGOT)",
+                "home": 0.6,
+                "away": 0.0
+              },
+              {
+                "key": "xa",
+                "label": "Passes décisives attendues (xA)",
+                "home": 0.593,
+                "away": 0.584
               }
             ],
             "1st": [
@@ -6886,7 +6926,10 @@
               }
             ]
           },
-          "is_french_match": false
+          "is_french_match": false,
+          "xg_source": "ESPN (Opta)",
+          "xg_espn_id": "401915300",
+          "xg_espn_ligue": "uefa.champions"
         },
         {
           "match_id": "2049625",
@@ -10490,6 +10533,30 @@
                 "label": "Sprints",
                 "home": 188,
                 "away": 180
+              },
+              {
+                "key": "xg",
+                "label": "Buts attendus (xG)",
+                "home": 4.79,
+                "away": 1.685
+              },
+              {
+                "key": "xgot",
+                "label": "xG des tirs cadrés (xGOT)",
+                "home": 4.081,
+                "away": 0.933
+              },
+              {
+                "key": "xg_sans_penalty",
+                "label": "xG hors penalty",
+                "home": 4.79,
+                "away": 0.897
+              },
+              {
+                "key": "xa",
+                "label": "Passes décisives attendues (xA)",
+                "home": 2.346,
+                "away": 0.702
               }
             ],
             "1st": [
@@ -10545,7 +10612,10 @@
               }
             ]
           },
-          "is_french_match": false
+          "is_french_match": false,
+          "xg_source": "ESPN (Opta)",
+          "xg_espn_id": "401915298",
+          "xg_espn_ligue": "uefa.champions"
         },
         {
           "match_id": "2049626",
@@ -13653,6 +13723,24 @@
                 "label": "Sprints",
                 "home": 145,
                 "away": 122
+              },
+              {
+                "key": "xg",
+                "label": "Buts attendus (xG)",
+                "home": 1.408,
+                "away": 0.608
+              },
+              {
+                "key": "xgot",
+                "label": "xG des tirs cadrés (xGOT)",
+                "home": 1.187,
+                "away": 0.626
+              },
+              {
+                "key": "xa",
+                "label": "Passes décisives attendues (xA)",
+                "home": 1.92,
+                "away": 0.928
               }
             ],
             "1st": [
@@ -13708,7 +13796,10 @@
               }
             ]
           },
-          "is_french_match": false
+          "is_french_match": false,
+          "xg_source": "ESPN (Opta)",
+          "xg_espn_id": "401915379",
+          "xg_espn_ligue": "uefa.champions"
         },
         {
           "match_id": "2049627",
@@ -16997,6 +17088,24 @@
                 "label": "Sprints",
                 "home": 173,
                 "away": 155
+              },
+              {
+                "key": "xg",
+                "label": "Buts attendus (xG)",
+                "home": 2.336,
+                "away": 0.924
+              },
+              {
+                "key": "xgot",
+                "label": "xG des tirs cadrés (xGOT)",
+                "home": 0.724,
+                "away": 1.335
+              },
+              {
+                "key": "xa",
+                "label": "Passes décisives attendues (xA)",
+                "home": 1.927,
+                "away": 0.513
               }
             ],
             "1st": [
@@ -17052,7 +17161,10 @@
               }
             ]
           },
-          "is_french_match": false
+          "is_french_match": false,
+          "xg_source": "ESPN (Opta)",
+          "xg_espn_id": "401915295",
+          "xg_espn_ligue": "uefa.champions"
         },
         {
           "match_id": "2049628",
@@ -20489,6 +20601,24 @@
                 "label": "Sprints",
                 "home": 189,
                 "away": 192
+              },
+              {
+                "key": "xg",
+                "label": "Buts attendus (xG)",
+                "home": 1.071,
+                "away": 0.85
+              },
+              {
+                "key": "xgot",
+                "label": "xG des tirs cadrés (xGOT)",
+                "home": 0.65,
+                "away": 0.44
+              },
+              {
+                "key": "xa",
+                "label": "Passes décisives attendues (xA)",
+                "home": 0.957,
+                "away": 0.966
               }
             ],
             "1st": [
@@ -20544,7 +20674,10 @@
               }
             ]
           },
-          "is_french_match": false
+          "is_french_match": false,
+          "xg_source": "ESPN (Opta)",
+          "xg_espn_id": "401915294",
+          "xg_espn_ligue": "uefa.champions"
         },
         {
           "match_id": "2049630",
@@ -24028,6 +24161,24 @@
                 "label": "Sprints",
                 "home": 171,
                 "away": 175
+              },
+              {
+                "key": "xg",
+                "label": "Buts attendus (xG)",
+                "home": 1.855,
+                "away": 1.049
+              },
+              {
+                "key": "xgot",
+                "label": "xG des tirs cadrés (xGOT)",
+                "home": 3.152,
+                "away": 0.76
+              },
+              {
+                "key": "xa",
+                "label": "Passes décisives attendues (xA)",
+                "home": 1.515,
+                "away": 0.573
               }
             ],
             "1st": [
@@ -24083,7 +24234,10 @@
               }
             ]
           },
-          "is_french_match": true
+          "is_french_match": true,
+          "xg_source": "ESPN (Opta)",
+          "xg_espn_id": "401915299",
+          "xg_espn_ligue": "uefa.champions"
         },
         {
           "match_id": "2049632",
@@ -27440,6 +27594,24 @@
                 "label": "Sprints",
                 "home": 138,
                 "away": 154
+              },
+              {
+                "key": "xg",
+                "label": "Buts attendus (xG)",
+                "home": 0.547,
+                "away": 1.561
+              },
+              {
+                "key": "xgot",
+                "label": "xG des tirs cadrés (xGOT)",
+                "home": 0.298,
+                "away": 1.45
+              },
+              {
+                "key": "xa",
+                "label": "Passes décisives attendues (xA)",
+                "home": 0.255,
+                "away": 1.091
               }
             ],
             "1st": [
@@ -27495,7 +27667,10 @@
               }
             ]
           },
-          "is_french_match": false
+          "is_french_match": false,
+          "xg_source": "ESPN (Opta)",
+          "xg_espn_id": "401915297",
+          "xg_espn_ligue": "uefa.champions"
         },
         {
           "match_id": "2049633",
@@ -30883,6 +31058,30 @@
                 "label": "Sprints",
                 "home": 154,
                 "away": 142
+              },
+              {
+                "key": "xg",
+                "label": "Buts attendus (xG)",
+                "home": 2.022,
+                "away": 0.534
+              },
+              {
+                "key": "xgot",
+                "label": "xG des tirs cadrés (xGOT)",
+                "home": 0.399,
+                "away": 0.21
+              },
+              {
+                "key": "xg_sans_penalty",
+                "label": "xG hors penalty",
+                "home": 1.234,
+                "away": 0.534
+              },
+              {
+                "key": "xa",
+                "label": "Passes décisives attendues (xA)",
+                "home": 1.372,
+                "away": 0.63
               }
             ],
             "1st": [
@@ -30938,7 +31137,10 @@
               }
             ]
           },
-          "is_french_match": false
+          "is_french_match": false,
+          "xg_source": "ESPN (Opta)",
+          "xg_espn_id": "401915296",
+          "xg_espn_ligue": "uefa.champions"
         }
       ],
       "standings": [
