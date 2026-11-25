@@ -39,6 +39,9 @@ Tout ce qui suit est fusionné sur `main` et en ligne (https://camelbaggy.github
 
 ## À vérifier à la reprise
 
+000. Étape 4 (25/11) : suivre `reconstitution_championnats.yml` (donnees-football) jusqu'à « 0 restant » ; contrôler quelques journées
+     reconstituées (classement calculé, journée, xG) ; Liga : journées ajoutées par la page ES.
+
 00. Étape 3 (25/11) : notification commune du jour et collecte quotidienne des championnats. Vérifier la 1re notification commune
     (soirée LDC du 25/11, puis week-end du 28-30/11 avec les 5 championnats), les battements des DEUX dépôts, et ajouter le secret
     `NTFY_TOPIC` dans donnees-football (alertes d'échec des championnats).

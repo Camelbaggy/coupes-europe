@@ -45,6 +45,11 @@ PAGES = {
     "bl": ("fr", "Championnat d'Allemagne de football {a}-{b}"),
     "sa": ("it", "Serie A {a}-{b}"),
 }
+# Pages LOCALES de secours (demande du propriétaire du 25/11/2026 : « prendre les pages locales si les données FR ne sont pas
+# complètes ») : lues seulement pour les matchs restés sans journée après la page principale ; recoupées avec elle.
+SECOURS = {
+    "liga": ("es", "Primera División de España {a}-{b2}"),
+}
 
 
 # ------------------------------------------------------------------------------
@@ -250,18 +255,51 @@ def _score_ok(val: str) -> Optional[Tuple[int, int]]:
     return (int(m.group(1)), int(m.group(2))) if m else None
 
 
-def lire_revision(ligue: str, saison: int, avant: Optional[str] = None
+def calendrier_es(w: str) -> List[Tuple[int, str, str, str]]:
+    """(jornada, domicile, extérieur, score ou '') de Wikipédia ES (§ Resultados : une table « Jornada N » par journée ; une
+    ligne = local, resultado, visitante, …)."""
+    w = _REF.sub("", w)
+    out: List[Tuple[int, str, str, str]] = []
+    j: Optional[int] = None
+    cellules: List[str] = []
+
+    def vider() -> None:
+        if j is not None and len(cellules) >= 3 and "[[" in cellules[0] and "[[" in cellules[2]:
+            sc = re.sub(r"\[https?://\S+\s+([^\]]+)\]", r"\1", cellules[1]).replace("'", "").replace("–", "-").strip()
+            sc = re.sub(r"^.*\|", "", sc).strip()
+            out.append((j, _cible(cellules[0].split("|", 1)[-1] if cellules[0].count("|") and "[[" not in cellules[0].split("|", 1)[0] else cellules[0]),
+                        _cible(cellules[2].split("|", 1)[-1] if cellules[2].count("|") and "[[" not in cellules[2].split("|", 1)[0] else cellules[2]),
+                        sc if _SCORE.match(sc.replace(" ", "")) else ""))
+
+    for l in w.split("\n"):
+        m = re.search(r"\|\s*Jornada (\d+)\s*$", l)
+        if l.startswith("!") and m:
+            vider()
+            j, cellules = int(m.group(1)), []
+            continue
+        if l.startswith("|-") or l.startswith("|}"):
+            vider()
+            cellules = []
+            if l.startswith("|}"):
+                j = None
+            continue
+        if j is not None and l.startswith("|") and not l.startswith("|+"):
+            cellules.append(l[1:].strip())
+    return out
+
+
+def lire_revision(ligue: str, saison: int, avant: Optional[str] = None, secours: bool = False
                   ) -> Optional[Tuple[List[Tuple[str, str, Optional[int], Optional[Tuple[int, int]]]], int, str]]:
     """[(domicile wiki, extérieur wiki, journée ou None, score ou None)], révision, horodatage."""
-    lang, modele = PAGES[ligue]
-    titre = modele.format(a=saison, b=saison + 1)
+    lang, modele = (SECOURS if secours else PAGES)[ligue]
+    titre = modele.format(a=saison, b=saison + 1, b2=str(saison + 1)[2:])
     r = wikitexte(lang, titre, avant)
     if not r:
         return None
     w, rev, ts = r
     items = []
-    if lang == "it":
-        for g, dom, ext, sc in calendrier_it(w):
+    if lang in ("it", "es"):
+        for g, dom, ext, sc in (calendrier_it if lang == "it" else calendrier_es)(w):
             items.append((dom, ext, g, _score_ok(sc)))
     else:
         for dom, ext, val in matrice_fr(w):
@@ -408,6 +446,24 @@ def calculer(ligue: str, saison: int, matchs_espn: List[Dict[str, Any]], equipes
         if r and r[1] not in revs:
             anomalies += fusionner(lot(r[0]), paires, occupe, f"révision {r[1]}")
             revs.append(r[1])
+    # 3. page locale de secours pour les matchs encore sans journée, si ses journées concordent avec la page principale
+    if manquants() and ligue in SECOURS:
+        r = lire_revision(ligue, saison, secours=True)
+        if r:
+            items_s, rev_s, _ = r
+            corr_s, _ = apparier(sorted({x[0] for x in items_s} | {x[1] for x in items_s}), equipes_espn, ligue)
+            completer_par_scores(items_s, corr_s, matchs_espn, equipes_espn)
+            lot_s = [(corr_s[d], corr_s[e], j) for d, e, j, _ in items_s if j is not None and d in corr_s and e in corr_s]
+            communs = [(h, a, j) for h, a, j in lot_s if (h, a) in paires]
+            diff = [x for x in communs if paires[(x[0], x[1])] != x[2]]
+            if communs and len(diff) <= max(2, 0.02 * len(communs)):
+                avant_n = len(paires)
+                anomalies += fusionner(lot_s, paires, occupe, f"secours {SECOURS[ligue][0]} {rev_s}")
+                revs.append(rev_s)
+                print(f"[JOURNÉES] {ligue} : page locale ({SECOURS[ligue][0]}) : {len(paires) - avant_n} journée(s) ajoutée(s), "
+                      f"{len(communs) - len(diff)}/{len(communs)} concordante(s) avec la page principale")
+            else:
+                anomalies.append(f"page locale ({SECOURS[ligue][0]}) écartée : {len(diff)}/{len(communs)} journée(s) discordante(s)")
     journees = {m["espn_id"]: paires[(m["home"], m["away"])] for m in matchs_espn if (m["home"], m["away"]) in paires}
     sans = [m["espn_id"] for m in matchs_espn if m["espn_id"] not in journees]
     if sans:
@@ -462,6 +518,14 @@ def _test() -> None:
           {"home": "20", "away": "11", "score": (0, 3)}, {"home": "21", "away": "10", "score": (2, 0)}]
     reste = completer_par_scores(items, corr, ms, {"10": [], "11": [], "12": [], "20": [], "21": []})
     assert corr["X"] == "20" and not reste, (corr, reste)
+    es = ('{|class="wikitable"\n! colspan="10" | Jornada 1\n|-\n! Local\n|-\n|bgcolor="D0E7FF"|' "'''[[Deportivo Alavés]]'''\n"
+          "|[https://www.laliga.com/x 3 – 0]\n|[[Getafe Club de Fútbol|Getafe C. F.]]\n|[[Estadio|E]]\n|-\n"
+          '|[[Real Racing Club de Santander|Racing]]\n|bgcolor="D0E7FF"|' "'''[https://x 2 – 2]'''\n"
+          "|[[Villarreal Club de Fútbol|Villarreal]]\n|}\n"
+          '{|\n! colspan="10" | Jornada 2\n|-\n|[[Sevilla Fútbol Club|Sevilla]]\n|\n|[[Elche Club de Fútbol|Elche]]\n|}')
+    assert calendrier_es(es) == [(1, "Deportivo Alavés", "Getafe Club de Fútbol", "3 - 0"),
+                                 (1, "Real Racing Club de Santander", "Villarreal Club de Fútbol", "2 - 2"),
+                                 (2, "Sevilla Fútbol Club", "Elche Club de Fútbol", "")], calendrier_es(es)
     print("[OK] journees_wiki : tests passés")
 
 

@@ -1377,6 +1377,7 @@
           if (!t) { t = { comp: k, stage: 'league', tour: 'J' + n, n: Number(n), dates: [], matchs: 0, jouee: false, groupe: 'journees', titre: 'Journée ' + n, id: 'j' + n }; map.set(n, t); }
           t.dates.push(l.date); t.matchs += Number(pj[n] || 0);
           if ((l.termines || 0) > 0) t.jouee = true;
+          if (l.reconstituee) t.reconstituee = true;
         });
         if ((l.sans_journee || 0) > 0) {
           let t = map.get('autres');
@@ -1465,6 +1466,7 @@
     const RECONSTITUEE_INFO = '<p>Cette journée (ou une de ses soirées) a été rejouée après coup avec le même pipeline que les soirées du jour : scores, buteurs, statistiques, momentum et notes des joueurs viennent de l\'UEFA.</p><p>Le classement de la phase de ligue est recalculé d\'après les scores (voir son info-bulle). Les résumés sont d\'abord générés sans IA à partir des données officielles ; ceux de la phase de ligue sont ensuite remplacés par des résumés IA contrôlés.</p>';
 
     // Bouton du menu, en tête du contenu de la coupe affichée (+ info-bulle discrète si une soirée du tour est reconstituée)
+    const RECONSTITUEE_LIGUE_INFO = '<p>Cette journée (ou un de ses jours) a été rejouée après coup avec le même traitement que la collecte du jour : scores, buteurs, statistiques, xG, momentum et notes viennent d\'ESPN (données Opta).</p><p>Le classement est recalculé d\'après les scores (voir son info-bulle).</p>';
     function renderTourBar(t) {
       const bar = document.getElementById('tour-bar');
       bar.hidden = !t;
@@ -1473,7 +1475,7 @@
       bar.innerHTML = `<button type="button" class="tour-btn" id="tour-btn" aria-haspopup="dialog" aria-expanded="false" aria-label="${esc(t.titre + ', ' + tourSousTitre(t) + '. Changer de journée ou de tour')}" onclick="openTourMenu()">
           <span class="tour-txt"><span class="tour-t">${esc(t.titre)}</span><span class="tour-d">${esc(tourSousTitre(t))}</span></span>
           <svg class="tour-chev" viewBox="0 0 12 8" aria-hidden="true"><path d="M1 1l5 5 5-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        </button>${t.reconstituee ? infoBtn(RECONSTITUEE_INFO, 'Journée reconstituée') : ''}`;
+        </button>${t.reconstituee ? infoBtn(estLigue(t.comp) ? RECONSTITUEE_LIGUE_INFO : RECONSTITUEE_INFO, 'Journée reconstituée') : ''}`;
     }
 
     // Feuille du bas : la liste des tours de la coupe affichée, regroupés, le tour courant surligné
@@ -1851,7 +1853,9 @@
       if (!LEGENDE_COUPES) LEGENDE_COUPES = legend.innerHTML;
       legend.innerHTML = ligue ? legendeLigue(comp.standings || []) : LEGENDE_COUPES;
       if (ligue && !legend.innerHTML) legend.hidden = true;
-      stTitle.innerHTML = ligue
+      stTitle.innerHTML = ligue && source === 'calcule'
+        ? `Classement · calculé ${infoBtn(classementLigueInfo(compKey, comp.standings_at), 'Méthode du classement calculé')}`
+        : ligue
         ? `Classement ${infoBtn('<p>Classement officiel (ESPN) relevé à l\'issue de cette journée ; il n\'est conservé que s\'il a été relevé avant le match suivant du championnat. Zones : qualifications européennes et relégation telles que publiées.</p>', 'Source du classement')}`
         : source === 'calcule'
         ? `Classement Phase de Ligue · calculé ${infoBtn(standingsInfoHtml(comp.standings_at), 'Méthode du classement calculé')}`
@@ -1877,6 +1881,19 @@
             <tbody>${rowsHtml}</tbody>
           </table>`;
       }
+    }
+
+    // Classement d'un championnat recalculé depuis les scores (classement_ligue.py) : critères appliqués selon le championnat
+    const CRITERES_LIGUE = {
+      pl: 'points, différence de buts, buts marqués', bl: 'points, différence de buts, buts marqués', fl1: 'points, différence de buts, buts marqués',
+      liga: 'points, confrontations directes (points puis différence de buts, seulement si l\'aller et le retour ont été joués), différence de buts, buts marqués',
+      sa: 'points, confrontations directes (points puis différence de buts, seulement si l\'aller et le retour ont été joués), différence de buts, buts marqués',
+    };
+    function classementLigueInfo(k, at) {
+      const d = at ? new Date(at + 'T12:00:00Z').toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' }) : '';
+      return `<p><b>Classement calculé</b> d'après les scores des matchs terminés${d ? ' jusqu\'au ' + esc(d) + ' inclus' : ''} : ESPN ne donne que le classement actuel, jamais celui d'une date passée.</p>
+        <p>Départage appliqué, dans l'ordre : ${esc(CRITERES_LIGUE[k] || 'points, différence de buts, buts marqués')}. Les critères suivants du règlement ne sont pas appliqués : les clubs encore à égalité portent le même rang, suivi de =.</p>
+        <p>Vérifié : le calcul à la date du jour est identique au classement officiel ESPN des cinq championnats. Les zones (Europe, relégation) ne sont pas indiquées : elles décrivent la fin de saison.</p>`;
     }
 
     // Légende des zones d'un championnat (codes ESPN ; libellé traduit, plage de rangs lue dans le classement)
