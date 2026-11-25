@@ -175,6 +175,7 @@ ETAPES = {
     "collecte": "Collecte et résumés (étape pipeline)",
     "push": "Publication git : push de data.json en échec après 5 essais",
     "page_non_a_jour": "Vérification de publication : page publique non à jour, ou notification en échec",
+    "workflow": "Workflow : étape préparatoire ou inattendue en échec (voir le run)",
 }
 
 
