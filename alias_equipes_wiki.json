@@ -1,0 +1,9 @@
+{
+  "_note": "Alias MANUELS nom de club Wikipédia -> id ESPN, par championnat (journees_wiki.apparier). Seulement quand le nom ET les scores ne suffisent pas, avec la justification dans _preuves.",
+  "_preuves": {
+    "nor|HamKam": "26/11/2026 : « HamKam » (Wikipédia NO) = abréviation officielle de Hamarkameratene (ESPN 21380) ; tous les scores concordent sauf Aalesund-HamKam du 29/05/2026 (Wikipédia 2-2, ESPN 0-0 : désaccord des sources, non tranché)."
+  },
+  "nor": {
+    "HamKam": "21380"
+  }
+}

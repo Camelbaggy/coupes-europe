@@ -416,7 +416,11 @@ nationalité, photo). La compo et le déroulé référencent les joueurs par `id
   `etat_championnats.json` (alerte, notification) ; secondaires = `collecte_secondaires.yml` + `etat_secondaires.json` (`run_ligues.fichier_etat`),
   ni alerte ni notification ; `veille_ligues.un_passage` traite les deux familles. Classement recalculé : `points, gd, gf` pour ned / nor / aut, points
   SEULS pour por / bel / tur / gre (règlements non vérifiés : égalité de points = même rang + « = », jamais de départage deviné). Journées : pages FR
-  de saison (`journees_wiki.PAGES`). Interface : accueil « Championnats majeurs » (`LIGUE_MAJEURS`) puis « Autres championnats » (`LIGUE_AUTRES`,
+  de saison (`journees_wiki.PAGES`) ; pages LOCALES quand la page FR ne donne pas les journées : Norvège = Wikipédia NO « Eliteserien i fotball
+  for menn AAAA » (`calendrier_no`, sections « N. serierunde »), Turquie = modèle TR « Şablon:AAAA-AA Süper Lig maçları/maçlar »
+  (`calendrier_boites`, fiches de match `tur` / `round` ; lit aussi les « Football box » EN). Alias manuel `alias_equipes_wiki.json` (justifié dans
+  `_preuves`) : HamKam = Hamarkameratene. Mesuré le 26/11/2026 : Turquie 306/306, Norvège 240 matchs ; pas de page locale exploitable pour le
+  Portugal, l'Autriche (saison 2026-27 absente), les Pays-Bas (page vide), la Belgique et la Grèce : leurs matchs restent sans journée. Interface : accueil « Championnats majeurs » (`LIGUE_MAJEURS`) puis « Autres championnats » (`LIGUE_AUTRES`,
   espace `autres`, 7 onglets `n7`) ; les « Derniers résultats » de l'accueil ne montrent que coupes + majeurs. À faire : historique des classements
   des secondaires ; formules à poules finales (Belgique, Autriche, Grèce : points divisés / groupes) à traiter avant la fin de leur phase régulière.
 

@@ -48,10 +48,12 @@ PAGES = {
     "por": ("fr", "Championnat du Portugal de football {a}-{b}"),
     "ned": ("fr", "Championnat des Pays-Bas de football {a}-{b}"),
     "bel": ("fr", "Championnat de Belgique de football {a}-{b}"),
-    "tur": ("fr", "Championnat de Turquie de football {a}-{b}"),
+    # Turquie : fiches de match du modèle « …/maçlar » de Wikipédia TR (champ `tur` = journée), la page FR n'en donne aucune
+    "tur": ("tr", "Şablon:{a}-{b2} Süper Lig maçları/maçlar"),
     "aut": ("fr", "Championnat d'Autriche de football {a}-{b}"),
     "gre": ("fr", "Championnat de Grèce de football {a}-{b}"),
-    "nor": ("fr", "Championnat de Norvège de football {a}"),
+    # Norvège : page NO, une section « N. serierunde » par journée (la page FR n'a qu'un tableau de scores, sans journée)
+    "nor": ("no", "Eliteserien i fotball for menn {a}"),
     "sa": ("it", "Serie A {a}-{b}"),
 }
 # Pages LOCALES de secours (demande du propriétaire du 25/11/2026 : « prendre les pages locales si les données FR ne sont pas
@@ -264,6 +266,69 @@ def _score_ok(val: str) -> Optional[Tuple[int, int]]:
     return (int(m.group(1)), int(m.group(2))) if m else None
 
 
+_FK = re.compile(r"\{\{\s*fk\s*\|\s*([^}|]+?)\s*(?:\|[^}]*)?\}\}", re.I)
+_SCORE_NO = re.compile(r"(\d+)\s*[–-]\s*(\d+)")
+
+
+def calendrier_no(w: str) -> List[Tuple[int, str, str, str]]:
+    """(journée, domicile, extérieur, score ou '') de Wikipédia NO (§ Terminliste : titre de section « N. serierunde », puis une ligne
+    par match : score en gras, {{fk|Domicile}} – {{fk|Extérieur}})."""
+    w = _REF.sub("", w)
+    out, n = [], None
+    for l in w.split("\n"):
+        m = re.match(r"^={2,4}\s*(?:\[\[[^\]|]*\|)?\s*(\d+)\.\s*serierunde", l, re.I)
+        if m:
+            n = int(m.group(1))
+            continue
+        if re.match(r"^={2,3}[^=]", l) and n is not None and "serierunde" not in l.lower():
+            n = None                       # section suivante (classement, statistiques…)
+            continue
+        if n is None or not l.startswith("*"):
+            continue
+        clubs = _FK.findall(l)
+        if len(clubs) != 2:
+            continue
+        sc = _SCORE_NO.search(l.split("{{")[0])
+        out.append((n, clubs[0], clubs[1], f"{sc.group(1)}-{sc.group(2)}" if sc else ""))
+    return out
+
+
+_BOITE = re.compile(r"\{\{\s*(?:Kapanabilir futbol maçı kutusu|Football box collapsible|Football box)\s*\n(.*?)\n\}\}", re.S | re.I)
+_LIEN = re.compile(r"\[\[([^\]|]+)(?:\|([^\]]+))?\]\]")
+
+
+def _champ(corps: str, noms: Tuple[str, ...]) -> str:
+    for n in noms:
+        m = re.search(r"^\|\s*" + n + r"\s*=\s*(.*)$", corps, re.M)
+        if m:
+            return m.group(1).strip()
+    return ""
+
+
+def _club_boite(x: str) -> str:
+    """Cible du lien d'un club (« [[Galatasaray (futbol takımı)|Galatasaray]] » -> « Galatasaray (futbol takımı) »), sinon le texte."""
+    m = _LIEN.search(x)
+    if m:
+        return m.group(1).strip()
+    return re.sub(r"\{\{[^}]*\}\}", "", x).strip()
+
+
+def calendrier_boites(w: str) -> List[Tuple[int, str, str, str]]:
+    """(journée, domicile, extérieur, score ou '') des fiches de match (« Kapanabilir futbol maçı kutusu » TR, « Football box
+    collapsible » EN) : champs `tur` / `round` (journée), `takım1` / `team1`, `takım2` / `team2`, `sonuç` / `score`. Une fiche sans
+    journée numérique ou sans les deux clubs est ignorée."""
+    out = []
+    for corps in _BOITE.findall(_REF.sub("", w)):
+        j = re.search(r"\d+", _champ(corps, ("tur", "round")))
+        h, a = _champ(corps, ("takım1", "team1")), _champ(corps, ("takım2", "team2"))
+        if not j or not h or not a:
+            continue
+        brut = _LIEN.sub(lambda m: m.group(2) or m.group(1), _champ(corps, ("sonuç", "score")))
+        sc = _score_ok(re.sub(r"\s*\(.*$", "", re.sub(r"\{\{[^}]*\}\}", "", brut)).strip())
+        out.append((int(j.group(0)), _club_boite(h), _club_boite(a), f"{sc[0]}-{sc[1]}" if sc else ""))
+    return out
+
+
 def calendrier_es(w: str) -> List[Tuple[int, str, str, str]]:
     """(jornada, domicile, extérieur, score ou '') de Wikipédia ES (§ Resultados : une table « Jornada N » par journée ; une
     ligne = local, resultado, visitante, …)."""
@@ -307,8 +372,9 @@ def lire_revision(ligue: str, saison: int, avant: Optional[str] = None, secours:
         return None
     w, rev, ts = r
     items = []
-    if lang in ("it", "es"):
-        for g, dom, ext, sc in (calendrier_it if lang == "it" else calendrier_es)(w):
+    lecteur = {"it": calendrier_it, "es": calendrier_es, "no": calendrier_no, "tr": calendrier_boites}.get(lang)
+    if lecteur:
+        for g, dom, ext, sc in lecteur(w):
             items.append((dom, ext, g, _score_ok(sc)))
     else:
         for dom, ext, val in matrice_fr(w):
@@ -486,7 +552,7 @@ def calculer(ligue: str, saison: int, matchs_espn: List[Dict[str, Any]], equipes
             uniques.append(cle)
     anomalies = uniques
     return {"ligue": ligue, "saison": saison,
-            "source": f"Wikipédia ({PAGES[ligue][0]}) « {PAGES[ligue][1].format(a=saison, b=saison + 1)} »",
+            "source": f"Wikipédia ({PAGES[ligue][0]}) « {PAGES[ligue][1].format(a=saison, b=saison + 1, b2=str(saison + 1)[2:])} »",
             "rev": rev, "revisions_lues": revs, "correspondances": dict(sorted(corr.items())),
             "paires": {f"{h}|{a}": j for (h, a), j in sorted(paires.items())},
             "journees": journees, "anomalies": anomalies,
@@ -535,6 +601,18 @@ def _test() -> None:
     assert calendrier_es(es) == [(1, "Deportivo Alavés", "Getafe Club de Fútbol", "3 - 0"),
                                  (1, "Real Racing Club de Santander", "Villarreal Club de Fútbol", "2 - 2"),
                                  (2, "Sevilla Fútbol Club", "Elche Club de Fútbol", "")], calendrier_es(es)
+    # Norvège (extrait réel de « Eliteserien i fotball for menn 2026 », Wikipédia NO)
+    no = ("== Terminliste ==\n===[[1. serierunde i Eliteserien 2026|1. serierunde]]===\n'''Lørdag 14. mars'''\n"
+          "*'''2–1''' '''{{fk|HamKam}}''' – {{fk|Viking}}\n*'''1–3''' {{fk|Aalesund}} – '''{{fk|Lillestrøm}}'''\n{{col-4}}\n"
+          "===[[2. serierunde i Eliteserien 2026|2. serierunde]]===\n*{{fk|Start}} – {{fk|Aalesund}}\n== Tabell ==\n*{{fk|A}} – {{fk|B}}")
+    assert calendrier_no(no) == [(1, "HamKam", "Viking", "2-1"), (1, "Aalesund", "Lillestrøm", "1-3"), (2, "Start", "Aalesund", "")], calendrier_no(no)
+    # Turquie (extrait réel du modèle « 2026-27 Süper Lig maçları/maçlar », Wikipédia TR)
+    tr = ("{{#switch:{{{1}}}\n|GAL-ÇFK = \n{{Kapanabilir futbol maçı kutusu\n|tarih = {{Başlangıç tarihi|2026|8|14}}\n|tur               = 1\n"
+          "|takım1            = [[Galatasaray (futbol takımı)|Galatasaray]]\n|sonuç             = 2 - 2\n|takım2            = [[Çorum FK|Çorum]]\n"
+          "|goller1 = \n* [[Victor Osimhen]] {{gol|53||90}}\n}}\n|X-Y = \n{{Kapanabilir futbol maçı kutusu\n|tur = 12\n|takım1 = [[Kasımpaşa SK|Kasımpaşa]]\n"
+          "|sonuç = [[#x|v]]\n|takım2 = [[Trabzonspor (futbol takımı)|Trabzonspor]]\n}}\n}}")
+    assert calendrier_boites(tr) == [(1, "Galatasaray (futbol takımı)", "Çorum FK", "2-2"),
+                                     (12, "Kasımpaşa SK", "Trabzonspor (futbol takımı)", "")], calendrier_boites(tr)
     print("[OK] journees_wiki : tests passés")
 
 
