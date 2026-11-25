@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Dashboard mobile des soirées de Coupes d'Europe (LDC, Ligue Europa, Ligue Conférence) centré sur les clubs
 français : collecte de données → résumés IA → `data.json` → page statique GitHub Pages → push ntfy.
-Spécification fonctionnelle : `Projet_foot.md`. Tout est en français : interface, logs, messages de commit,
+Spécification fonctionnelle : `Projet_foot.md`. Point de reprise (état, décisions, à vérifier) : `docs/AVANCEMENT.md`, à mettre à jour en fin de session. Tout est en français : interface, logs, messages de commit,
 commentaires.
 
 **Règle cardinale : zéro hallucination sur les chiffres.** Scores, buteurs, minutes, statistiques et classements
@@ -27,7 +27,7 @@ python agents_flash.py                                  # résumés seuls : data
 python tools/inspect_data.py data.json                  # résumé lisible (notes, momentum, drapeaux manquants…)
 python run_pipeline.py --reconstituer --dossier-soirees /tmp/soirees --du 2026-11-04 --au 2026-11-04   # reconstitution locale d'une soirée passée (sans Gemini)
 python run_pipeline.py --rattraper-ia --max-cartes 10   # remplace par Gemini des résumés déterministes de la phase de ligue (clé requise)
-python run_pipeline.py --completer-xg [--du … --au …] --dossier-soirees DIR   # ajoute les xG (ESPN / Opta) aux soirées existantes (reprenable ; tester sur une COPIE de soirees/)
+python run_pipeline.py --completer-xg [--du … --au …] --dossier-soirees DIR   # ajoute les xG (ESPN / Opta) aux soirées existantes (reprenable ; tester sur une COPIE de soirees/ ET lancer depuis le dossier de cette copie : le data.json du dossier COURANT est suivi)
 python espn.py --test                                   # xG : rapprochement strict, valeurs, panne, incohérence (réponses ESPN réelles allégées : tools/fixtures/espn/)
 node tools/test_xg_ui.js http://localhost:8766 /tmp/xg  # Playwright 390 x 844 de l'onglet Stats avec / sans xG (servir un dossier index.html + data.json avec xG)
 python -m http.server 8000                              # voir index.html (il lit data.json et soirees/ via fetch)
@@ -79,6 +79,64 @@ index.html  : page unique (CSS + JS inline), lit soirees/index.json + soirees/<d
   ne pas committer `data.json`, `soirees/` ni `clubs/` à la main.
 - `data_raw.json` (sortie collecteur, avec `raw_comments_for_llm` et `matches[].actions`) n'est pas versionné ;
   `agents_flash` retire ces champs avant d'écrire `data.json`.
+
+### Vue d'ensemble : sources, workflows, secrets
+
+| Donnée | Source | Module |
+|---|---|---|
+| Matchs, scores, actions, compositions, stats d'équipe et de joueur, classements | UEFA (API publique d'uefa.com, sans clé) | `uefa.py`, `collector.py` |
+| xG / xGOT / xA (tous les matchs terminés) | ESPN, modèle Opta | `espn.py` (§ Buts attendus) |
+| Fil de commentaires (matchs de clubs français, matière de l'IA seulement) | ESPN | `espn.py` |
+| Résumés des matchs des clubs français | Gemini (rédacteur + contrôleur), sinon repli déterministe | `agents_flash.py` |
+| Fiches de club : stade, effectif, cumuls | UEFA | `clubs.py` |
+| Fondation, ville, site, surnom ; extrait encyclopédique | Wikidata (P7361 ou alias manuel) ; Wikipédia FR (CC BY-SA) | `clubs.py` |
+| Historique européen complet | UEFA (`matches?teamId=`) | `histoire.py` |
+| Couleurs d'équipe | UEFA (maillot porté, compositions) | `couleurs.py`, `clubs.py` |
+| Drapeaux | flagcdn.com (code pays UEFA) | `index.html` |
+
+| Workflow | Déclencheur | Groupe | Écrit sur main |
+|---|---|---|---|
+| `update_dashboard.yml` | cron mar-mer-jeu 22 h 30 UTC (+ sam. mai-juin) et dispatch du battement | `update-dashboard` | data.json, soirees/, clubs/, etat_soirees.json ; ntfy |
+| `battement.yml` | dispatch, se relance seul (~330 min) | `battement` | rien (relance update_dashboard) |
+| `veille_secours.yml` | cron horaire :52 | `veille-secours` | rien (relance battement / update_dashboard) |
+| `historique_soirees.yml` | dispatch, auto-relance | `historique-soirees` | soirees/, data.json (reconstitution) |
+| `rattrapage_ia.yml` | cron 6 h 17 et 15 h 17 UTC + dispatch | `rattrapage-ia` | soirees/, data.json (résumés Gemini) |
+| `completer_xg.yml` | dispatch, auto-relance | `completer-xg` | soirees/, data.json (xG) |
+| `clubs.yml` | cron lundi 5 h 17 UTC + dispatch | `clubs` | clubs/ (fiches, couleurs, historique) |
+| `test_pipeline.yml` | push sur `ccr-*` avec `[test]` / `[sans-ia]` | — | rien (pipeline de la semaine du 3 au 5/11/2026) |
+
+Secrets / variables : `GEMINI_API_KEY` (facultatif : sans clé, résumés déterministes), `NTFY_TOPIC` (topic ntfy ; absent = simulation),
+`DASHBOARD_URL` (page publique, sert à vérifier la publication avant la notification), `AI_BUDGET_SECONDS` (budget Gemini, 900 s ; 0 = pas d'IA).
+
+### Collecte d'une soirée, pas à pas (`collector.collect_dates_data`)
+
+1. Pour chaque coupe (LDC 1, LE 14, LC 2019) : liste des matchs du jour (`uefa.fetch_matches`, une liste illisible = soirée `partiel`) ; classement
+   choisi par `choisir_classement` (officiel le soir, recalculé ensuite, § Classement).
+2. Pour chaque match commencé (`build_match`) : événements (`events?filter=ALL`, paginé par 500) -> déroulé affiché, buts reconstitués (score après
+   chaque but, contrôlé contre le score officiel : écart = `[WARN]`), actions ; `player-statistics` (clés `PLAYER_STAT_KEYS` seulement) ; compositions
+   (positions, maillot porté) ; `team-statistics` (23 clés `TEAM_STATS`, associées par `teamId`) ; momentum et stats par mi-temps calculés (ci-dessous).
+3. Matchs de clubs français terminés : fil ESPN (si trouvé) et une carte `french_clubs_focus` par club français (rang et zone du classement).
+4. Tous les matchs terminés : xG ESPN (`espn.ajouter_xg`, jamais bloquant).
+5. Notes des joueurs par compétition (`ratings.rate_matches`), compteurs `matchs` / `termines` / `incomplet` pour l'état de soirée -> `data_raw.json`.
+6. `agents_flash` : résumés -> `data.json` (sans `raw_comments_for_llm` ni `actions`) ; `historique.publier_soiree` -> `soirees/` ; `clubs.apres_soiree` ->
+   fiches des clubs qui ont joué ; le workflow publie, vérifie la page, notifie (§ Fiabilité).
+
+### Méthodes de calcul (valeurs dérivées, toutes déterministes)
+
+- **Momentum** (`uefa.compute_momentum`) : chaque action officielle est créditée à l'équipe qui ATTAQUE avec un poids (`MOMENTUM_WEIGHTS`) : but 6,
+  tir cadré 4, tir non cadré 3, tir contré 2,5, attaque dangereuse 2, corner 2, arrêt 1,5 (acteur = défenseur ou gardien : crédité à l'ADVERSAIRE),
+  hors-jeu 1, coup franc obtenu 0,5. Différence domicile - extérieur par minute (temps additionnel inclus), lissage gaussien σ = 2 min (noyau ± 6 min)
+  période par période (jamais à travers la mi-temps), normalisation par le maximum absolu du match -> `value` ∈ [-100, 100]. Les phases de domination
+  du dossier IA en sont dérivées.
+- **Stats par mi-temps** (`uefa.half_stats`) : l'UEFA ne donne que des cumuls du match ; on COMPTE les actions officielles de chaque période pour 4
+  stats seulement : tirs (but, cadré, non cadré, contré), tirs cadrés (but + cadré), corners, cartons jaunes. Pas d'xG par mi-temps.
+- **Notes des joueurs** (`ratings.py`, docstring et README) : >= 10 min jouées ; joueurs de champ = stats UEFA standardisées PAR COMPÉTITION (z bornés à
+  ±3) pondérées par les coefficients de Ball, Huynh & Varley (2025) ; partie « statistiques » calibrée (moyenne 6,8, écart-type 0,55) ; puis ajouts
+  bruts : buts, passes décisives, cartons ; résultat pendant le temps de jeu (Wolf et al. 2020) et clean sheet des défenseurs ; gardiens sur échelle
+  fixe (arrêts, buts encaissés, clean sheet, jeu au pied) ; entrées tardives ramenées vers la moyenne ; compression au-delà de 9. Contrôle dans les
+  logs `[NOTES]` (moyenne ~6,9, écart-type ~0,75, accord avec l'homme du match UEFA).
+- **Classement recalculé** (`classement.py`), **palmarès européen** (`histoire.py`), **couleurs** (`couleurs.py`), **moyennes de compétition et stats
+  par match des fiches club** (`clubs.py`), **xG** (lus, contrôlés xG / xGC) : voir leurs sections.
 
 ### Fiabilité des passages : état par soirée, notification unique, battement
 
