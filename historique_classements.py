@@ -49,7 +49,7 @@ LIGUES: Dict[str, Dict[str, Any]] = {
     "fl1": {"slug": "fra.1", "nom": "Ligue 1", "debut": 1933, "fr": "Championnat de France de football {a}-{b}",
             "local": None, "v3": 1994},
     "pl": {"slug": "eng.1", "nom": "Premier League", "debut": 1888, "fr": "Championnat d'Angleterre de football {a}-{b}",
-           "local": None, "v3": 1981},
+           "local": ("en", "{a}–{b2} Football League"), "v3": 1981},
     "liga": {"slug": "esp.1", "nom": "Liga", "debut": 1929, "fr": "Championnat d'Espagne de football {a}-{b}",
              "local": ("es", "Primera División de España {a}-{b2}"), "v3": 1995},
     "sa": {"slug": "ita.1", "nom": "Serie A", "debut": 1929, "fr": "Championnat d'Italie de football {a}-{b}",
@@ -57,6 +57,20 @@ LIGUES: Dict[str, Dict[str, Any]] = {
     "bl": {"slug": "ger.1", "nom": "Bundesliga", "debut": 1963, "fr": "Championnat d'Allemagne de football {a}-{b}",
            "local": ("de", "Fußball-Bundesliga {a}/{b2}"), "v3": 1995},
 }
+
+
+def titre_local(ligue: str, a: int) -> Tuple[str, str]:
+    """(langue, titre) de la page locale d'une saison. EN : « 1899–1900 Football League » (siècle complet au passage),
+    « 1992–93 FA Premier League » à partir de la création de la Premier League ; ES : « … 1929 » pour la saison unique."""
+    lang, modele = LIGUES[ligue]["local"]
+    b2 = str(a + 1)[2:] if str(a + 1)[:2] == str(a)[:2] else str(a + 1)
+    if ligue == "pl" and a >= 1992:
+        modele = "{a}–{b2} FA Premier League" if a < 2007 else "{a}–{b2} Premier League"
+    if ligue == "liga" and a == 1929:
+        return lang, "Primera División de España 1929"
+    return lang, modele.format(a=a, b=a + 1, b2=b2)
+
+
 # Saisons sans championnat national officiel (année de début) : rien n'est demandé ni écrit
 SAISONS_ABSENTES = {
     "fl1": set(range(1939, 1945)),                          # championnats de guerre, non officiels
@@ -220,6 +234,100 @@ def tables_fussballtabelle(w: str) -> List[List[Dict[str, Any]]]:
             r["mention"] = mention
         cur.append(r)
     return [b for b in blocs if b]
+
+
+# Module Lua « Sports table » (EN) / « Football table » (ES) : paramètres nommés par code d'équipe.
+_ST_CLES = {
+    "g": ("win", "ganados"), "n": ("draw", "empates"), "p": ("loss", "perdidos"),
+    "bp": ("gf",), "bc": ("ga", "gc"), "nom": ("name", "nombre"),
+    "ajust": ("adjust_points", "ajustar_puntos", "ajuste_puntos", "startpoints", "puntos_iniciales"),
+}
+_ST_V = ("winpoints", "puntos_ganado", "puntos_victoria")
+_ST_N = ("drawpoints", "puntos_empate")
+
+
+def tables_sports_table(w: str) -> List[List[Dict[str, Any]]]:
+    """`{{#invoke:Sports table|main|style=WDL|team_order=…|win_ARS=…|draw_ARS=…|loss_ARS=…|gf_ARS=…|ga_ARS=…|name_ARS=…}}` (EN)
+    et `{{#invoke:Football table|main|equipo1=…|ganados_X=…|empates_X=…|perdidos_X=…|gf_X=…|gc_X=…|nombre_X=…}}` (ES). La page ne
+    publie pas les points : le module les AFFICHE en calculant V x victoires + nuls (+ ajustement publié) ; on refait ce calcul
+    (`pts_calcule`). Un paramètre de points par équipe inconnu = tableau refusé (on ne devine pas son effet). Une page à plusieurs
+    divisions : seuls les tableaux `section` « First Division » / sans section sont gardés."""
+    w = re.sub(r"<!--.*?-->", "", w, flags=re.S)
+    w = _REF.sub("", w)
+    out = []
+    for m in re.finditer(r"\{\{\s*#invoke:\s*(?:[Ss]ports|[Ff]ootball) table\s*\|", w):
+        i, prof, j = m.start(), 0, m.start()
+        while j < len(w):
+            if w.startswith("{{", j):
+                prof += 1
+                j += 2
+            elif w.startswith("}}", j):
+                prof -= 1
+                j += 2
+                if prof == 0:
+                    break
+            else:
+                j += 1
+        params: Dict[str, str] = {}
+        for c in _cellules(w[i + 2:j - 2])[2:]:
+            if "=" in c:
+                k, v = c.split("=", 1)
+                params[k.strip()] = v.strip()
+        section = params.get("section", "")
+        if section and "first division" not in section.lower() and "primera" not in section.lower():
+            continue
+        if (params.get("style") or params.get("estilo") or "WDL").upper() != "WDL":
+            continue
+        if any(k.startswith(("hth_", "result_", "match_")) for k in params) and not any(k.startswith(("win_", "ganados_")) for k in params):
+            continue
+        ordre = [x.strip() for x in params.get("team_order", "").split(",") if x.strip()]
+        if not ordre:
+            n = 1
+            while params.get(f"team{n}") or params.get(f"equipo{n}"):
+                ordre.append((params.get(f"team{n}") or params.get(f"equipo{n}")).strip())
+                n += 1
+        vp = next((_nombre(params[k]) for k in _ST_V if k in params), 3)
+        np_ = next((_nombre(params[k]) for k in _ST_N if k in params), 1)
+        if not ordre or vp is None or np_ is None:
+            continue
+        connus = {f"{p}_" for t in _ST_CLES.values() for p in t} | {"status_", "result", "col_", "text_", "note_", "estado_",
+                                                                     "color_", "texto_", "nota_", "resultado", "hth_", "dq_"}
+        douteux = [k for k in params if re.search(r"(?i)point|punt", k) and k not in _ST_V + _ST_N
+                   and not k.startswith(_ST_CLES["ajust"])]
+        if douteux:
+            continue
+        rows, ok = [], True
+        for rang, code in enumerate(ordre, 1):
+            def val(champ: str) -> Optional[int]:
+                for p in _ST_CLES[champ]:
+                    if f"{p}_{code}" in params:
+                        return _nombre(params[f"{p}_{code}"])
+                return None
+            g, n_, p_, bp, bc = val("g"), val("n"), val("p"), val("bp"), val("bc")
+            nom_brut = next((params[f"{p}_{code}"] for p in _ST_CLES["nom"] if f"{p}_{code}" in params), "")
+            if None in (g, n_, p_, bp, bc) or not nom_brut:
+                ok = False
+                break
+            aj = 0
+            for p in _ST_CLES["ajust"]:
+                if f"{p}_{code}" in params:
+                    v = _nombre(params[f"{p}_{code}"])
+                    if v is None:
+                        ok = False
+                    aj += v or 0
+            nom, cible, mention = _club(nom_brut)
+            r = {"rang": rang, "club": nom, "pts": g * vp + n_ * np_ + aj, "j": g + n_ + p_, "g": g, "n": n_, "p": p_,
+                 "bp": bp, "bc": bc, "pts_calcule": True}
+            if aj:
+                r["penalite"] = -aj
+            if cible:
+                r["club_wiki"] = cible
+            if mention:
+                r["mention"] = mention
+            rows.append(r)
+        if ok and rows:
+            out.append(rows)
+    return out
 
 
 def _club(cellule: str) -> Tuple[str, str, str]:
@@ -400,7 +508,7 @@ def tables_wikitable(w: str, lang: str) -> List[List[Dict[str, Any]]]:
 def classement_final(w: str, lang: str, v: int) -> Tuple[str, List[Dict[str, Any]], Dict[str, Any]]:
     """(statut, lignes, contrôles) du classement final d'une page de saison. Plusieurs tableaux candidats sains et
     différents (poules) = illisible : on ne choisit jamais au hasard."""
-    cands = [b for b in tables_foot_classement(w) + tables_fussballtabelle(w) + tables_wikitable(w, lang) if len(b) >= 6]
+    cands = [b for b in tables_foot_classement(w) + tables_fussballtabelle(w) + tables_sports_table(w) + tables_wikitable(w, lang) if len(b) >= 6]
     sains = []
     for b in cands:
         st, c = controler(b, v)
@@ -558,7 +666,8 @@ def a_faire(ligue: str, fichier: Dict[str, Any], derniere: int, aujourdhui: Opti
     return out
 
 
-def collecter(donnees: str, ligues: List[str], budget_min: float, aujourdhui: Optional[dt.date] = None) -> Dict[str, int]:
+def collecter(donnees: str, ligues: List[str], budget_min: float, aujourdhui: Optional[dt.date] = None,
+              retenter: bool = False) -> Dict[str, int]:
     debut = time.monotonic()
     derniere = derniere_saison_terminee(aujourdhui)
     jour = (aujourdhui or dt.date.today()).isoformat()
@@ -567,6 +676,10 @@ def collecter(donnees: str, ligues: List[str], budget_min: float, aujourdhui: Op
         cfg = LIGUES[lg]
         chemin = os.path.join(donnees, "championnats", "historique", f"{lg}.json")
         fichier = _lire(chemin) or {"ligue": lg, "nom": cfg["nom"], "saisons": {}}
+        if retenter:   # --retenter : saisons illisibles relues sans attendre RETENTE_JOURS (nouveau lecteur, par exemple)
+            for s_ in fichier["saisons"].values():
+                if s_.get("statut") == "illisible":
+                    s_.pop("essai", None)
         todo = a_faire(lg, fichier, derniere, aujourdhui)
         # 1. ESPN (2002-03 et après), du plus récent au plus ancien
         for a in sorted([a for a in todo if a >= ESPN_DEPUIS], reverse=True):
@@ -582,8 +695,10 @@ def collecter(donnees: str, ligues: List[str], budget_min: float, aujourdhui: Op
                     "rows": rows if st != "illisible" else [], **({"essai": jour} if st == "illisible" else {})}
             traites += a != derniere
         noms = index_noms_espn(fichier)
+        espn_illisibles = [a for a in todo if a >= ESPN_DEPUIS
+                           and (fichier["saisons"].get(libelle(a, lg)) or {}).get("statut") == "illisible"]
         # 2. Wikipédia (avant 2002-03) : FR, puis page locale pour les saisons restées illisibles
-        anciennes = sorted([a for a in todo if a < ESPN_DEPUIS], reverse=True)
+        anciennes = sorted([a for a in todo if a < ESPN_DEPUIS] + espn_illisibles, reverse=True)
         for k in range(0, len(anciennes), LOT_TITRES):
             if time.monotonic() - debut > budget_min * 60:
                 break
@@ -599,8 +714,8 @@ def collecter(donnees: str, ligues: List[str], budget_min: float, aujourdhui: Op
                     restes.append(a)
                 ecrire_saison(fichier, lg, a, res, "Wikipédia FR", "fr", p[1] if p else titres[a], noms, jour)
             if restes:
-                lang, modele = cfg["local"]
-                tl = {a: modele.format(a=a, b=a + 1, b2=str(a + 1)[2:]) for a in restes}
+                lang = cfg["local"][0]
+                tl = {a: titre_local(lg, a)[1] for a in restes}
                 pl = pages_wiki(lang, list(tl.values()))
                 for a in restes:
                     p = pl.get(tl[a])
@@ -702,6 +817,8 @@ def _test() -> None:
         "fl1_1932-33.txt": ("fr", 2, "illisible", 0, None),                             # deux poules + finale
         "sa_1934-35_it.txt": ("it", 2, "ok", 16, ("Juventus", 44)),                     # {{Descrizione comando}}, {{Calcio X}}
         "bl_1971-72_de.txt": ("de", 2, "ecarts_points", 18, ("FC Bayern München", 55)),  # Fußballtabelle ; Bielefeld : Abzug 19
+        "pl_1980-81_en.txt": ("en", 2, "ok", 22, ("Aston Villa", 60)),                # Sports table ; 2e division écartée
+        "liga_1977-78_es.txt": ("es", 2, "ok", 18, ("Real Madrid C. F.", 47)),          # Football table (ES)
     }
     for nom, (lang, v, st_att, n_att, premier) in attendu.items():
         w = open(os.path.join(fx, nom), encoding="utf-8").read()
@@ -739,6 +856,7 @@ if __name__ == "__main__":
     ap.add_argument("--donnees", default="../donnees-football")
     ap.add_argument("--ligues", default=",".join(LIGUES))
     ap.add_argument("--budget-min", type=float, default=40)
+    ap.add_argument("--retenter", action="store_true", help="relire les saisons illisibles sans attendre 30 jours")
     ap.add_argument("--test", action="store_true")
     ap.add_argument("--valider", action="store_true")
     a = ap.parse_args()
@@ -747,4 +865,4 @@ if __name__ == "__main__":
     elif a.valider:
         valider(a.ligues.split(","))
     else:
-        collecter(a.donnees, a.ligues.split(","), a.budget_min)
+        collecter(a.donnees, a.ligues.split(","), a.budget_min, retenter=a.retenter)

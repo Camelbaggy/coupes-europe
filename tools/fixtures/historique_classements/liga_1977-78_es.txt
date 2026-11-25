@@ -1,0 +1,68 @@
+== Clasificación ==
+{{#invoke:Football table|main|estilo=WDL
+|actualizado=completo
+|fuente=[https://www.bdfutbol.com/es/t/t1977-78.html BDFutbol]
+
+|puntos_ganado=2
+
+|nombre_ATH=[[Athletic Club]]
+|nombre_ATM=[[Club Atlético de Madrid|Atlético de Madrid]]
+|nombre_BAR=[[Fútbol Club Barcelona|F. C. Barcelona]]
+|nombre_BET=[[Real Betis Balompié|Real Betis]]
+|nombre_BUR=[[Burgos Club de Fútbol (1936)|Burgos C. F.]]
+|nombre_CAD=[[Cádiz Club de Fútbol|Cádiz C. F.]]
+|nombre_ELC=[[Elche Club de Fútbol|Elche C. F.]]
+|nombre_ESP=[[Real Club Deportivo Espanyol|R. C. D. Español]]
+|nombre_HER=[[Hércules de Alicante Club de Fútbol|Hércules C. F.]]
+|nombre_LAS=[[Unión Deportiva Las Palmas|U. D. Las Palmas]]
+|nombre_RAC=[[Real Racing Club de Santander|Racing de Santander]]
+|nombre_RAY=[[Rayo Vallecano de Madrid|A. D. Rayo Vallecano]]
+|nombre_RMA='''[[Real Madrid Club de Fútbol|Real Madrid C. F.]]'''
+|nombre_RSO=[[Real Sociedad de Fútbol|Real Sociedad]]
+|nombre_SAL=[[Unión Deportiva Salamanca|U. D. Salamanca]]
+|nombre_SEV=[[Sevilla Fútbol Club|Sevilla F. C.]]
+|nombre_SPO=[[Real Sporting de Gijón|Sporting de Gijón]]
+|nombre_VAL=[[Valencia Club de Fútbol|Valencia C. F.]]
+
+|ganados_ATH=16|empates_ATH=8 |perdidos_ATH=10|gf_ATH=62|gc_ATH=36
+|ganados_ATM=16|empates_ATM=4 |perdidos_ATM=14|gf_ATM=61|gc_ATM=52
+|ganados_BAR=16|empates_BAR=9 |perdidos_BAR=9 |gf_BAR=49|gc_BAR=29
+|ganados_BET=11|empates_BET=8 |perdidos_BET=15|gf_BET=51|gc_BET=52
+|ganados_BUR=10|empates_BUR=11|perdidos_BUR=13|gf_BUR=33|gc_BUR=47
+|ganados_CAD=7 |empates_CAD=8 |perdidos_CAD=19|gf_CAD=30|gc_CAD=69
+|ganados_ELC=11|empates_ELC=5 |perdidos_ELC=18|gf_ELC=44|gc_ELC=66
+|ganados_ESP=12|empates_ESP=6 |perdidos_ESP=16|gf_ESP=48|gc_ESP=60
+|ganados_HER=10|empates_HER=10|perdidos_HER=14|gf_HER=32|gc_HER=40
+|ganados_LAS=12|empates_LAS=11|perdidos_LAS=11|gf_LAS=43|gc_LAS=41
+|ganados_RAY=12|empates_RAY=9 |perdidos_RAY=13|gf_RAY=50|gc_RAY=59
+|ganados_RAC=11|empates_RAC=9 |perdidos_RAC=14|gf_RAC=29|gc_RAC=45
+|ganados_RMA=22|empates_RMA=3 |perdidos_RMA=9 |gf_RMA=77|gc_RMA=40
+|ganados_RSO=12|empates_RSO=9 |perdidos_RSO=13|gf_RSO=52|gc_RSO=46
+|ganados_SAL=14|empates_SAL=6 |perdidos_SAL=14|gf_SAL=37|gc_SAL=40
+|ganados_SEV=13|empates_SEV=8 |perdidos_SEV=13|gf_SEV=38|gc_SEV=45
+|ganados_SPO=15|empates_SPO=9 |perdidos_SPO=10|gf_SPO=53|gc_SPO=43
+|ganados_VAL=16|empates_VAL=7 |perdidos_VAL=11|gf_VAL=54|gc_VAL=33
+
+<!--Actualizar las posiciones de los equipos aquí-->
+|equipo1=RMA |equipo2=BAR |equipo3=ATH |equipo4=VAL |equipo5=SPO |equipo6=ATM |equipo7=LAS |equipo8=SEV |equipo9=SAL |equipo10=RAY |equipo11=RSO |equipo12=BUR |equipo13=RAC |equipo14=ESP |equipo15=HER |equipo16=BET |equipo17=ELC |equipo18=CAD
+
+|estado_RMA=C
+|estado_BET=D
+|estado_CAD=D
+|estado_ELC=D
+
+<!--Definición de la columna de clasificación y descenso-->
+|encabezado_notas=Clasificación
+|color_CCE=verde3  |texto_CCE=Clasifica a la [[Copa de Campeones de Europa 1978-79|Copa de Europa]]
+|color_UEF=azul3   |texto_UEF=Clasifica a la [[Copa de la UEFA 1978-79|Copa de la UEFA]]
+|color_REC=#FFF5C4  |texto_REC={{esd|Clasifica a la [[Recopa de Europa 1978-79|Recopa de Europa]]}}
+|color_REL=rojo3    |texto_REL={{nowrap|Descenso a [[Segunda División de España|Segunda División]]}}
+
+<!--Acceso de las diferentes posiciones a otras competiciones (definidas debajo)-->
+
+|resultado1=CCE |resultado2=REC |resultado3=UEF |resultado4=UEF |resultado5=UEF |resultado16=REL |resultado17=REL |resultado18=REL
+
+<!--Configuración de la tabla y reglas-->
+|mostrar_limite=5
+|reglas_clasificacion = Puntos · Diferencia de goles · Goles a favor · Play-off
+}}
