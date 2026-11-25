@@ -395,7 +395,16 @@ nationalité, photo). La compo et le déroulé référencent les joueurs par `id
   titres). `encyclo_ligues.parcours_championnat` rattache les lignes aux clubs actuels (ligne ESPN : `espn_id` ; ligne Wikipédia : `club_wiki` ->
   élément Wikidata = élément de la fiche ; cache `championnats/clubs/wiki_qid.json`) -> `championnat_hist` des fiches (onglet Histoire,
   « En championnat ») et `championnats/clubs/liens_historique.json` (clubs cliquables du bloc « Saisons passées » sous le classement).
-- À venir : historique des classements (Wikipédia, en cours).
+- **Ligue 2** (`fl2`, ESPN `fra.2`, décision du 26/11/2026) : ESPN n'en publie que les actions CLÉS (buts, cartons, remplacements : 15-22 par match),
+  ~33 stats d'équipe sans xG, ~12 stats par joueur. `ligues.LIGUES["fl2"]["flux"] = "reduit"` (`flux_reduit`) : ni momentum, ni stats par
+  mi-temps, ni notes (valeurs calculées sur ces données = fausses) ; le match porte `flux: "reduit"` et `source: "ESPN"`, la fiche l'explique.
+  Zones ESPN : montée directe (`promotion`), barrages d'accession (`barrage_promo`), barrage de relégation, relégation. Journées et historique :
+  pages FR « Championnat de France de football de deuxième division AAAA-AAAA » (toutes les saisons depuis 1933-34 ; « Ligue 2 », « D2 »,
+  « Division 2 » sont des redirections). En attente de l'accord du propriétaire : l'API du site de la LFP (`ma-api.ligue1.fr`, publique, sans clé ;
+  actions et stats Opta probables, non vérifiées) ; jamais de découverte de ses adresses par rétro-ingénierie ni de faux navigateur.
+- **Championnats principaux / secondaires** (décision du 26/11/2026) : `ligues.PRINCIPAUX` (big 5 + Ligue 2, = `notification_jour.LIGUES`, contrôlé par
+  `notification_jour.py --test`) entrent dans la notification commune du jour ; tout championnat ajouté ensuite est secondaire : collecté et affiché,
+  jamais nommé dans la notification (et à collecter par un workflow sans alerte d'échec).
 
 ## API UEFA : pièges vérifiés sur les données réelles
 

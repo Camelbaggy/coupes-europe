@@ -43,6 +43,10 @@ Tout ce qui suit est fusionné sur `main` et en ligne (https://camelbaggy.github
   joueurs (Wikidata, date de naissance au jour + nom, candidat unique) ; classements finaux de 460 saisons sur 466 (bloc « Saisons passées » et
   parcours du club dans l'onglet Histoire).
 
+- **Ligue 2** (26/11) : collecte ESPN en flux réduit (pas de momentum, de stats par mi-temps, de notes ni d'xG : ESPN ne publie que les
+  actions clés), zones de montée / barrages, journées Wikipédia, historique de la D2, notification commune (« … Ligue 1 et Ligue 2 »).
+  En attente : adresses de l'API LFP (`ma-api.ligue1.fr`) relevées par le propriétaire (Eruda / F12) pour enrichir les matchs.
+
 ## À vérifier à la reprise
 
 0000. Encyclopédie des championnats : après fusion, la prochaine collecte écrit `wikidata` / `wikipedia` dans `championnats/clubs/` et
