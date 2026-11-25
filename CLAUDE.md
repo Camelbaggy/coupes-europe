@@ -27,7 +27,7 @@ python agents_flash.py                                  # résumés seuls : data
 python tools/inspect_data.py data.json                  # résumé lisible (notes, momentum, drapeaux manquants…)
 python -m http.server 8000                              # voir index.html (il lit data.json via fetch)
 python -m py_compile *.py tools/*.py                    # contrôle statique
-python soirees.py --test && python publication.py --test && bash tools/test_veille.sh   # tests locaux : état / notification unique, veille.sh (faux gh)
+python soirees.py --test && python publication.py --test && bash tools/test_veille.sh && python tools/verifier_workflows.py   # tests locaux : état / notification unique, veille.sh (faux gh), `bash -n` de chaque bloc `run:` des workflows
 ```
 
 `AI_BUDGET_SECONDS=0` désactive tout appel Gemini (résumés de repli déterministes). Sans `GEMINI_API_KEY`, même

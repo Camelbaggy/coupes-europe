@@ -63,7 +63,7 @@ jobs:
           else
             SOIREE=$(python -c "import run_pipeline; print(run_pipeline.date_soiree_par_defaut())")
           fi
-          echo "Soirée visée : ${SOIREE:-(semaine d'essai)}"
+          echo "Soirée visée : ${SOIREE:-(semaine de test)}"
           echo "soiree=$SOIREE" >> "$GITHUB_OUTPUT"
 
       - name: Collecte UEFA + résumés Gemini Flash (sans push ntfy)
