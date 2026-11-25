@@ -32,10 +32,14 @@ Tout ce qui suit est fusionné sur `main` et en ligne (https://camelbaggy.github
 
 - **Championnats nationaux (big 5)** : étude des sources faite le 25/11 (`docs/etude_championnats.md`) : ESPN (flux Opta complet
   pour toute la saison 2026-27 des 5 championnats), journée via football-data.org / OpenLigaDB, contrôle croisé football-data.co.uk.
-  Décisions du propriétaire reçues le 25/11 (§ 10 de l'étude) ; restent : dépôt de données séparé, notification commune
-  coupes + championnats, saisons avant 2002-03.
+  Décisions du propriétaire reçues le 25/11 (§ 10 de l'étude). **Étape 1 livrée sur la branche** (§ 11) : `ligues.py`, `journees_wiki.py`,
+  `run_ligues.py`, essai `[test-ligues]` ; dépôt de données `Camelbaggy/donnees-football` initialisé EN LOCAL seulement (workflow de collecte,
+  README, CLAUDE.md) : push sur son `main` et activation de GitHub Pages à faire avec l'accord du propriétaire.
 
 ## À vérifier à la reprise
+
+0. Championnats : résultat du workflow `test_ligues.yml` (commit `[test-ligues]`) ; journées Bundesliga et Serie A (calcul local en cours au
+   moment de la rédaction) ; écart Málaga-Villarreal (Wikipédia 1-2 / ESPN 1-3) à recouper.
 
 1. `completer_xg.yml` : run terminé en succès, soirées avec xG (ouvrir une fiche de match d'une soirée passée, onglet Stats).
 2. Soirée du 25/11 (LDC) puis du 26/11 (LE + LC) : notification unique reçue, xG présents dès le passage du soir.

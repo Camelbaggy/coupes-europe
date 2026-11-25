@@ -1,0 +1,44 @@
+name: Test des championnats (branche, sans commit)
+
+# Collecte réelle (ESPN + Wikipédia) d'un jour de championnats dans un dossier temporaire, puis résumé
+# (tools/inspect_ligues.py). Déclenché par un commit contenant [test-ligues] sur une branche ccr-*, ou à la main.
+on:
+  push:
+    branches: ['ccr-*']
+  workflow_dispatch:
+    inputs:
+      date:
+        description: 'Jour (AAAA-MM-JJ)'
+        required: false
+        default: '2026-11-22'
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[test-ligues]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Tests locaux
+        run: python journees_wiki.py --test && python -m py_compile ligues.py run_ligues.py journees_wiki.py
+      - name: Collecte réelle d'un jour (5 championnats)
+        env:
+          PYTHONUNBUFFERED: "1"
+          JOUR: ${{ inputs.date || '2026-11-22' }}
+        run: |
+          python run_ligues.py --date "$JOUR" --donnees /tmp/donnees
+          python run_ligues.py --date "$JOUR" --donnees /tmp/donnees --sans-journees   # 2e passage : aucune recollecte
+          python tools/inspect_ligues.py /tmp/donnees
+          du -sh /tmp/donnees/championnats/*
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: donnees-test
+          path: /tmp/donnees

@@ -42,6 +42,9 @@ python clubs.py --couleurs                              # couleurs des clubs seu
 node tools/test_couleurs_ui.js http://localhost:8765 /tmp/caps   # Playwright 390 x 844 : 40 soirées (ΔE, contrastes), rendu compos / stats / momentum / fiche de club, captures (serveur : python -m http.server 8765)
 python couleurs.py --test                               # règle des couleurs : ΔE76, contraste, choix, agrégation + parité Python / JS (Node) du bloc COULEURS d'index.html
 python classement.py --test && python historique.py --test && python reconstitution.py --test   # classement recalculé (cas réel LDC), soirees/ + index + data.json, reconstitution et rattrapage IA (doublures, sans réseau)
+python run_ligues.py --date 2026-11-22 --donnees /tmp/donnees [--ligues fl1,pl] [--sans-journees]   # championnats : un jour -> dossier de données (ESPN + Wikipédia)
+python ligues.py --date 2026-11-22 --ligues fl1 --max-matchs 1 --sortie /tmp/l1.json   # collecteur ESPN seul (sans écriture dans le dépôt de données)
+python journees_wiki.py --test && python tools/inspect_ligues.py /tmp/donnees    # journées Wikipédia (sans réseau) ; résumé des données de championnats
 ```
 
 `AI_BUDGET_SECONDS=0` désactive tout appel Gemini (résumés de repli déterministes). Sans `GEMINI_API_KEY`, même
@@ -323,6 +326,23 @@ Chaque match : `home_team`/`away_team` (`flag`, `is_french`, `formation`…), `e
 `away`, `value` ∈ [-100, 100]), `stats.{all,1st,2nd}`, `lineups` (positions x/y en %, `id` des joueurs) et
 `players` (dictionnaire par id : stats UEFA brutes sélectionnées, `rating`, `factors`, minutes, entrée/sortie,
 nationalité, photo). La compo et le déroulé référencent les joueurs par `id` ; la fiche joueur lit `players[id]`.
+
+## Championnats nationaux (big 5, en cours : étape 1 livrée)
+
+Étude, mesures, décisions du propriétaire et plan par étapes : `docs/etude_championnats.md` (§ 10-11). Données dans le dépôt SÉPARÉ
+**Camelbaggy/donnees-football** (`championnats/<ligue>/<saison>/<AAAA-MM-JJ>.json` + `index.json` + `journees.json`, servi par GitHub Pages,
+écrit par ses propres workflows qui prennent le code de `main` ici) ; jamais de données de championnat dans ce dépôt.
+- `ligues.py` : ESPN (flux Opta : ~1 500 actions par match, ~110 stats par joueur, xG), matchs AU SCHÉMA des coupes (ids `espn-<id>`) ;
+  momentum (`BOX_ENTRY` = entrée dans la surface, poids 2, à la place de l'attaque dangereuse), 14 stats par mi-temps comptées, notes
+  (`ratings.py` via `JOUEUR_CLES`), positions des compos depuis le poste Opta, maillot porté, classement ESPN. Pièges : « Own Goal » porte
+  l'équipe BÉNÉFICIAIRE ; « Foul » porte l'équipe FAUTIVE ; « Save » inclut les contres des joueurs de champ (arrêts du gardien = acteur gardien).
+- `journees_wiki.py` : numéro de journée (absent chez ESPN) lu sur Wikipédia FR (tableau `{{Foot résultat}}`, cases `Jnn` des matchs non
+  joués) et IT (Serie A, § Calendario) ; matchs joués : révisions anciennes ; clubs rapprochés par les noms puis par les scores ; contrôle
+  « un club une fois par journée » ; jamais de journée devinée.
+- `run_ligues.py` : un jour (heure de Paris) par championnat, sans recollecter un match déjà complet ; classement officiel seulement tant
+  qu'aucun match postérieur n'a commencé. Essai réel : commit `[test-ligues]` sur une branche `ccr-*` (`test_ligues.yml`).
+- À venir (étude § 8) : accueil et interface (option B : une seule application), collecte quotidienne + notification commune, reconstitution
+  de 2026-27, fiches club / joueur uniques, historique des classements (Wikipédia).
 
 ## API UEFA : pièges vérifiés sur les données réelles
 

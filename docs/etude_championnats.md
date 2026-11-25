@@ -181,3 +181,60 @@ interface : menu des journées, résultats, classement, fiches).
 8. **Saisons passées : historique du classement des clubs seulement.** ESPN donne le classement final officiel (pénalités comprises :
    Serie A 2005-06 = Inter 76 pts) **depuis 2002-03** pour les 5 championnats (mesuré ; rien en 2001-02). Avant 2002-03 : à décider
    (football-data.co.uk depuis 1993, classement recalculé SANS les pénalités de points, donc à signaler comme tel, ou rien).
+
+### Suite des réponses (25/11/2026, après-midi)
+
+- **Dépôt de données : `Camelbaggy/donnees-football`** (créé par le propriétaire), servi par GitHub Pages ; le code reste ici. Ses workflows
+  prennent le code de `main` de ce dépôt (public), comme `courses-cyclistes-archives`.
+- **Notification commune** coupes + championnats : UNE par jour où des matchs ont été joués, titre qui nomme les compétitions (« Nouveaux
+  résultats disponibles en LDC et Ligue 1 »). Remplace la notification par soirée de coupe (étape 3).
+- **Historique des classements** : pour le big 5, Wikipédia a une page par saison depuis l'origine (ex. « Championnat d'Allemagne de
+  football 1902-1903 ») ; pages locales (DE, IT, ES, EN) si la page FR est incomplète. Étape 6.
+
+## 11. Étape 1 livrée : collecteur des championnats (25/11/2026)
+
+Modules (Python stdlib) : `ligues.py` (ESPN), `journees_wiki.py` (journées), `run_ligues.py` (collecte d'un jour -> dépôt de données),
+`tools/inspect_ligues.py` (résumé), workflow d'essai `test_ligues.yml` (`[test-ligues]`) ; côté données :
+`donnees-football/.github/workflows/collecte_championnats.yml` (dispatch : jour ou plage).
+
+**Format** : chaque match a EXACTEMENT le schéma des coupes (`collector.build_match`) pour que la page, `ratings.py`, les couleurs et le
+momentum servent tels quels ; identifiants `espn-<id>` (matchs, clubs, joueurs) pour ne jamais se confondre avec les ids UEFA.
+`championnats/<ligue>/<saison>/<AAAA-MM-JJ>.json` = une « soirée » d'un seul championnat (jour de Paris), `index.json` des jours (avec les
+journées présentes), `journees.json` (cache Wikipédia + calendrier ESPN de la saison). Ligues : `fl1`, `pl`, `liga`, `sa`, `bl`.
+
+**Mesuré sur la journée du 22/11/2026** (16 matchs, 5 championnats, depuis le conteneur) :
+- ~35 requêtes ESPN et ~18 s par match (stats individuelles comprises) ; 2e passage du même jour : 3 requêtes par championnat, aucun fichier
+  réécrit ; ~54 Ko par match publié (JSON compact ; 32 Ko pour les joueurs) -> **~95 Mo par saison** pour le big 5.
+- Comptages par mi-temps sur les actions Opta = totaux ESPN du match (tirs, cadrés, contrés, corners, fautes, tacles, interceptions,
+  dégagements, hors-jeu ; 10 équipes, écart ≤ 1).
+- Notes : moyenne 6,96, écart-type 0,73 à 0,78 selon le championnat (cible ~6,9 / ~0,75).
+- Buts reconstitués = score officiel sur les 16 matchs (piège vérifié : un « Own Goal » ESPN porte l'équipe qui BÉNÉFICIE du but).
+
+**Règles propres aux championnats** :
+- Momentum : `uefa.compute_momentum` inchangé ; types Opta convertis (`ligues.TYPES`) ; « attaque dangereuse » remplacée par
+  `BOX_ENTRY` = passe ou centre partant hors de la surface adverse et y arrivant (coordonnées Opta x ≥ 83, 21,1 ≤ y ≤ 78,9 ; sens d'attaque
+  de l'équipe), poids 2 ; faute = coup franc obtenu (0,5) pour l'adversaire de l'équipe fautive (l'action ESPN porte l'équipe FAUTIVE).
+- Stats par mi-temps (`ligues.MI_TEMPS`, 14 lignes) : tirs, cadrés, contrés, passes tentées, passes et centres vers la surface, centres,
+  corners, hors-jeu, tacles, interceptions, dégagements, arrêts du gardien, fautes, cartons jaunes. Pas de possession ni d'xG par mi-temps.
+- Stats d'équipe (`ligues.STATS_EQUIPE`, ~33 lignes, clés UEFA quand elles existent, sinon nouvelles clés rangées dans « Autres » par la
+  page jusqu'à l'étape 2) : possession, tirs, xG / xGOT / xA, grosses occasions, passes, entrées dans la surface et dans le dernier tiers,
+  duels (dont aériens), PPDA…
+- Notes : clés ESPN converties en clés UEFA (`ligues.JOUEUR_CLES`) ; deux substituts documentés : passes courtes réussies = passes réussies
+  − longs ballons réussis ; « passes vers l'avant » = passes réussies dans le dernier tiers. Standardisation par championnat ET par jour
+  (comme les coupes par soirée). Gardiens : arrêts, buts encaissés pendant son temps de jeu (Opta), clean sheet.
+- Compos : positions déduites du poste Opta du match (`G`, `CD-L`, `RB`, `DM`, `AM-R`, `CF-L`…) : ligne (profondeur) + largeur, même
+  échelle que les compos UEFA (domicile : droite = x petit, vérifié sur Hakimi / Nuno Mendes) ; formation ESPN.
+- Maillot porté : `rosters[].uniform.color` du résumé ESPN -> `shirt_color` (règle des couleurs inchangée).
+- Classement : ESPN actuel (`officiel`) tant qu'aucun match du championnat postérieur au jour n'a commencé (calendrier ESPN), sinon celui
+  déjà enregistré ; zones ESPN (`ucl`, `uel`, `uecl`, `barrage`, `relegation`) avec leur libellé. Recalcul pour les jours passés : étape 4
+  (départages propres à chaque championnat).
+
+**Journées (Wikipédia), mesuré le 25/11/2026** :
+- Ligue 1 : 300/306 matchs (18 clubs dont 3 rapprochés par les scores : Auxerre, Lyon, Brest) ; 6 sans journée : la page met Troyes deux
+  fois en J33 (erreur de la page, écartée par le contrôle) et une case J30 / J6 contredite par une révision plus récente.
+- Premier League : 380/380, 0 anomalie. Liga : un écart de score Wikipédia / ESPN (Málaga-Villarreal 1-2 contre 1-3) : signalé, à recouper
+  (étape 3, football-data.co.uk) ; au-delà de 2 % d'écarts, la correspondance des clubs est rejetée.
+- Rapprochement des clubs : noms (indice de Jaccard des mots distinctifs, réciproque), puis scores (≥ 3 matchs joués identiques, aucun
+  contraire, candidat unique), puis alias manuels `alias_equipes_wiki.json` (aucun nécessaire à ce jour).
+- Wikipédia répond souvent HTTP 429 depuis le conteneur de développement (attentes de 40 à 50 s respectées) : ~10 révisions par
+  championnat au premier calcul, puis une lecture par jour.
