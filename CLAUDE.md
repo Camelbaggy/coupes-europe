@@ -81,8 +81,9 @@ GitHub retarde ou saute les crons ; plusieurs mécanismes garantissent une mise 
   à partir de 12 h UTC le lendemain ; `aucun_match` jamais ; `--renotifier` force. Un passage sur une soirée `complet` + notifiée + déjà dans
   `data.json` s'arrête avant toute collecte (sans Gemini) sauf `--forcer`. Sans `NTFY_TOPIC` (simulation), la soirée est marquée notifiée.
   Limite connue : si le push de l'état « notifié » échoue après l'envoi, le passage suivant renotifie (job en échec, alerte).
-- **Alerte d'échec** (`python run_pipeline.py --alerte SOIRÉE --cause collecte|push|page_non_a_jour`, étape `if: failure()` du workflow, jamais pour
-  `--week` ni une soirée `aucun_match`) : ntfy distinct « Échec de mise à jour Coupes d'Europe » (priorité 4, tag `rotating_light`) avec la soirée,
+- **Alerte d'échec** (`python run_pipeline.py --alerte SOIRÉE --cause collecte|push|page_non_a_jour|workflow`, étape `if: failure()` du workflow
+  déclenchée par TOUT échec du job, étape préparatoire comprise (soirée recalculée si l'étape `cible` n'a rien produit), jamais pour
+  la semaine de test ni une soirée `aucun_match`) : ntfy distinct « Échec de mise à jour Coupes d'Europe » (priorité 4, tag `rotating_light`) avec la soirée,
   l'étape en cause et le lien du run. Une seule alerte par soirée et par cause, mémorisée dans le champ `alertes` (`{cause: horodatage}`) de
   `etat_soirees.json` (`soirees.doit_alerter` / `marquer_alerte`, conservé par `enregistrer`) et publiée au mieux (`publier.sh --etat-seul || true`) ;
   une cause différente déclenche une nouvelle alerte. Tests : `python publication.py --test`.

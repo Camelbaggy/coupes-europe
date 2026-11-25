@@ -122,18 +122,26 @@ jobs:
         run: bash .github/scripts/publier.sh --etat-seul
 
       - name: Alerte ntfy d'échec de publication
-        if: failure() && steps.cible.outputs.soiree != ''
+        # TOUT échec du job (y compris une étape préparatoire comme « cible ») déclenche l'alerte, sauf la semaine de test.
+        # La soirée est recalculée ici si l'étape « cible » n'a rien produit.
+        if: failure() && !(github.event_name == 'workflow_dispatch' && inputs.date_specifique == '' && inputs.mode_test_semaine)
         continue-on-error: true
         env:
           NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
           SOIREE: ${{ steps.cible.outputs.soiree }}
+          DATE_SPECIFIQUE: ${{ inputs.date_specifique }}
           OUTCOME_COLLECTE: ${{ steps.collecte.outcome }}
           OUTCOME_PUBLIER: ${{ steps.publier.outcome }}
           OUTCOME_NOTIF: ${{ steps.notif.outcome }}
         run: |
+          if [ -z "$SOIREE" ]; then
+            if [ -n "$DATE_SPECIFIQUE" ]; then SOIREE="$DATE_SPECIFIQUE"
+            else SOIREE=$(python -c "import run_pipeline; print(run_pipeline.date_soiree_par_defaut())" || date -u +%F); fi
+          fi
           if [ "$OUTCOME_COLLECTE" = "failure" ]; then CAUSE=collecte
           elif [ "$OUTCOME_PUBLIER" = "failure" ]; then CAUSE=push
-          else CAUSE=page_non_a_jour; fi
+          elif [ "$OUTCOME_NOTIF" = "failure" ]; then CAUSE=page_non_a_jour
+          else CAUSE=workflow; fi
           python run_pipeline.py --alerte "$SOIREE" --cause "$CAUSE"
           # mémoriser l'alerte (anti-spam du battement) : meilleur effort, un push en échec peut encore échouer
           bash .github/scripts/publier.sh --etat-seul || true
