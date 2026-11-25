@@ -56,7 +56,20 @@ LIGUES: Dict[str, Dict[str, Any]] = {
            "local": ("it", "Serie A {a}-{b}"), "v3": 1994},
     "bl": {"slug": "ger.1", "nom": "Bundesliga", "debut": 1963, "fr": "Championnat d'Allemagne de football {a}-{b}",
            "local": ("de", "Fußball-Bundesliga {a}/{b2}"), "v3": 1995},
+    # Ligue 2 (deuxième division, depuis 1933-34 ; décision du 26/11/2026). Saisons à plusieurs groupes : « illisible », jamais de
+    # choix entre les poules. `fr` peut être une liste de modèles essayés dans l'ordre (titres_fr).
+    "fl2": {"slug": "fra.2", "nom": "Ligue 2", "debut": 1933,
+            "fr": "Championnat de France de football de deuxième division {a}-{b}",   # vérifié 1933-34 à 2026-27 (autres formes = redirections)
+            "local": None, "v3": 1994},
 }
+
+
+def titres_fr(ligue: str, a: int) -> List[str]:
+    """Titres candidats de la page FR d'une saison, dans l'ordre d'essai."""
+    if ligue == "liga" and a == 1929:
+        return ["Championnat d'Espagne de football 1929"]
+    modeles = LIGUES[ligue]["fr"]
+    return [m.format(a=a, b=a + 1) for m in (modeles if isinstance(modeles, list) else [modeles])]
 
 
 def titre_local(ligue: str, a: int) -> Tuple[str, str]:
@@ -78,6 +91,7 @@ SAISONS_ABSENTES = {
     "liga": set(range(1936, 1939)),                         # guerre civile
     "sa": {1943, 1944},                                     # 1943-44 Campionato Alta Italia (non officiel), 1944-45 aucun
     "bl": set(),
+    "fl2": set(range(1939, 1945)),                          # comme la première division
 }
 
 
@@ -707,9 +721,9 @@ def collecter(donnees: str, ligues: List[str], budget_min: float, aujourdhui: Op
             if time.monotonic() - debut > budget_min * 60:
                 break
             lot = anciennes[k:k + LOT_TITRES]
-            titres = {a: cfg["fr"].format(a=a, b=a + 1) if not (lg == "liga" and a == 1929)
-                      else "Championnat d'Espagne de football 1929" for a in lot}
-            pages = pages_wiki("fr", list(titres.values()))
+            cands = {a: titres_fr(lg, a) for a in lot}
+            pages = pages_wiki("fr", [t for ts in cands.values() for t in ts])
+            titres = {a: next((t for t in cands[a] if pages.get(t)), cands[a][0]) for a in lot}
             restes = []
             for a in lot:
                 p = pages.get(titres[a])
@@ -796,7 +810,7 @@ def ecrire_index(donnees: str) -> None:
 def valider(ligues: List[str], annees: range = range(2002, 2011)) -> None:
     for lg in ligues:
         cfg = LIGUES[lg]
-        titres = {a: cfg["fr"].format(a=a, b=a + 1) for a in annees}
+        titres = {a: titres_fr(lg, a)[0] for a in annees}
         pages = pages_wiki("fr", list(titres.values()))
         ok = tot = 0
         for a in annees:

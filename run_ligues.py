@@ -228,7 +228,8 @@ def collecter(jour: str, donnees: str, ligues_demandees: List[str], avec_wiki: b
             continue
         # Notes : recalculées sur TOUS les matchs notés du jour (standardisation par championnat et par jour, comme les
         # coupes par soirée) ; un match déjà noté peut donc voir ses notes bouger légèrement quand un autre s'ajoute
-        notes = ratings.rate_matches([m for m in matchs if m.get("players")]) if any(m.get("players") for m in matchs) else {}
+        notes = ratings.rate_matches([m for m in matchs if m.get("players")]) \
+            if any(m.get("players") for m in matchs) and not ligues.flux_reduit(lg) else {}
         rows, source, calc_at = [], "absent", None
         if not reconstituee and not forcer_calcul and classement_valable(jour, jr.get("calendrier") or {}, maintenant):
             rows, st = ligues.classement(lg)

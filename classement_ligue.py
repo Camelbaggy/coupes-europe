@@ -37,6 +37,7 @@ CRITERES = {
     "pl": ["points", "gd", "gf"],
     "bl": ["points", "gd", "gf"],
     "fl1": ["points", "gd", "gf"],
+    "fl2": ["points", "gd", "gf"],         # règlement LFP, mêmes premiers critères que la Ligue 1
     "liga": ["points", "h2h", "gd", "gf"],
     "sa": ["points", "h2h", "gd", "gf"],
 }

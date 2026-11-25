@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Championnats nationaux (Ligue 1, Premier League, Liga, Serie A, Bundesliga) : collecte ESPN (flux Opta).
+Championnats nationaux (Ligue 1, Premier League, Liga, Serie A, Bundesliga, Ligue 2) : collecte ESPN (flux Opta ;
+Ligue 2 : actions clés seulement, voir LIGUES["fl2"]).
 
 Étude, mesures et décisions : docs/etude_championnats.md. Produit des matchs AU MÊME FORMAT que les coupes
 (collector.build_match) : index.html, ratings.py, couleurs, momentum s'appliquent sans copie.
@@ -46,7 +47,18 @@ LIGUES: Dict[str, Dict[str, Any]] = {
     "liga": {"slug": "esp.1", "name": "Liga", "short_name": "Liga", "country": "ESP", "country_name": "Espagne"},
     "sa": {"slug": "ita.1", "name": "Serie A", "short_name": "SA", "country": "ITA", "country_name": "Italie"},
     "bl": {"slug": "ger.1", "name": "Bundesliga", "short_name": "BL", "country": "GER", "country_name": "Allemagne"},
+    # Ligue 2 (décision du propriétaire du 26/11/2026) : ESPN ne publie que les actions clés (buts, cartons, remplacements :
+    # 15-22 par match, mesuré sur 7 matchs de novembre 2026), ~33 stats d'équipe sans xG et ~12 stats par joueur. `flux` =
+    # « reduit » : ni momentum, ni stats par mi-temps, ni notes (des valeurs calculées sur ces données seraient fausses).
+    "fl2": {"slug": "fra.2", "name": "Ligue 2", "short_name": "L2", "country": "FRA", "country_name": "France", "flux": "reduit"},
 }
+# Championnats qui entrent dans la notification commune du jour et les alertes d'échec (décision du 26/11/2026 : big 5 +
+# Ligue 2 ; tout championnat ajouté ensuite est « secondaire » : collecté et affiché, jamais notifié ni alerté).
+PRINCIPAUX = ["fl1", "pl", "liga", "sa", "bl", "fl2"]
+
+
+def flux_reduit(ligue: str) -> bool:
+    return LIGUES.get(ligue, {}).get("flux") == "reduit"
 
 REQUETES = {"n": 0, "erreurs": 0}
 
@@ -91,8 +103,8 @@ def _equipe(c: Dict[str, Any], ligue: str) -> Dict[str, Any]:
     return {
         "flag": FLAG_CODES.get(pays, ""), "country_name": LIGUES[ligue]["country_name"],
         "id": f"espn-{t.get('id', '')}", "espn_id": str(t.get("id", "")),
-        "name": t.get("shortDisplayName") or t.get("displayName") or "",
-        "official_name": t.get("displayName") or "", "short": t.get("abbreviation") or "",
+        "name": (t.get("shortDisplayName") or t.get("displayName") or "").strip(),
+        "official_name": (t.get("displayName") or "").strip(), "short": t.get("abbreviation") or "",
         "country": pays, "is_french": pays == "FRA", "logo": logo,
         "score": int(c["score"]) if str(c.get("score", "")).isdigit() else 0,
     }
@@ -607,12 +619,15 @@ def completer_match(ligue: str, match: Dict[str, Any], avec_stats_joueurs: bool 
     sa, s2 = stats_equipe(ligue, ev, a["espn_id"])
     if "erreur" in (s1, s2):
         return "erreur"
+    reduit = flux_reduit(ligue)
     match.update({
-        "events": shown, "goals": goals, "momentum": uefa.compute_momentum(actions),
+        "events": shown, "goals": goals, "momentum": [] if reduit else uefa.compute_momentum(actions),
         "lineups": lineups, "players": players,
         "stats": {"all": construire_stats(sh, sa) if sh and sa else [],
-                  "1st": stats_mi_temps(actions, "FIRST_HALF"), "2nd": stats_mi_temps(actions, "SECOND_HALF")},
-        "source": SOURCE, "actions_opta": len(plays),
+                  "1st": [] if reduit else stats_mi_temps(actions, "FIRST_HALF"),
+                  "2nd": [] if reduit else stats_mi_temps(actions, "SECOND_HALF")},
+        "source": "ESPN" if reduit else SOURCE, "actions_opta": len(plays),
+        **({"flux": "reduit"} if reduit else {}),
     })
     if sh and sa and "expectedGoals" in sh and "expectedGoals" in sa:
         match["xg_source"] = SOURCE
@@ -628,7 +643,7 @@ def completer_match(ligue: str, match: Dict[str, Any], avec_stats_joueurs: bool 
 # Classement
 # ------------------------------------------------------------------------------
 ZONES = [("champions", "ucl"), ("europa league", "uel"), ("conference", "uecl"), ("relegation playoff", "barrage"),
-         ("relegation", "relegation"), ("promotion", "promotion")]
+         ("relegation", "relegation"), ("promotion playoff", "barrage_promo"), ("promotion", "promotion")]
 
 
 def classement(ligue: str) -> Tuple[List[Dict[str, Any]], str]:
@@ -647,7 +662,7 @@ def classement(ligue: str) -> Tuple[List[Dict[str, Any]], str]:
         zone = next((z for motif, z in ZONES if motif in note), None)
         gd = int(s.get("pointDifferential") or 0)
         rows.append({
-            "rank": int(s["rank"]), "team_id": f"espn-{t.get('id')}", "team": t.get("shortDisplayName") or t.get("displayName"),
+            "rank": int(s["rank"]), "team_id": f"espn-{t.get('id')}", "team": (t.get("shortDisplayName") or t.get("displayName") or "").strip(),
             "short_name": t.get("abbreviation", ""), "country": pays, "country_name": LIGUES[ligue]["country_name"],
             "flag": FLAG_CODES.get(pays, ""), "logo": next((l.get("href") for l in t.get("logos") or []), ""),
             "is_french": pays == "FRA", "played": int(s.get("gamesPlayed") or 0), "won": int(s.get("wins") or 0),
@@ -745,7 +760,7 @@ def collecter_jour(jour: str, ligues: Optional[List[str]] = None, avec_stats_jou
                         incomplet = True
                 matchs.append(m)
         rows, st = classement(lg)
-        rated = [m for m in matchs if m.get("players")]
+        rated = [] if flux_reduit(lg) else [m for m in matchs if m.get("players")]
         notes = ratings.rate_matches(rated) if rated else {}
         sortie["competitions"][lg] = {
             "id": lg, "name": LIGUES[lg]["name"], "short_name": LIGUES[lg]["short_name"], "stage_type": "league",
