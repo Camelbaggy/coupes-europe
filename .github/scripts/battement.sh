@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Battement auto-entretenu (appelé par battement.yml) : toutes les 10 min, un passage de veille.sh (relance d'update_dashboard.yml).
+# Battement auto-entretenu (appelé par battement.yml) : toutes les 10 min, un passage de veille.sh (relance d'update_dashboard.yml)
+# puis de veille_notification.sh (notification commune du jour, coupes + championnats).
 # Environnement : REPO, GH_TOKEN. Surcharges facultatives : DUREE_MIN (330) ou DUREE_S, PAUSE_S (600).
 set -u
 RACINE=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
@@ -22,6 +23,7 @@ while :; do
   n=$((n + 1))
   echo "[BATTEMENT] passage $n, $(( (SECONDS - debut) / 60 )) min écoulées, $(date -u +%H:%M) UTC"
   bash "$RACINE/veille.sh" || echo "[BATTEMENT] veille.sh a échoué (code $?)"
+  bash "$RACINE/veille_notification.sh" || echo "[BATTEMENT] veille_notification.sh a échoué (code $?)"
   if [ $(( SECONDS - debut + pause )) -ge "$duree" ]; then break; fi
   sleep "$pause"
 done

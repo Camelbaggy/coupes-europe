@@ -1,0 +1,48 @@
+name: Notification du jour (coupes + championnats)
+
+# UNE notification ntfy par jour où des matchs ont été joués, toutes compétitions confondues (notification_jour.py) :
+# « Nouveaux résultats disponibles en LDC et Ligue 1 ». Relancé par la veille (battement.yml, veille_secours.yml) quand un jour
+# paraît prêt ; la décision est refaite ici sur une copie fraîche de main (etat_soirees.json, etat_notifications.json) et l'état
+# publié des championnats (Camelbaggy/donnees-football), puis etat_notifications.json est publié. Groupe dédié, sans annulation.
+on:
+  workflow_dispatch:
+    inputs:
+      date:
+        description: 'Jour (AAAA-MM-JJ)'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: notification-jour
+  cancel-in-progress: false
+
+jobs:
+  notifier:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            .github/scripts
+            notification_jour.py
+            notify.py
+            etat_soirees.json
+            etat_notifications.json
+            soirees/index.json
+          sparse-checkout-cone-mode: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Décision et push
+        env:
+          PYTHONUNBUFFERED: "1"
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+          DASHBOARD_URL: ${{ secrets.DASHBOARD_URL }}
+          JOUR: ${{ inputs.date }}
+        run: python notification_jour.py --date "$JOUR"
+      - name: Publication de etat_notifications.json
+        run: bash .github/scripts/publier.sh --etat-seul

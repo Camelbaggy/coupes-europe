@@ -26,6 +26,58 @@ import ligues
 import ratings
 
 
+DELAI_APRES_COUP_MIN = 120   # un match terminé n'est collecté que 2 h après son coup d'envoi (stats Opta finalisées)
+ETAT = "etat_championnats.json"   # racine du dépôt de données ; lu par la veille et par notification_jour.py (dépôt de code)
+GARDE_JOURS = 60
+
+
+def statut_jour(bilan: Dict[str, Any]) -> str:
+    st = [b.get("statut") for b in bilan.values()]
+    if any(s == "partiel" for s in st):
+        return "partiel"
+    return "complet" if any(s == "complet" for s in st) else "aucun_match"
+
+
+def ecrire_etat(donnees: str, jour: str, bilan: Dict[str, Any], maintenant: datetime) -> Dict[str, Any]:
+    """etat_championnats.json : {jour: {statut, ligues: {clé: {statut, matchs, termines}}, maj, alertes?}} (60 jours gardés).
+    `matchs` exclut les reportés / annulés ; `termines` = terminés ET collectés en entier."""
+    chemin = os.path.join(donnees, ETAT)
+    etat = _lire(chemin) or {}
+    ancien = etat.get(jour) or {}
+    ligues_etat = dict(ancien.get("ligues") or {})
+    for lg, b in bilan.items():
+        ligues_etat[lg] = {"statut": b.get("statut"), "matchs": b.get("matchs", 0), "termines": b.get("termines", 0)}
+    etat[jour] = {"statut": statut_jour(ligues_etat), "ligues": ligues_etat,
+                  "maj": maintenant.strftime("%Y-%m-%dT%H:%M:%SZ"),
+                  **({"alertes": ancien["alertes"]} if ancien.get("alertes") else {})}
+    limite = (maintenant.date() - timedelta(days=GARDE_JOURS)).isoformat()
+    etat = {j: v for j, v in sorted(etat.items()) if j >= limite}
+    os.makedirs(donnees, exist_ok=True)
+    with open(chemin, "w", encoding="utf-8") as f:
+        json.dump(etat, f, ensure_ascii=False, indent=1)
+    print(f"[ÉTAT] {jour} : {etat[jour]['statut']} " +
+          ", ".join(f"{lg} {v['termines']}/{v['matchs']}" for lg, v in ligues_etat.items() if v.get("matchs")))
+    return etat
+
+
+def alerter(jour: str, cause: str, donnees: str, url_run: str = "") -> int:
+    """Alerte ntfy d'échec de la collecte des championnats (une par jour et par cause, mémorisée dans etat_championnats.json ;
+    sans NTFY_TOPIC : simulation). Retourne toujours 0."""
+    import notify
+    chemin = os.path.join(donnees, ETAT)
+    etat = _lire(chemin) or {}
+    e = etat.setdefault(jour, {"statut": "partiel", "ligues": {}})
+    if cause in (e.get("alertes") or {}):
+        print(f"[ALERTE] {jour}, cause « {cause} » : déjà alertée")
+        return 0
+    if notify.send_ntfy_alert("Échec de mise à jour des championnats", f"Jour : {jour}\nÉtape en cause : {cause}\n"
+                              f"Lien du run : {url_run or '(inconnu)'}", url_run):
+        e.setdefault("alertes", {})[cause] = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+        with open(chemin, "w", encoding="utf-8") as f:
+            json.dump(etat, f, ensure_ascii=False, indent=1)
+    return 0
+
+
 def saison_de(jour: str) -> int:
     """Année de début de la saison (1er juillet -> 30 juin)."""
     d = date.fromisoformat(jour)
@@ -125,8 +177,12 @@ def collecter(jour: str, donnees: str, ligues_demandees: List[str], avec_wiki: b
                 if m["date"] != jour or m["espn_id"] in vus:
                     continue
                 vus.add(m["espn_id"])
+                coup = ligues._dt(m.get("date_utc", ""))
                 if m["espn_id"] in deja:
                     m = deja[m["espn_id"]]
+                elif m["finished"] and coup and maintenant < coup + timedelta(minutes=DELAI_APRES_COUP_MIN):
+                    # Fini depuis trop peu : Opta complète encore ses statistiques ; collecté au passage suivant
+                    m["en_attente"] = True
                 elif m["finished"]:
                     r = ligues.completer_match(lg, m)
                     nouveaux += 1
@@ -142,10 +198,11 @@ def collecter(jour: str, donnees: str, ligues_demandees: List[str], avec_wiki: b
                 matchs.append(m)
         if incomplet and not matchs and precedent:
             print(f"[WARN] {lg} {jour} : ESPN illisible ; fichier précédent conservé")
-            bilan[lg] = {"statut": "erreur"}
+            ancien = next((l for l in (_lire(os.path.join(dossier, "index.json")) or []) if l.get("date") == jour), {})
+            bilan[lg] = {"statut": "partiel", "matchs": ancien.get("matchs", 0), "termines": ancien.get("termines", 0)}
             continue
         if not matchs and not precedent:
-            bilan[lg] = {"statut": "aucun_match"}
+            bilan[lg] = {"statut": "partiel" if incomplet else "aucun_match", "matchs": 0, "termines": 0}
             continue
         # Notes : recalculées sur TOUS les matchs notés du jour (standardisation par championnat et par jour, comme les
         # coupes par soirée) ; un match déjà noté peut donc voir ses notes bouger légèrement quand un autre s'ajoute
@@ -157,7 +214,9 @@ def collecter(jour: str, donnees: str, ligues_demandees: List[str], avec_wiki: b
         else:
             ancien = (precedent.get("competitions") or {}).get(lg) or {}
             rows, source = ancien.get("standings") or [], ancien.get("standings_source") or "absent"
-        termines = sum(1 for m in matchs if m["finished"])
+        # Matchs comptés pour l'état : les reportés / annulés ne bloquent pas un jour ; un match « prêt » = terminé ET collecté
+        comptes = [m for m in matchs if m.get("status") not in ("Reporté", "Annulé")]
+        termines = sum(1 for m in comptes if m["finished"] and not m.get("en_attente") and not m.get("detail_manquant"))
         comp = {
             "id": lg, "name": ligues.LIGUES[lg]["name"], "short_name": ligues.LIGUES[lg]["short_name"],
             "stage_type": "league", "type": "championnat", "pays": ligues.LIGUES[lg]["country"],
@@ -180,9 +239,9 @@ def collecter(jour: str, donnees: str, ligues_demandees: List[str], avec_wiki: b
                     "maj": maintenant.strftime("%Y-%m-%dT%H:%M:%SZ"), "fichier": f"{jour}.json"})
         idx.sort(key=lambda l: l["date"], reverse=True)
         ecrire_si_change(chemin_idx, idx)
-        statut = "aucun_match" if not matchs else "complet" if termines == len(matchs) and not incomplet else "partiel"
-        bilan[lg] = {"statut": statut, "matchs": len(matchs), "termines": termines, "nouveaux": nouveaux, "ecrit": ecrit}
-        print(f"[OK] {ligues.LIGUES[lg]['name']} {jour} : {statut}, {termines}/{len(matchs)} terminé(s), "
+        statut = "aucun_match" if not comptes else "complet" if termines == len(comptes) and not incomplet else "partiel"
+        bilan[lg] = {"statut": statut, "matchs": len(comptes), "termines": termines, "nouveaux": nouveaux, "ecrit": ecrit}
+        print(f"[OK] {ligues.LIGUES[lg]['name']} {jour} : {statut}, {termines}/{len(comptes)} prêt(s), "
               f"{nouveaux} nouveau(x), classement {source}, fichier {'écrit' if ecrit else 'inchangé'}")
     print(f"[INFO] {ligues.REQUETES['n']} requête(s) ESPN, {ligues.REQUETES['erreurs']} en erreur")
     return bilan
@@ -196,7 +255,15 @@ if __name__ == "__main__":
     ap.add_argument("--donnees", default="../donnees-football")
     ap.add_argument("--ligues", default=",".join(ligues.LIGUES))
     ap.add_argument("--sans-journees", action="store_true", help="ne pas relire Wikipédia (cache seul)")
+    ap.add_argument("--etat", action="store_true", help="écrire etat_championnats.json (collecte quotidienne)")
+    ap.add_argument("--alerte", metavar="JOUR", help="alerte ntfy d'échec pour ce jour (avec --cause), sans collecte")
+    ap.add_argument("--cause", default="workflow")
     a = ap.parse_args()
+    if a.alerte:
+        e = os.environ
+        url = f"{e.get('GITHUB_SERVER_URL', '')}/{e.get('GITHUB_REPOSITORY', '')}/actions/runs/{e.get('GITHUB_RUN_ID', '')}" \
+            if e.get("GITHUB_RUN_ID") else ""
+        raise SystemExit(alerter(a.alerte, a.cause, a.donnees, url))
     if a.du:
         d, fin = date.fromisoformat(a.du), date.fromisoformat(a.au or a.du)
         jours = []
@@ -206,4 +273,6 @@ if __name__ == "__main__":
     else:
         jours = [a.date or datetime.now(timezone.utc).date().isoformat()]
     for j in jours:
-        collecter(j, a.donnees, a.ligues.split(","), not a.sans_journees)
+        b = collecter(j, a.donnees, a.ligues.split(","), not a.sans_journees)
+        if a.etat:
+            ecrire_etat(a.donnees, j, b, datetime.now(timezone.utc))

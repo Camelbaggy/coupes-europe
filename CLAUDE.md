@@ -46,6 +46,9 @@ python classement.py --test && python historique.py --test && python reconstitut
 python run_ligues.py --date 2026-11-22 --donnees /tmp/donnees [--ligues fl1,pl] [--sans-journees]   # championnats : un jour -> dossier de données (ESPN + Wikipédia)
 python ligues.py --date 2026-11-22 --ligues fl1 --max-matchs 1 --sortie /tmp/l1.json   # collecteur ESPN seul (sans écriture dans le dépôt de données)
 python journees_wiki.py --test && python tools/inspect_ligues.py /tmp/donnees    # journées Wikipédia (sans réseau) ; résumé des données de championnats
+python notification_jour.py --test && python veille_ligues.py --test   # notification commune du jour ; veille de la collecte quotidienne des championnats
+python notification_jour.py --veille                    # jours prêts à notifier d'après les fichiers PUBLIÉS (lecture seule)
+python run_ligues.py --date J --donnees DIR --etat      # + etat_championnats.json (collecte quotidienne) ; --alerte J --cause X : alerte d'échec
 ```
 
 `AI_BUDGET_SECONDS=0` désactive tout appel Gemini (résumés de repli déterministes). Sans `GEMINI_API_KEY`, même
@@ -108,6 +111,9 @@ index.html  : page unique (CSS + JS inline), lit soirees/index.json + soirees/<d
 | `completer_xg.yml` | dispatch, auto-relance | `completer-xg` | soirees/, data.json (xG) |
 | `clubs.yml` | cron lundi 5 h 17 UTC + dispatch | `clubs` | clubs/ (fiches, couleurs, historique) |
 | `test_pipeline.yml` | push sur `ccr-*` avec `[test]` / `[sans-ia]` | — | rien (pipeline de la semaine du 3 au 5/11/2026) |
+| `notification_jour.yml` | dispatch (veille du battement / secours) | `notification-jour` | etat_notifications.json ; ntfy (notification commune du jour) |
+| `test_ligues.yml` | push sur `ccr-*` avec `[test-ligues]` | — | rien (championnats d'un jour) |
+| (donnees-football) `collecte_championnats.yml` / `battement.yml` / `veille_secours.yml` | dispatch de la veille des championnats / se relance / cron :37 | `championnats` / `battement` / `veille-secours` | championnats/, etat_championnats.json (dans donnees-football) ; alerte ntfy |
 
 Secrets / variables : `GEMINI_API_KEY` (facultatif : sans clé, résumés déterministes), `NTFY_TOPIC` (topic ntfy ; absent = simulation),
 `DASHBOARD_URL` (page publique, sert à vérifier la publication avant la notification), `AI_BUDGET_SECONDS` (budget Gemini, 900 s ; 0 = pas d'IA).
@@ -159,7 +165,15 @@ GitHub retarde ou saute les crons ; plusieurs mécanismes garantissent une mise 
   est défini, vérification ignorée en simulation. `--week` / `--no-notify` : ni état ni vérification. Les passages sur une soirée `complet` déjà
   dans `data.json` mais non notifiée sautent la collecte (`soirees.a_notifier_sans_collecte`, aucun Gemini) et vont à la vérification +
   notification. La soirée visée est calculée une seule fois par le workflow (étape `cible`) et passée à toutes les étapes.
-- **Notification unique** : push ntfy seulement si la soirée est `complet` et non notifiée ; une soirée restée `partiel` est notifiée une fois
+- **Notification COMMUNE du jour** (étape 3 des championnats, décision du 25/11/2026 ; `notification_jour.py`, `docs/etude_championnats.md` § 13) :
+  UNE notification par jour où des matchs ont été joués, toutes compétitions : « Nouveaux résultats disponibles en LDC et Ligue 1 » (lien = accueil).
+  La chaîne des coupes ne pousse plus elle-même : `publication.notifier` vérifie la page puis REMET la soirée (`notifie: true` dans
+  `etat_soirees.json` = remise) et tente `notification_jour.notifier`. Le push part quand toutes les compétitions jouées ce jour-là sont prêtes :
+  coupes remises ; chaque championnat `complet` dans `etat_championnats.json` (donnees-football) ET publié (index.json de Pages) ; partiel accepté
+  à partir de 12 h UTC le lendemain ; famille sans état attendue jusqu'à 13 h UTC le lendemain. Une seule fois par jour : `etat_notifications.json`
+  (publié par `publier.sh --etat-seul`). La veille du battement (`veille_notification.sh` -> `notification_jour.py --veille`, fichiers PUBLIÉS) relance
+  `notification_jour.yml` pour un jour prêt (refait la décision sur main). Tests : `python notification_jour.py --test`.
+- **Notification unique (règles historiques, désormais = règle de REMISE de la soirée)** : push ntfy seulement si la soirée est `complet` et non notifiée ; une soirée restée `partiel` est notifiée une fois
   à partir de 12 h UTC le lendemain ; `aucun_match` jamais ; `--renotifier` force. Un passage sur une soirée `complet` + notifiée + déjà dans
   `data.json` s'arrête avant toute collecte (sans Gemini) sauf `--forcer`. Sans `NTFY_TOPIC` (simulation), la soirée est marquée notifiée.
   Limite connue : si le push de l'état « notifié » échoue après l'envoi, le passage suivant renotifie (job en échec, alerte).
@@ -328,7 +342,7 @@ Chaque match : `home_team`/`away_team` (`flag`, `is_french`, `formation`…), `e
 `players` (dictionnaire par id : stats UEFA brutes sélectionnées, `rating`, `factors`, minutes, entrée/sortie,
 nationalité, photo). La compo et le déroulé référencent les joueurs par `id` ; la fiche joueur lit `players[id]`.
 
-## Championnats nationaux (big 5, en cours : étapes 1-2 livrées)
+## Championnats nationaux (big 5, en cours : étapes 1-3 livrées)
 
 Étude, mesures, décisions du propriétaire et plan par étapes : `docs/etude_championnats.md` (§ 10-11). Données dans le dépôt SÉPARÉ
 **Camelbaggy/donnees-football** (`championnats/<ligue>/<saison>/<AAAA-MM-JJ>.json` + `index.json` + `journees.json`, servi par GitHub Pages,
@@ -347,8 +361,12 @@ nationalité, photo). La compo et le déroulé référencent les joueurs par `id
   `buildToursLigue`, `loadJourLigue`, `DONNEES` = Pages de donnees-football ou `?donnees=`). `entrer` (pushState) / `goAccueil` / `route`
   (popstate). En championnat : logo du club à la place du drapeau (`flag()` / `logoEspn`), pas de focus ni de surlignage français, légende des zones ESPN (`legendeLigue`), sources « ESPN (Opta) »
   selon `m.source`. Essai : `node tools/test_accueil_ui.js <url> <dossier> [donnees/]` ; les autres essais Playwright ouvrent `index.html?c=ucl`.
-- À venir (étude § 8) : collecte quotidienne + notification commune (étape 3), reconstitution de 2026-27, fiches club / joueur uniques,
-  historique des classements (Wikipédia).
+- **Collecte quotidienne** (étape 3, étude § 13) : dans donnees-football, `battement.yml` (~330 min, se relance) et `veille_secours.yml` (cron :37)
+  exécutent `veille_ligues.py` (code d'ici) toutes les 10 min : relance `collecte_championnats.yml -f date=J` pour le premier relevé du jour (>= 9 h
+  UTC) puis dès qu'ESPN compte plus de matchs « prêts » (terminés, coup d'envoi il y a >= 2 h) que `etat_championnats.json` ; 15 min au moins entre
+  deux passages, aucun en cours. `run_ligues.py --etat` : un match terminé depuis moins de 2 h après le coup d'envoi n'est pas collecté (`en_attente`) ;
+  reportés / annulés ne bloquent pas un jour. Échec du workflow : alerte ntfy (secret `NTFY_TOPIC` de donnees-football). Notification : section Fiabilité.
+- À venir (étude § 8) : reconstitution de 2026-27, fiches club / joueur uniques, historique des classements (Wikipédia).
 
 ## API UEFA : pièges vérifiés sur les données réelles
 

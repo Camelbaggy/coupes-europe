@@ -2,7 +2,7 @@
 # Publie les fichiers générés sur la branche courante, avec push robuste.
 # Usage : publier.sh [--etat-seul | --soirees | --clubs]
 #   (sans option) data.json + soirees/ + clubs/ + etat_soirees.json  (passage d'une soirée, update_dashboard.yml)
-#   --etat-seul   etat_soirees.json seul (état « notifié », alertes)
+#   --etat-seul   etat_soirees.json + etat_notifications.json seuls (état « notifié », alertes, notification du jour)
 #   --soirees     soirees/ + data.json (modifié seulement par une soirée plus récente), JAMAIS etat_soirees.json
 #                 (reconstitution historique_soirees.yml, rattrapage IA rattrapage_ia.yml : aucune notification)
 #   --clubs       clubs/ seul (fiches de club, clubs.yml) : jamais data.json, soirees/ ni etat_soirees.json
@@ -31,7 +31,10 @@ case "$mode" in
   --clubs) [ -d clubs ] && git add clubs ;;
   *) git add data.json; [ -d soirees ] && git add soirees; [ -d clubs ] && git add clubs ;;
 esac
-if [ "$mode" != "--soirees" ] && [ "$mode" != "--clubs" ]; then [ -f etat_soirees.json ] && git add etat_soirees.json; fi
+if [ "$mode" != "--soirees" ] && [ "$mode" != "--clubs" ]; then
+  [ -f etat_soirees.json ] && git add etat_soirees.json
+  [ -f etat_notifications.json ] && git add etat_notifications.json   # notification commune du jour (notification_jour.py)
+fi
 
 if git diff --staged --quiet; then
   if [ -z "$(git log '@{u}..HEAD' --oneline 2>/dev/null)" ]; then
