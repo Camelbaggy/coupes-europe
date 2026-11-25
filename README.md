@@ -14,7 +14,10 @@ avec focus sur les clubs français. Spécifications : `Projet_foot.md`.
 | — | `index.html` | Dashboard statique (GitHub Pages) qui lit `data.json` |
 
 Le workflow `update_dashboard.yml` tourne mardi, mercredi et jeudi à 22h30 UTC (23h30 à Paris en hiver)
-et commit `data.json`.
+et commit `data.json` (copie de la soirée la plus récente) ainsi que `soirees/<date>.json` et `soirees/index.json` :
+l'historique de toutes les soirées, que l'accueil propose dans un menu déroulant (`?soiree=AAAA-MM-JJ`).
+Les soirées passées sont reconstituées par `historique_soirees.yml` (classement recalculé depuis les scores pour la
+phase de ligue, résumés sans IA) puis les résumés de la phase de ligue sont rattrapés par Gemini (`rattrapage_ia.yml`).
 
 ## Sources de données
 

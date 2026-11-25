@@ -1,0 +1,46 @@
+name: Rattrapage IA des résumés (phase de ligue, par lots)
+
+# Remplace par un résumé Gemini contrôlé (rédacteur + contrôleur) les résumés déterministes des matchs de clubs français de la
+# PHASE DE LIGUE des soirées reconstituées. Jamais les tours préliminaires de cette saison. Par lots (max_cartes par passage) pour
+# respecter le quota gratuit : 2 passages par jour, donc 2-3 jours pour ~28 cartes. Reprenable (une carte réussie est enregistrée
+# aussitôt) ; HTTP 429 = arrêt propre. Sans carte à rattraper, le passage ne fait rien (le cron peut rester en place).
+# Aucune notification. À lancer à la main : gh workflow run rattrapage_ia.yml --ref main
+on:
+  schedule:
+    - cron: '17 6,15 * * *'
+  workflow_dispatch:
+    inputs:
+      max_cartes:
+        description: 'Nombre maximal de cartes à rattraper pendant ce passage'
+        required: false
+        default: '10'
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: rattrapage-ia
+  cancel-in-progress: false
+
+jobs:
+  rattraper:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Rattrapage Gemini des résumés déterministes de la phase de ligue
+        env:
+          PYTHONUNBUFFERED: "1"
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          AI_BUDGET_SECONDS: "1500"
+          MAX_CARTES: ${{ inputs.max_cartes }}
+        run: python run_pipeline.py --rattraper-ia --max-cartes "${MAX_CARTES:-10}"
+
+      - name: Publication des soirées modifiées (si besoin)
+        run: bash .github/scripts/publier.sh --soirees

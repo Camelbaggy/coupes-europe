@@ -275,7 +275,7 @@ et le menu n'affiche que les soirées ayant des matchs.
   afficher le stade le plus fréquent ; (10) un match reporté / rejoué change de date : la clé de soirée est la date UEFA
   `kickOffTime.date` du moment du fichier, `soirees/` n'est donc jamais purgé automatiquement.
 
-## 6. Points à décider
+## 6. Points à décider (tranchés le 25/11/2026 : voir « Décisions » plus bas)
 
 1. Classement des soirées passées : option A (absent) ou B (calculé, étiqueté) ?
 2. Reconstituer aussi les tours préliminaires (25 dates, 428 matchs, 6 matchs français) ou seulement la phase de ligue (15 dates, 207 matchs) ?
@@ -286,3 +286,41 @@ et le menu n'affiche que les soirées ayant des matchs.
 7. Couleurs : valider la règle (couleur portée du match, puis principale du club, puis neutre), le seuil ΔE 25, et ne pas utiliser P6364 ni la couleur du logo ?
 8. Ordre de livraison proposé : (1) `soirees/` + écriture à chaque passage + menu, (2) workflow de reconstitution,
    (3) `clubs/` + fiche club, (4) couleurs (`shirt_color` collecté dès l'étape 1, coût nul), (5) palmarès et historique.
+
+### Décisions du propriétaire (25/11/2026)
+
+1. **Classement d'une soirée passée** : RECALCULÉ depuis les scores pour la phase de ligue, marqué « calculé » (info-bulle) ;
+   rien pour les tours préliminaires (option B de §4.2, A pour les préliminaires). Mis en œuvre par `classement.py`.
+2. **Reconstitution** : phase de ligue ET tours préliminaires (40 soirées, 635 matchs, 34 matchs de clubs français).
+3. **Résumés IA des soirées passées** : SEULEMENT les matchs de la phase de ligue (28 cartes). Cette saison, les tours
+   préliminaires gardent le résumé déterministe ; aux saisons suivantes ils seront traités en direct comme toute soirée.
+   Repli déterministe d'abord, puis rattrapage Gemini par lots étalés sur 2-3 jours.
+4. **Historique européen complet des clubs** (+0,5 Go téléchargés) : plus tard (étape 5).
+5. **Entraîneur** : non affiché. Couleurs : voir 7.
+6. **Alias Wikidata validés** (`alias_clubs_wikidata.json`, à créer à l'étape fiches club) : Como Q1120838, Sunderland Q18739,
+   Torreense Q1853273, Mjällby Q749138, Sint-Truidense Q138248.
+7. **Règle des couleurs validée** : maillot porté du match (`shirt_color`), sinon couleur principale du club, sinon neutre ;
+   ΔE < 25 : l'équipe à l'extérieur prend son maillot `pl02` ; texte blanc ou foncé selon le contraste AA ; liseré blanc / noir.
+   P6364 et couleur du logo non utilisés.
+8. **Ordre de livraison** : (1) soirées + menu, (2) reconstitution, (3) fiches club, (4) couleurs, (5) historique européen.
+
+### Mise en œuvre des étapes 1 et 2 (écarts et mesures par rapport à l'étude)
+
+- **Classement recalculé, validé sur les données réelles** (`python classement.py --test`, fixture
+  `tools/fixtures/classement_ldc_2027.json`) : le calcul sur tous les matchs terminés donne exactement le classement officiel UEFA
+  (rang, points, buts) pour LDC, LE et LC (108 clubs, 0 écart) ; les champs officiels `opponentsPoints`,
+  `opponentsGoalDifference`, `opponentsGoalScored` confirment la définition des critères g à i (adversaires affrontés).
+  Recalculé à la date du 04/11 (LDC), 35 rangs sur 36 égalent le `previousRank` de l'UEFA ; le dernier (AEK 30e calculé contre 29e) est un
+  départage au critère g (points des adversaires 31 contre 34) que l'UEFA affiche ex æquo dans `previousRank`.
+  Appliqués : points, différence de buts, buts marqués, buts à l'extérieur, victoires, victoires à l'extérieur, points / différence de
+  buts / buts marqués des adversaires. Non appliqués (données absentes à la date voulue) : points disciplinaires, coefficient de club ;
+  une égalité résiduelle donne le même rang, signalé « = ». Aucune zone (top 8 / barrages / éliminés) pour un classement calculé.
+- **Classement officiel conservé pour un vrai passage** : le classement stocké par un passage du soir est l'officiel UEFA tant que
+  l'on est avant 13 h UTC le lendemain (`classement.officiel_valable`) ; au-delà (relance tardive, reconstitution) il est recalculé.
+- **Index** `soirees/index.json` : liste triée par date décroissante, une ligne par soirée (statut, nombre de matchs, par coupe le tour
+  `J5` / `T2 aller` / `Barrages retour`, matchs des clubs français avec score, état des résumés, `reconstituee`, `maj`). Dérivé des
+  fichiers (`historique.reindexer`) : `publier.sh` le reconstruit après un rebase concurrent.
+- **Pas de purge** de `soirees/` ; `etat_soirees.json` (60 jours) n'est lu que par le battement, qui ignore `soirees/`.
+- **Mesures de la reconstitution locale** (UEFA joignable) : une soirée de préliminaires (26/08, 5 matchs) en 18 s, une soirée de
+  phase de ligue (04/11, 10 matchs) en 23 s, listes de saison comprises (24 Mo, 3 requêtes) ; notes calculées normalement sur les
+  tours préliminaires (moyenne 6,99 / 6,85, écart-type 0,75 / 0,82). Soirée de 40 matchs : environ 2 à 3 minutes.

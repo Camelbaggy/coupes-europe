@@ -15,8 +15,9 @@ Valeurs dérivées (calculées, jamais inventées) :
 import argparse
 import json
 from datetime import date, datetime, timedelta, timezone
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
+import classement
 import espn
 import ratings
 import uefa
@@ -41,6 +42,38 @@ def kickoff_paris(iso: str) -> str:
     except ValueError:
         return ""
     return dt.astimezone(PARIS_TZ).strftime("%d/%m %H:%M")
+
+
+_MATCHS_LIGUE: Dict[Any, Any] = {}
+
+
+def matchs_phase_ligue(comp_key: str, season: int) -> List[Dict[str, Any]]:
+    """Lignes (date, équipes, score) des matchs de phase de ligue TERMINÉS de la saison, lues une fois par processus.
+    Lève RuntimeError si la liste de la saison est illisible (on ne calcule jamais un classement sur une liste tronquée)."""
+    cle = (comp_key, season)
+    if cle not in _MATCHS_LIGUE:
+        brut = uefa.fetch_season_matches(comp_key, season)
+        if brut is None:
+            raise RuntimeError(f"liste des matchs {comp_key} {season} illisible : classement non calculable")
+        _MATCHS_LIGUE[cle] = classement.matchs_depuis_uefa(brut)
+    return _MATCHS_LIGUE[cle]
+
+
+def choisir_classement(comp_key: str, season: int, jour: Optional[str], mode: str, maintenant: datetime
+                       ) -> Tuple[List[Dict[str, Any]], str, Optional[str]]:
+    """(lignes, source, date de calcul) du classement d'une soirée.
+
+    - officiel : classement UEFA actuel (seul disponible) ; valable tant que la soirée vient d'avoir lieu ;
+    - calcule  : recalculé depuis les scores de la phase de ligue jusqu'à `jour` inclus (classement.py) ;
+    - absent   : aucun match de phase de ligue terminé à cette date (tours préliminaires) : rien n'est affiché.
+    `mode` : "officiel" (forcé, ex. semaine de test), "calcule" (forcé, reconstitution) ou "auto" (officiel si la
+    soirée est récente, sinon recalculé)."""
+    if mode == "auto":
+        mode = "officiel" if jour is None or classement.officiel_valable(jour, maintenant) else "calcule"
+    if mode == "officiel" or jour is None:
+        return uefa.fetch_standings(comp_key, season), "officiel", None
+    rows = classement.calculer_classement(matchs_phase_ligue(comp_key, season), jour)
+    return (rows, "calcule", jour) if rows else ([], "absent", None)
 
 
 def build_match(comp_key: str, m: Dict[str, Any], detailed: bool) -> Dict[str, Any]:
@@ -71,6 +104,7 @@ def build_match(comp_key: str, m: Dict[str, Any], detailed: bool) -> Dict[str, A
         "events": [], "goals": [], "momentum": [], "actions": [],
         "lineups": {}, "players": {}, "stats": {"all": [], "1st": [], "2nd": []},
     }
+    match.update(uefa.stage_info(m))  # stage (league / qualifying / knockout), round, matchday_short, leg
     match["is_french_match"] = home["is_french"] or away["is_french"]
     if raw_status in ("UPCOMING", ""):
         return match
@@ -78,7 +112,11 @@ def build_match(comp_key: str, m: Dict[str, Any], detailed: bool) -> Dict[str, A
     events = uefa.fetch_events(mid)
     shown, goals, actions = uefa.build_events(events, m, home["id"], away["id"])
     pstats = uefa.fetch_player_stats(mid)  # tous les matchs : nécessaire aux notes et aux fiches joueurs
-    lineups, players = uefa.build_lineups(uefa.fetch_lineups(mid), events, str(potm.get("id", "")), pstats)
+    lineups_raw = uefa.fetch_lineups(mid)
+    kits = uefa.kit_info(lineups_raw)  # maillot réellement porté dans ce match (collecté pour les couleurs, pas encore affiché)
+    home.update(kits["home"])
+    away.update(kits["away"])
+    lineups, players = uefa.build_lineups(lineups_raw, events, str(potm.get("id", "")), pstats)
     home["formation"], away["formation"] = lineups.get("home_formation", ""), lineups.get("away_formation", "")
 
     match.update({
@@ -100,8 +138,13 @@ def build_match(comp_key: str, m: Dict[str, Any], detailed: bool) -> Dict[str, A
 
 
 def collect_dates_data(target_dates: List[str], label_prefix: str = "Soirée",
-                       output_path: str = "data_raw.json") -> Dict[str, Any]:
-    print(f"[INFO] Collecte UEFA (+ fil ESPN) pour {target_dates}")
+                       output_path: str = "data_raw.json", classement_mode: str = "auto",
+                       avec_espn: bool = True, maintenant: Optional[datetime] = None) -> Dict[str, Any]:
+    """`classement_mode` : voir `choisir_classement` (une soirée = une date ; plusieurs dates = officiel).
+    `avec_espn=False` : pas de fil de commentaires (reconstitution : résumés déterministes, ESPN inutile)."""
+    maintenant = maintenant or datetime.now(timezone.utc)
+    jour = target_dates[0] if len(target_dates) == 1 else None
+    print("[INFO] Collecte UEFA" + (" (+ fil ESPN)" if avec_espn else "") + f" pour {target_dates}")
     output: Dict[str, Any] = {
         "last_updated": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "source": "UEFA (données officielles) + ESPN (fil de commentaires)",
@@ -118,7 +161,7 @@ def collect_dates_data(target_dates: List[str], label_prefix: str = "Soirée",
         raw_matches = uefa.fetch_matches(comp_key, target_dates, erreurs_uefa)
         season = next((int(to_number(m.get("seasonYear"))) for m in raw_matches if m.get("seasonYear")),
                       uefa.season_year_for(date.fromisoformat(target_dates[0])))
-        standings = uefa.fetch_standings(comp_key, season)
+        standings, standings_source, standings_at = choisir_classement(comp_key, season, jour, classement_mode, maintenant)
         by_team = {r["team_id"]: r for r in standings}
         is_league = any(((m.get("round") or {}).get("mode") or "") == "GROUP" for m in raw_matches) or \
             (not raw_matches and bool(standings))
@@ -136,12 +179,12 @@ def collect_dates_data(target_dates: List[str], label_prefix: str = "Soirée",
 
             h, a = match["home_team"], match["away_team"]
             comments: List[str] = []
-            espn_id = espn.find_espn_event(comp_key, match["date"], [h["name"], h["official_name"]],
-                                           [a["name"], a["official_name"]], h["score"], a["score"])
+            espn_id = avec_espn and espn.find_espn_event(comp_key, match["date"], [h["name"], h["official_name"]],
+                                                         [a["name"], a["official_name"]], h["score"], a["score"])
             if espn_id:
                 comments = espn.fetch_commentary(comp_key, espn_id)
             print(f"[INFO] {h['name']}-{a['name']} : {len(match['actions'])} actions UEFA, "
-                  f"{len(comments)} lignes de fil ESPN" + ("" if espn_id else " (match ESPN introuvable)"))
+                  f"{len(comments)} lignes de fil ESPN" + ("" if espn_id or not avec_espn else " (match ESPN introuvable)"))
 
             for t in (h, a):
                 if not t["is_french"]:
@@ -162,9 +205,11 @@ def collect_dates_data(target_dates: List[str], label_prefix: str = "Soirée",
             "french_clubs_focus": focus,
             "matches": sorted(matches, key=lambda x: (x["date"], x["kickoff"])),
             "standings": standings,
+            "standings_source": standings_source,
+            **({"standings_at": standings_at} if standings_at else {}),
             "bracket": None,
         }
-        print(f"[INFO] {meta['name']} : {len(matches)} match(s), {len(standings)} équipes au classement, "
+        print(f"[INFO] {meta['name']} : {len(matches)} match(s), {len(standings)} équipes au classement ({standings_source}), "
               f"{len(focus)} fiche(s) club français.")
 
     # Notes : standardisation et calibrage par compétition (niveaux différents entre LDC, EL et ECL)
