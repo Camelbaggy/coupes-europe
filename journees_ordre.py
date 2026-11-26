@@ -7,8 +7,9 @@ Règles (déterministes ; un match sans preuve reste SANS journée, jamais devin
    reportés à leur date d'origine) : robuste, presque tous les clubs sont à l'heure ;
 2. chaque match est rangé dans la journée de référence la plus proche (à moins de `ECART_JOURS`) ; il en reçoit le numéro
    seulement si CHACUN de ses deux clubs a exactement un match dans cette fenêtre ;
-3. complément : un match encore sans journée (report rejoué plus tard : ses deux clubs ont deux matchs dans la même fenêtre)
-   reçoit la journée manquante commune à ses deux clubs si elle est UNIQUE et antérieure à sa date ; répété tant que ça progresse ;
+   Match pas encore joué : fenêtre de `ECART_AVENIR_JOURS` seulement (une affiche reprogrammée tombe hors de toute fenêtre) ;
+3. complément (matchs JOUÉS et reports en attente seulement) : un match encore sans journée (report rejoué plus tard : ses deux
+   clubs ont deux matchs dans la même fenêtre) reçoit la journée manquante commune à ses deux clubs si elle est UNIQUE et antérieure à sa date ; répété tant que ça progresse ;
 4. contrôles finaux : au plus un match par club et par journée, au plus clubs / 2 matchs, k <= `max_j` (fin de la phase
    régulière : les poules finales belges, autrichiennes et grecques ne sont pas numérotées) ; une journée qui viole un contrôle
    est entièrement retirée.
@@ -19,6 +20,7 @@ from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional, Tuple
 
 ECART_JOURS = 4.0
+ECART_AVENIR_JOURS = 2.0     # match pas encore joué : plus près de la date de la journée (reprogrammations)
 
 
 def _jours(iso: str) -> Optional[float]:
@@ -56,7 +58,7 @@ def calculer(ms: List[Dict[str, Any]], max_j: Optional[int] = None) -> Tuple[Dic
         if m.get("statut") == "STATUS_POSTPONED":
             continue                       # date d'origine : traité par le complément (journée manquante unique)
         k = min(ref, key=lambda v: abs(d - ref[v]), default=None)
-        if k is not None and abs(d - ref[k]) <= ECART_JOURS:
+        if k is not None and abs(d - ref[k]) <= (ECART_JOURS if m.get("score") is not None else ECART_AVENIR_JOURS):
             fen[m["espn_id"]] = k
     nb: Dict[Tuple[str, int], int] = {}
     for mid, k in fen.items():
@@ -72,8 +74,8 @@ def calculer(ms: List[Dict[str, Any]], max_j: Optional[int] = None) -> Tuple[Dic
             pris[par_match[mid]["away"]].add(n)
         ajout = 0
         for m in ms:
-            if m["espn_id"] in j:
-                continue
+            if m["espn_id"] in j or (m.get("score") is None and m.get("statut") != "STATUS_POSTPONED"):
+                continue                   # complément réservé aux matchs JOUÉS (et aux reports en attente) : pas d'avenir deviné
             d = _jours(m["date_utc"])
             jusque = [k for k in ref if ref[k] <= d + ECART_JOURS]
             commun = {k for k in jusque if k not in pris[m["home"]] and k not in pris[m["away"]]}
@@ -109,7 +111,7 @@ def _calendrier(n_clubs: int = 10) -> List[Dict[str, Any]]:
         tours.append([(c[i], c[-1 - i]) for i in range(n_clubs // 2)])
         c = [c[0], c[-1]] + c[1:-1]
     tours += [[(b, a) for a, b in t] for t in tours]
-    return [{"espn_id": f"{n}-{i}", "home": h, "away": a, "statut": "STATUS_FULL_TIME",
+    return [{"espn_id": f"{n}-{i}", "home": h, "away": a, "statut": "STATUS_FULL_TIME", "score": (1, 0),
              "date_utc": (datetime(2026, 8, 1) + timedelta(days=7 * n)).strftime("%Y-%m-%dT18:00Z")}
             for n, t in enumerate(tours, 1) for i, (h, a) in enumerate(t)]
 

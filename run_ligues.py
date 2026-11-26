@@ -22,6 +22,7 @@ from datetime import date, datetime, timedelta, timezone
 from typing import Any, Dict, List, Optional
 
 import classement_ligue
+import journees_ordre
 import journees_wiki
 import ligues
 import ratings
@@ -153,6 +154,11 @@ def ecrire_si_change(chemin: str, obj: Any) -> bool:
     return True
 
 
+# Championnats sans source de journées (pas de page Wikipédia exploitable, décision du propriétaire du 26/11/2026) : numéro
+# déduit du calendrier ESPN (journees_ordre.py ; mesuré : 0 erreur sur 850 matchs joués, 2 sur 1 634 à venir, matchs reportés)
+JOURNEES_DEDUITES = {"por", "ned", "bel", "gre"}
+
+
 def journees_saison(lg: str, annee: int, dossier: str, avec_wiki: bool) -> Dict[str, Any]:
     """Journées de la saison (cache relu ; Wikipédia relu une fois par jour au plus) et programme des matchs à venir
     (`programme.json`, une fois par jour au plus, indépendamment des journées). Jamais bloquant."""
@@ -170,6 +176,15 @@ def journees_saison(lg: str, annee: int, dossier: str, avec_wiki: bool) -> Dict[
             print(f"[WARN] {lg} : calendrier ESPN de la saison illisible ; journées et programme inchangés")
             return cache
         res = journees_wiki.calculer(lg, annee, ms, clubs, cache) if besoin_jr else {"erreur": True, "deja_lues": True}
+        if lg in JOURNEES_DEDUITES and not res.get("erreur"):
+            # pas de source de journées : numéro déduit du calendrier (journees_ordre.py) ; Wikipédia garde la priorité
+            ded, an_d = journees_ordre.calculer(ms)
+            wiki_n = len(res.get("journees") or {})
+            res["journees"] = {**ded, **(res.get("journees") or {})}
+            res["deduites"] = len(res["journees"]) - wiki_n
+            res["source"] = (res.get("source") or "") + " ; journées déduites du calendrier ESPN (journees_ordre.py)"
+            res["anomalies"] = list(res.get("anomalies") or []) + [f"déduction : {a}" for a in an_d]
+            print(f"[JOURNÉES] {lg} : {res['deduites']} journée(s) déduite(s) du calendrier")
         jr = cache.get("journees") or {} if res.get("erreur") else res.get("journees") or {}
         prog = ligues.programme(lg, ms, jr, datetime.now(timezone.utc))
         prog["maj"] = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
