@@ -444,8 +444,8 @@ habituelle, qui remplace tout). Rien n'est enregistré. Étape suivante prévue 
 
 ## Programme des matchs à venir (menu des journées, 26/11/2026)
 
-Le menu des journées / tours de chaque compétition montre aussi les journées À VENIR (groupe « À venir » en tête, la plus proche
-d'abord, pastille « à venir ») ; choisir l'une d'elles affiche la section « Programme » (date, heure de Paris, stade, statut « Reporté »)
+Le menu des journées / tours de chaque compétition montre aussi les journées À VENIR (groupe « À venir » en tête, la plus lointaine
+en haut, la prochaine juste au-dessus de la dernière jouée, pastille « à venir ») ; choisir l'une d'elles affiche la section « Programme » (date, heure de Paris, stade, statut « Reporté »)
 et le classement actuel, sans focus ni résultats. Une journée en partie jouée garde ses résultats et ajoute « À venir dans cette journée ».
 - **Coupes** : `clubs/programme.json` `{source: "UEFA", maj, competitions: {ucl: [match]}}` écrit par `clubs.mettre_a_jour`
   (`programme_coupes`, listes de saison UEFA déjà lues : chaque passage de soirée via `apres_soiree` + `clubs.yml`) ; `tour` =
@@ -459,6 +459,19 @@ et le classement actuel, sans focus ni résultats. Une journée en partie jouée
   Exclus : terminés, annulés, coup d'envoi passé de plus de 3 h (fichier) / 150 min (page, `progVisibles`) ; reportés gardés.
 - Page : `ajouterAvenir(k, matchs)` (fin de `buildTours` / `buildToursLigue`), `t.futur` / `t.avenir`, `loadTour` d'un tour futur = classement
   du dernier tour joué, `renderProgramme` (`#prog-section`), `#results-section` masquée pour un tour futur ; URL `?c=uel&tour=j6`.
+
+## Parcours européen dans les classements des championnats (26/11/2026)
+
+`clubs/europe.json` `{saison, source: "UEFA", maj, clubs: {id UEFA: {comp, statut, sortie?, parcours[]}}}` écrit par `clubs.mettre_a_jour`
+(`europe_saison`, listes de saison UEFA + classements, TOUS les clubs engagés, préliminaires compris). `comp` = coupe du dernier match joué ou
+programmé ; `statut` `en_lice` (match à venir, ou phase de ligue finie avec rang <= 24 : attente du tirage ; sans vainqueur lisible : en lice,
+jamais d'élimination devinée), `elimine` (`winner.aggregate` d'une confrontation, `winner.match` d'un match sans aller / retour ; rang > 24 en fin
+de phase de ligue ; `sortie` = tour), `vainqueur` (finale gagnée). Validé sur 2025-26 : 3 vainqueurs (Paris, Aston Villa, Crystal Palace), tous
+les autres éliminés. Page : pastille `.eu-b` LDC / LE / LC (couleurs des coupes) après le nom dans le classement d'un championnat, barrée =
+éliminé, 🏆 = vainqueur, légende + info-bulle (`badgeEurope`, `legendeEurope`) ; club relié par `uefa_id` (correspondance prouvée) sinon
+`uefa_wd` (index des fiches de championnat : P7361 Wikidata unique, `fiches_ligues.py`, jamais utilisé pour fusionner les fiches) ; seulement
+pour la saison européenne du classement (`saisonEuropeDe` : « 2026-27 » -> 2027, Norvège « 2026 » -> 2027). État ACTUEL, quelle que soit la journée.
+Menu des journées : les journées à venir sont dans l'ordre inverse (la prochaine juste au-dessus de la dernière jouée).
 
 ## Alertes en direct des clubs français (`direct_clubs.py`, 26/11/2026)
 

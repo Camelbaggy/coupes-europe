@@ -858,6 +858,13 @@ def mettre_a_jour(ids: Optional[List[str]] = None, saison: Optional[int] = None,
         print(f"[PROGRAMME] coupes : " + ", ".join(f"{k} {len(v)}" for k, v in prog["competitions"].items()) + " match(s) à venir")
     except Exception as e:
         print(f"[WARN] programme des coupes non écrit : {type(e).__name__} : {e}")
+    try:   # parcours européen de la saison (classements des championnats de la page) : jamais bloquant
+        eur = europe_saison(ctx.matchs_uefa, ctx.standings)
+        ecrire(os.path.join(dossier, EUROPE), {"saison": ctx.saison, "source": "UEFA", "maj": maintenant, "clubs": eur})
+        print(f"[EUROPE] {len(eur)} club(s) : " + ", ".join(
+            f"{st} {sum(1 for x in eur.values() if x['statut'] == st)}" for st in ("en_lice", "elimine", "vainqueur")))
+    except Exception as e:
+        print(f"[WARN] parcours européens non écrits : {type(e).__name__} : {e}")
     anciens = {}
     for fn in os.listdir(dossier) if os.path.isdir(dossier) else []:
         if re.match(r"^\d+\.json$", fn):
@@ -989,6 +996,71 @@ def programme_coupes(matchs_uefa: Dict[str, List[Dict[str, Any]]], maintenant: d
         liste.sort(key=lambda x: (x["debut"], x["id"]))
         out[comp] = liste
     return {"source": "UEFA", "competitions": out}
+
+
+EUROPE = "europe.json"
+SIGLES_COUPES = {"ucl": "LDC", "uel": "LE", "uecl": "LC"}
+
+
+def europe_saison(matchs_uefa: Dict[str, List[Dict[str, Any]]], standings: Dict[str, List[Dict[str, Any]]]) -> Dict[str, Any]:
+    """Parcours européen de la saison de TOUS les clubs engagés (tours préliminaires compris), dérivé des listes UEFA :
+    `{id UEFA: {comp, statut, sortie?, parcours[]}}`. `comp` = coupe du DERNIER match joué ou programmé ; `statut` :
+    - `en_lice` : un match à venir (ou en cours) ; ou phase de ligue finie avec un rang <= 24 (attente du tirage) ;
+    - `elimine` : confrontation perdue (vainqueur UEFA `winner.aggregate`, ou `winner.match` d'un match sans aller / retour),
+      ou rang > 24 en fin de phase de ligue ; `sortie` = tour de la sortie ;
+    - `vainqueur` : finale gagnée.
+    Rien n'est deviné : sans vainqueur lisible ni match à venir, le club reste `en_lice` (dernier état sûr : il n'a pas perdu)."""
+    par_club: Dict[str, List[Tuple[str, Dict[str, Any]]]] = {}
+    for comp, ms in matchs_uefa.items():
+        for m in ms or []:
+            for cote in ("homeTeam", "awayTeam"):
+                t = m.get(cote) or {}
+                if t.get("id") and not t.get("isPlaceHolder"):
+                    par_club.setdefault(str(t["id"]), []).append((comp, m))
+    rangs = {comp: {str((it.get("team") or {}).get("id")): to_number(it.get("rank")) for it in st or []}
+             for comp, st in standings.items()}
+    ligue_finie = {comp: bool(ms) and all((m.get("status") or "") == "FINISHED" for m in ms
+                                          if (m.get("round") or {}).get("mode") == "GROUP") and
+                   any((m.get("round") or {}).get("mode") == "GROUP" for m in ms) for comp, ms in matchs_uefa.items()}
+
+    def tour(m: Dict[str, Any]) -> str:
+        si = uefa.stage_info(m)
+        md = m.get("matchday") or {}
+        return historique.tour_court({**si, "matchday": fr(md.get("translations"), "longName")}).replace(" aller", "").replace(" retour", "")
+
+    out: Dict[str, Any] = {}
+    for cid, lst in par_club.items():
+        lst.sort(key=lambda x: ((x[1].get("kickOffTime") or {}).get("dateTime") or ""))
+        parcours: List[str] = []
+        for comp, _ in lst:
+            if comp not in parcours:
+                parcours.append(comp)
+        a_venir = [(c, m) for c, m in lst if (m.get("status") or "") in ("UPCOMING", "LIVE", "POSTPONED")]
+        comp, dernier = a_venir[0] if a_venir else lst[-1]
+        e: Dict[str, Any] = {"comp": comp, "parcours": parcours}
+        if a_venir:
+            e["statut"] = "en_lice"
+        else:
+            si = uefa.stage_info(dernier)
+            w = dernier.get("winner") or {}
+            leg = (dernier.get("matchday") or {}).get("type") or ""
+            gagnant = ((w.get("aggregate") or {}).get("team") or {}).get("id") or (
+                ((w.get("match") or {}).get("team") or {}).get("id") if leg not in ("FIRST_LEG", "SECOND_LEG") else None)
+            if si["stage"] == "league":
+                r = rangs.get(comp, {}).get(cid)
+                if ligue_finie.get(comp) and r is not None and r > 24:
+                    e.update(statut="elimine", sortie="Phase de ligue")
+                else:
+                    e["statut"] = "en_lice"
+            elif gagnant is None:
+                e["statut"] = "en_lice"
+            elif str(gagnant) == cid:
+                finale = "FINAL" in (si["round"]["type"] or "").upper() or "finale" == (si["round"]["name"] or "").lower()
+                e["statut"] = "vainqueur" if finale else "en_lice"
+            else:
+                e.update(statut="elimine", sortie=tour(dernier))
+        out[cid] = e
+    return out
 
 
 def clubs_du_jour(data: Dict[str, Any]) -> List[str]:
@@ -1191,6 +1263,27 @@ def _tests() -> None:
     assert pr[1]["tour"] == "J5" and pr[1]["stage"] == "league" and pr[1]["stade"] == "Stade 9" and pr[1]["ville"] == "Ville"
     assert pr[0]["statut"] == "Reporté" and pr[1]["home_team"]["name"] == "Dom" and pr[1]["home_team"]["is_french"]
     ok += 3
+    # parcours européen : confrontation perdue (cumul) = éliminé + tour ; match à venir = en lice ; phase de ligue : rang > 24 éliminé
+    def q(mid, jour, d, e, h, a, statut="FINISHED", leg="SECOND_LEG", gagnant=None):
+        m = _match_fictif(mid, jour, d, e, h, a, statut, rnd="KNOCK")
+        m["round"] = {"mode": "KNOCK_OUT", "phase": "QUALIFYING", "metaData": {"name": "Q3", "type": "THIRD_QUALIFYING"}}
+        m["matchday"] = {"type": leg}
+        if gagnant:
+            m["winner"] = {"aggregate": {"team": {"id": gagnant}}}
+        return m
+    mu = {"ucl": [q("1", "2026-07-20", "10", "20", 0, 1, leg="FIRST_LEG"), q("2", "2026-07-27", "20", "10", 2, 0, gagnant="20")],
+          "uel": [q("3", "2026-08-20", "10", "30", 0, 0, "UPCOMING", leg="FIRST_LEG")],
+          "uecl": [_match_fictif("4", "2026-11-26", "40", "50", 1, 0), _match_fictif("5", "2026-12-10", "40", "50", 0, 0)]}
+    eu = europe_saison(mu, {"uecl": []})
+    assert eu["10"] == {"comp": "uel", "parcours": ["ucl", "uel"], "statut": "en_lice"}, eu["10"]
+    assert eu["20"]["statut"] == "en_lice" and eu["30"]["statut"] == "en_lice"
+    mu["uel"] = [q("3", "2026-08-20", "10", "30", 0, 2, gagnant="30")]
+    eu = europe_saison(mu, {"uecl": []})
+    assert eu["10"]["statut"] == "elimine" and eu["10"]["sortie"] == "T3" and eu["10"]["comp"] == "uel", eu["10"]
+    mu["uecl"][1]["status"] = "FINISHED"
+    eu = europe_saison(mu, {"uecl": [{"team": {"id": "40"}, "rank": 3}, {"team": {"id": "50"}, "rank": 30}]})
+    assert eu["40"]["statut"] == "en_lice" and eu["50"] == {"comp": "uecl", "parcours": ["uecl"], "statut": "elimine", "sortie": "Phase de ligue"}
+    ok += 4
     print(f"[OK] clubs.py : {ok} contrôles")
 
 
