@@ -45,6 +45,7 @@ from collections import Counter
 from typing import Any, Dict, List, Optional, Tuple
 
 import couleurs
+import historique
 import uefa
 from netutil import FLAG_CODES, fetch_json, fr, to_number
 
@@ -850,6 +851,13 @@ def mettre_a_jour(ids: Optional[List[str]] = None, saison: Optional[int] = None,
     ctx = Contexte(saison, dossier, dossier_soirees)
     if not ctx.charger(avec_inscrits=complet):
         return 1
+    try:   # programme des matchs à venir (menu des journées de la page) : jamais bloquant
+        prog = programme_coupes(ctx.matchs_uefa, dt.datetime.now(dt.timezone.utc))
+        prog["maj"] = maintenant
+        ecrire(os.path.join(dossier, PROGRAMME), prog)
+        print(f"[PROGRAMME] coupes : " + ", ".join(f"{k} {len(v)}" for k, v in prog["competitions"].items()) + " match(s) à venir")
+    except Exception as e:
+        print(f"[WARN] programme des coupes non écrit : {type(e).__name__} : {e}")
     anciens = {}
     for fn in os.listdir(dossier) if os.path.isdir(dossier) else []:
         if re.match(r"^\d+\.json$", fn):
@@ -939,6 +947,48 @@ def mettre_a_jour_couleurs(saison: Optional[int] = None, dossier: str = DOSSIER,
     print(f"[CLUBS] couleurs : {n} club(s) mis à jour, {len(courant['clubs']) - len(sans)}/{len(courant['clubs'])} avec couleurs"
           + (f" ; sans maillot lisible : {', '.join(sans)}" if sans else ""))
     return 0
+
+
+PROGRAMME = "programme.json"
+
+
+def programme_coupes(matchs_uefa: Dict[str, List[Dict[str, Any]]], maintenant: dt.datetime) -> Dict[str, Any]:
+    """Matchs À VENIR de chaque coupe (listes de saison UEFA) : non terminés, coup d'envoi après `maintenant` - 3 h, ou
+    reportés. `tour` = sigle des soirées (`historique.tour_court` : J6, Barrages aller…) pour rejoindre le menu des tours."""
+    seuil = (maintenant - dt.timedelta(hours=3)).strftime("%Y-%m-%dT%H:%M")
+    out: Dict[str, List[Dict[str, Any]]] = {}
+    for comp, ms in matchs_uefa.items():
+        liste = []
+        for m in ms or []:
+            st = (m.get("status") or "").upper()
+            ko = m.get("kickOffTime") or {}
+            debut = ko.get("dateTime") or ""
+            if st in ("FINISHED", "CANCELLED", "ABANDONED") or (st != "POSTPONED" and debut[:16] < seuil):
+                continue
+            si = uefa.stage_info(m)
+            md = m.get("matchday") or {}
+            court = historique.tour_court({**si, "matchday": fr(md.get("translations"), "longName")})
+            eqs = []
+            for cote in ("homeTeam", "awayTeam"):
+                t = m.get(cote) or {}
+                e = uefa.team_info(t)
+                e.pop("official_name", None)
+                if t.get("isPlaceHolder"):
+                    e["a_determiner"] = True
+                eqs.append(e)
+            x = {"id": str(m.get("id")), "debut": debut, "date": (ko.get("date") or "")[:10], "stage": si["stage"],
+                 "tour": court, "home_team": eqs[0], "away_team": eqs[1],
+                 "statut": STATUTS.get(m.get("status"), m.get("status") or "")}
+            stade = m.get("stadium") or {}
+            if stade:
+                x["stade"] = fr(stade.get("translations"), "name")
+                ville = fr((stade.get("city") or {}).get("translations"), "name")
+                if ville:
+                    x["ville"] = ville
+            liste.append(x)
+        liste.sort(key=lambda x: (x["debut"], x["id"]))
+        out[comp] = liste
+    return {"source": "UEFA", "competitions": out}
 
 
 def clubs_du_jour(data: Dict[str, Any]) -> List[str]:
@@ -1131,6 +1181,16 @@ def _tests() -> None:
     agr = couleurs.couleurs_clubs({"1": o, "2": {"d": "2026-11-11", "e": {"10": ["pl01", "#c8102e"], "20": ["pl01", "#0000ff"]}}})
     check(agr["10"]["principale"] == "#c8102e" and agr["10"]["secondaire"] == "#ffffff" and agr["10"]["nb_matchs"] == 1, "couleurs du club 10")
     check(agr["20"]["principale"] == "#0000ff" and agr["20"]["secondaire"] is None, "club 20 sans pl02 : pas de secondaire inventée")
+    # programme des matchs à venir : terminés et passés exclus, reporté gardé, sigle de tour des soirées
+    now = dt.datetime(2026, 11, 26, 12, tzinfo=dt.timezone.utc)
+    ms = [_match_fictif("1", "2026-11-25", "10", "20", 1, 0), _match_fictif("2", "2026-11-26", "10", "20", 0, 0, "UPCOMING"),
+          _match_fictif("3", "2026-11-20", "10", "20", 0, 0, "UPCOMING"), _match_fictif("4", "2026-11-01", "10", "20", 0, 0, "POSTPONED")]
+    ms[1]["matchday"]["translations"]["longName"] = {"FR": "Journée 5"}
+    pr = programme_coupes({"uel": ms}, now)["competitions"]["uel"]
+    assert [x["id"] for x in pr] == ["4", "2"], pr
+    assert pr[1]["tour"] == "J5" and pr[1]["stage"] == "league" and pr[1]["stade"] == "Stade 9" and pr[1]["ville"] == "Ville"
+    assert pr[0]["statut"] == "Reporté" and pr[1]["home_team"]["name"] == "Dom" and pr[1]["home_team"]["is_french"]
+    ok += 3
     print(f"[OK] clubs.py : {ok} contrôles")
 
 

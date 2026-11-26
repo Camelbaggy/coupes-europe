@@ -761,8 +761,39 @@ def saison(ligue: str, annee: int, clubs: Optional[Dict[str, List[str]]] = None)
                 score = (sc(h), sc(a)) if fini and sc(h) is not None and sc(a) is not None else None
                 vus[str(ev.get("id"))] = {"espn_id": str(ev.get("id")), "home": str(h["team"]["id"]),
                                           "away": str(a["team"]["id"]), "date_utc": ev.get("date", ""),
-                                          "score": score, "statut": st.get("name", "")}
+                                          "score": score, "statut": st.get("name", ""),
+                                          "equipes": [_equipe(h, ligue), _equipe(a, ligue)],
+                                          "stade": ((comp.get("venue") or {}).get("fullName") or "").strip()}
     return sorted(vus.values(), key=lambda m: m["date_utc"])
+
+
+def programme(ligue: str, ms: List[Dict[str, Any]], journees: Dict[str, int], maintenant: datetime) -> Dict[str, Any]:
+    """Matchs À VENIR de la saison (calendrier ESPN de `saison`) : non terminés, programmés après `maintenant` - 3 h, ou
+    reportés. Journée = celle de Wikipédia (`journees.json`) si connue, sinon absente (jamais devinée)."""
+    seuil = (maintenant - timedelta(hours=3)).strftime("%Y-%m-%dT%H:%M")
+    out = []
+    for m in ms:
+        if m.get("score") is not None or m.get("statut") in ("STATUS_CANCELED", "STATUS_ABANDONED"):
+            continue
+        reporte = m.get("statut") == "STATUS_POSTPONED"
+        if not reporte and (m.get("date_utc") or "") < seuil:
+            continue
+        d = _dt(m.get("date_utc") or "")
+        eqs = []
+        for e in m.get("equipes") or []:
+            e = dict(e); e.pop("score", None); eqs.append(e)
+        if len(eqs) != 2:
+            continue
+        x = {"id": f"espn-{m['espn_id']}", "debut": m.get("date_utc") or "",
+             "date": d.astimezone(_PARIS).date().isoformat() if d else "",
+             "home_team": eqs[0], "away_team": eqs[1], "statut": STATUT_FR.get(m.get("statut") or "", "À venir")}
+        if journees.get(m["espn_id"]):
+            x["journee"] = int(journees[m["espn_id"]])
+        if m.get("stade"):
+            x["stade"] = m["stade"]
+        out.append(x)
+    out.sort(key=lambda x: (x["debut"], x["id"]))
+    return {"ligue": ligue, "source": "ESPN", "matchs": out}
 
 
 # ------------------------------------------------------------------------------

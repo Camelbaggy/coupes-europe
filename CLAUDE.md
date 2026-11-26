@@ -442,6 +442,24 @@ gardé). `m.direct` : bandeau « En direct (ESPN) · provisoire », pas de momen
 habituelle, qui remplace tout). Rien n'est enregistré. Étape suivante prévue : momentum en direct (actions Opta d'ESPN, port JS de
 `uefa.compute_momentum` avec test de parité Python / JS).
 
+## Programme des matchs à venir (menu des journées, 26/11/2026)
+
+Le menu des journées / tours de chaque compétition montre aussi les journées À VENIR (groupe « À venir » en tête, la plus proche
+d'abord, pastille « à venir ») ; choisir l'une d'elles affiche la section « Programme » (date, heure de Paris, stade, statut « Reporté »)
+et le classement actuel, sans focus ni résultats. Une journée en partie jouée garde ses résultats et ajoute « À venir dans cette journée ».
+- **Coupes** : `clubs/programme.json` `{source: "UEFA", maj, competitions: {ucl: [match]}}` écrit par `clubs.mettre_a_jour`
+  (`programme_coupes`, listes de saison UEFA déjà lues : chaque passage de soirée via `apres_soiree` + `clubs.yml`) ; `tour` =
+  `historique.tour_court` (même sigle que `soirees/index.json` : la journée à venir rejoint le bon tour une fois jouée) ;
+  placeholders de tirage (`isPlaceHolder`) marqués `a_determiner`. Les affiches à élimination directe n'existent qu'après le tirage.
+- **Championnats** : `championnats/<ligue>/<saison>/programme.json` (donnees-football) `{ligue, source: "ESPN", maj, matchs}` écrit par
+  `run_ligues.journees_saison` (une fois par jour, même lecture du calendrier ESPN `ligues.saison`, qui garde désormais `equipes` et
+  `stade`) via `ligues.programme` ; journée = `journees.json` (Wikipédia), jamais devinée : sans journée, regroupement par semaine
+  (« Semaine du … », id `sem-<lundi>`).
+- Match = `{id, debut (UTC), date, tour | journee, stage, home_team, away_team (schéma des équipes des matchs), statut, stade, ville}`.
+  Exclus : terminés, annulés, coup d'envoi passé de plus de 3 h (fichier) / 150 min (page, `progVisibles`) ; reportés gardés.
+- Page : `ajouterAvenir(k, matchs)` (fin de `buildTours` / `buildToursLigue`), `t.futur` / `t.avenir`, `loadTour` d'un tour futur = classement
+  du dernier tour joué, `renderProgramme` (`#prog-section`), `#results-section` masquée pour un tour futur ; URL `?c=uel&tour=j6`.
+
 ## Alertes en direct des clubs français (`direct_clubs.py`, 26/11/2026)
 
 Demande du propriétaire : être prévenu sans sélectionner les matchs. Tout match de LDC / LE / LC du jour (UTC) dont une équipe a
