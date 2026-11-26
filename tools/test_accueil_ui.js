@@ -27,7 +27,7 @@ const { chromium, devices } = require('playwright');
   await page.goto(`${base}/?${q}`);
   await page.waitForSelector('#accueil .acc-tuile', { timeout: 20000 });
   ok(await page.isVisible('#accueil') && !(await page.isVisible('#comp-view')), 'accueil affiché sans paramètre');
-  ok((await page.$$('#accueil .acc-tuile')).length === 16, '16 tuiles (3 coupes + 6 championnats majeurs + 7 autres)');
+  ok((await page.$$('#accueil .acc-tuile')).length === 21, '21 tuiles (5 coupes de clubs + 3 sélections + 6 championnats majeurs + 7 autres)');
   const blocs = await page.$$eval('#accueil .acc-bloc-h b', els => els.map(e => e.textContent));
   ok(blocs.length > 0, `derniers résultats : ${blocs.join(', ')}`);
   ok(await debord() <= 0, 'accueil : pas de débordement horizontal');
@@ -43,10 +43,10 @@ const { chromium, devices } = require('playwright');
 
   // 3. Entrer dans un championnat par sa tuile
   const tuiles = await page.$$('#accueil .acc-tuile');
-  await tuiles[3].click();   // Ligue 1
+  await tuiles[8].click();   // Ligue 1 (après 5 coupes de clubs et 3 sélections)
   await page.waitForSelector('#comp-view:not([hidden]) .match-tile', { timeout: 20000 });
   ok(new URL(page.url()).searchParams.get('c') === 'fl1', 'URL ?c=fl1 ; tour=' + new URL(page.url()).searchParams.get('tour'));
-  ok((await page.$$('#tabs-bar .tab-btn')).length === 5, '5 onglets de championnat');
+  ok((await page.$$('#tabs-bar .tab-btn')).length === 6, '6 onglets de championnat (big 5 + Ligue 2)');
   ok(!(await page.isVisible('#focus-section')), 'pas de focus clubs français en championnat');
   ok(await page.textContent('#tour-btn .tour-t').then(t => /^Journée \d+$/.test(t)), 'menu des journées : ' + await page.textContent('#tour-btn .tour-t'));
   ok(await debord() <= 0, 'championnat : pas de débordement horizontal');
@@ -88,7 +88,7 @@ const { chromium, devices } = require('playwright');
   // 7. Anciens liens des coupes
   await page.goto(`${base}/?c=ucl&tour=j5&${q}`);
   await page.waitForSelector('#comp-view:not([hidden]) .match-tile', { timeout: 20000 });
-  ok((await page.textContent('#tour-btn .tour-t')) === 'Journée 5' && (await page.$$('#tabs-bar .tab-btn')).length === 3, 'ancien lien ?c=ucl&tour=j5 : LDC J5');
+  ok((await page.textContent('#tour-btn .tour-t')) === 'Journée 5' && (await page.$$('#tabs-bar .tab-btn')).length === 5, 'ancien lien ?c=ucl&tour=j5 : LDC J5');
   ok(await page.isVisible('#focus-section'), 'coupes : focus clubs français conservé');
   await page.screenshot({ path: `${out}/08-ldc-j5.png`, fullPage: true });
   await page.goto(`${base}/?soiree=2026-11-05&${q}`);
