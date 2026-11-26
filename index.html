@@ -2492,7 +2492,8 @@
     };
     // Compétition internationale, bloc « En direct » : drapeaux partout (décision du 26/11/2026), mais ESPN ne donne pas le pays d'un club.
     // Pays lu (1) dans la fiche du club (index des fiches : identifiant ESPN des clubs des championnats suivis), sinon (2) dans les équipes
-    // FIFA déjà chargées de l'édition (programme, jours) : sélection = même code, club = un mot distinctif commun, UN SEUL candidat.
+    // FIFA déjà chargées de l'édition (programme, jours) : sélection = même code, club = un mot distinctif commun, UN SEUL candidat ;
+    // un club absent de l'édition chargée est cherché par son nom dans toutes les fiches (un mot distinctif commun ; tous les candidats du même pays).
     // Sans correspondance sûre : aucune image (jamais de logo, jamais de pays deviné).
     const MOTS_VIDES_CLUB = new Set(['club', 'football', 'futbol', 'sport', 'sports', 'sporting', 'united', 'city', 'real', 'athletic', 'atletico',
       'deportivo', 'saint', 'san', 'santa', 'union', 'racing', 'olympique', 'association']);
@@ -2514,6 +2515,13 @@
       const ab = String(t.abbreviation || '').toUpperCase();
       const mots = (n) => [...motsNom(n)].filter(x => !MOTS_VIDES_CLUB.has(x));
       const noms = [t.displayName, t.shortDisplayName, t.name, t.location].filter(Boolean);
+      // (3) club : fiche retrouvée par le NOM (fiches UEFA des coupes et fiches des championnats), un seul pays possible
+      const parNom = estSelection(k) || !clubIndex ? [] : [...new Set(clubIndex.values())].filter(x => x.drapeau && noms.some(n =>
+        mots(n).some(w => mots(x.nom).includes(w) || mots(x.nom_officiel).includes(w))));
+      if (parNom.length && new Set(parNom.map(x => x.drapeau)).size === 1) {   // tous les candidats du même pays, sinon rien
+        const x = parNom[0];
+        return Object.assign(e, { flag: x.drapeau, country: x.code_pays || '', country_name: x.pays || '', is_french: !!x.francais });
+      }
       const cand = equipesIntlConnues(k).filter(x => estSelection(k)
         ? ab && String(x.short || x.country || '').toUpperCase() === ab
         : noms.some(n => mots(n).some(w => mots(x.name).includes(w) || mots(x.official_name).includes(w))));
