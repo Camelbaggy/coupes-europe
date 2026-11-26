@@ -173,6 +173,17 @@
     .acc-bloc-h .go { color: var(--c-accent, var(--accent-ucl)); font-size: 0.8rem; font-weight: 700; white-space: nowrap; }
     .acc-m { width: 100%; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 8px; padding: 9px 14px; border: none; border-top: 1px solid var(--border); background: none; color: var(--text-main); font: inherit; cursor: pointer; min-height: 44px; }
     .acc-m:hover { background: var(--bg-card-hover); }
+    /* En direct */
+    .direct-bloc { background: var(--bg-card); border: 1px solid var(--border); border-left: 4px solid #ef4444; border-radius: 14px; margin: 12px 0; overflow: hidden; }
+    .direct-h { display: flex; align-items: center; gap: 8px; padding: 10px 14px; font-weight: 700; font-size: 0.9rem; }
+    .direct-h .pt { width: 8px; height: 8px; border-radius: 50%; background: #ef4444; animation: direct-pulse 1.6s ease-in-out infinite; }
+    @keyframes direct-pulse { 50% { opacity: 0.25; } }
+    @media (prefers-reduced-motion: reduce) { .direct-h .pt { animation: none; } }
+    .direct-h small { color: var(--text-muted); font-weight: 500; font-size: 0.72rem; margin-left: auto; }
+    .direct-comp { font-size: 0.72rem; color: var(--text-muted); padding: 6px 14px 0; border-top: 1px solid var(--border); display: flex; align-items: center; gap: 6px; }
+    .acc-m .sc.live { background: rgba(239, 68, 68, 0.16); color: #fca5a5; }
+    .acc-m .min { grid-column: 1 / -1; font-size: 0.68rem; color: #fca5a5; text-align: center; margin-top: -4px; font-weight: 700; }
+    .acc-m .min.fin { color: var(--text-muted); }
     .acc-m .eq { font-size: 0.85rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: flex; align-items: center; gap: 6px; }
     .acc-m .eq.d { justify-content: flex-end; text-align: right; }
     .acc-m .sc { font-weight: 800; font-variant-numeric: tabular-nums; background: var(--bg-elevated); border-radius: 8px; padding: 2px 10px; min-width: 52px; text-align: center; }
@@ -1151,6 +1162,8 @@
       <button type="button" role="tab" data-lvue="saison" onclick="choisirVueLigue('saison')">Cette saison</button>
       <button type="button" role="tab" data-lvue="histo" onclick="choisirVueLigue('histo')">Saisons passées</button>
     </div>
+    <!-- EN DIRECT (ESPN, interrogé par le navigateur pendant les matchs ; données provisoires) -->
+    <section id="direct-section" hidden></section>
     <div class="tour-bar" id="tour-bar" hidden></div>
     <!-- 1. FOCUS CLUBS FRANÇAIS -->
     <section id="focus-section">
@@ -1798,7 +1811,7 @@
       const toutes = [...COMP_KEYS, ...LIGUE_MAJEURS];   // derniers résultats : coupes et championnats majeurs seulement
       const dates = Object.fromEntries(toutes.map(k => [k, derniereDate(k)]));
       const jour = Object.values(dates).filter(Boolean).sort().pop() || null;
-      let html = '';
+      let html = '<div id="direct-accueil"></div>';
       if (jour) {
         const ks = toutes.filter(k => dates[k] === jour);
         const datas = await Promise.all(ks.map(k => donneesDuJour(k, jour)));
@@ -1830,6 +1843,7 @@
       box.innerHTML = html;
       const maj = [soireeIndex && soireeIndex[0] && soireeIndex[0].maj, ...LIGUE_MAJEURS.map(k => (ligueIndex[k][0] || {}).maj)].filter(Boolean).sort().pop();
       if (maj) updateBadge({ last_updated: maj });
+      directDemarrer();
     }
 
     function switchCompetition(compKey, slide) {
@@ -1972,6 +1986,182 @@
           </table>`;
       }
       renderHistLigue(compKey);
+      directDemarrer();
+    }
+
+    // ===================== EN DIRECT (ESPN, interrogé par le navigateur) =====================
+    // L'API d'ESPN accepte les appels d'une autre page (en-tête CORS « * », vérifié le 26/11/2026). Pendant les matchs, la page interroge
+    // elle-même les tableaux du jour (toutes les 60 s s'il y a un match en cours ou imminent, sinon toutes les 5 min, page visible
+    // seulement) et la fiche ouverte (30 s). Données PROVISOIRES, marquées comme telles : la collecte habituelle (UEFA pour les coupes,
+    // ESPN complet pour les championnats) les remplace après le match. En direct : score, minute, buts, cartons, remplacements, compos,
+    // stats d'équipe ; ni note ni résumé ni momentum (calculés après le match). Rien n'est enregistré.
+    // site.web.api.espn.com (et non site.api.espn.com : ce dernier répond « Access Denied » à certains navigateurs, constaté le 26/11/2026)
+    const ESPN_WEB = 'https://site.web.api.espn.com/apis/site/v2/sports/soccer';
+    const SLUG_ESPN = { ucl: 'uefa.champions', uel: 'uefa.europa', uecl: 'uefa.europa.conf', fl1: 'fra.1', fl2: 'fra.2', pl: 'eng.1', liga: 'esp.1',
+      sa: 'ita.1', bl: 'ger.1', por: 'por.1', ned: 'ned.1', bel: 'bel.1', tur: 'tur.1', aut: 'aut.1', gre: 'gre.1', nor: 'nor.1' };
+    const DIRECT_APRES_FIN_MIN = 165;   // un match terminé reste dans le bloc jusqu'à 165 min après son coup d'envoi
+    const directEtat = { minuterie: null, jeton: 0, fiche: null, ficheMinuterie: null };
+    const jourParisCompact = () => new Date().toLocaleDateString('en-CA', { timeZone: 'Europe/Paris' }).replace(/-/g, '');
+    const espnEquipe = (c) => {
+      const t = (c && c.team) || {};
+      return { id: 'espn-' + t.id, espn_id: String(t.id || ''), name: String(t.shortDisplayName || t.displayName || t.name || '').trim(),
+        short: t.abbreviation || '', logo: t.logo || ((t.logos || [])[0] || {}).href || '', score: Number(c && c.score) || 0 };
+    };
+    function directResume(k, ev) {
+      const comp = (ev.competitions || [{}])[0], cs = comp.competitors || [];
+      const st = ev.status || {}, ty = st.type || {};
+      return { k, id: String(ev.id), date: ev.date, state: ty.state, mitemps: ty.name === 'STATUS_HALFTIME', minute: st.displayClock || '',
+        home: espnEquipe(cs.find(c => c.homeAway === 'home')), away: espnEquipe(cs.find(c => c.homeAway === 'away')) };
+    }
+    async function directTableau(k) {
+      try {
+        const r = await fetch(`${ESPN_WEB}/${SLUG_ESPN[k]}/scoreboard?dates=${jourParisCompact()}`, { cache: 'no-store' });
+        if (!r.ok) return null;
+        return ((await r.json()).events || []).map(ev => directResume(k, ev));
+      } catch (e) { return null; }
+    }
+    const directVisible = (x, maintenant) => x.state === 'in' ||
+      (x.state === 'post' && maintenant - new Date(x.date).getTime() < DIRECT_APRES_FIN_MIN * 60000);
+    function directLigne(x) {
+      const etat = x.state === 'in' ? (x.mitemps ? 'Mi-temps' : x.minute) : 'Terminé · provisoire';
+      return `<button type="button" class="acc-m" onclick="ouvrirDirect('${esc(x.k)}', '${esc(x.id)}')">
+        <span class="eq d">${esc(x.home.name)} ${flag(x.home)}</span><span class="sc ${x.state === 'in' ? 'live' : ''}">${x.home.score} - ${x.away.score}</span>
+        <span class="eq">${flag(x.away)} ${esc(x.away.name)}</span><span class="min ${x.state === 'in' ? '' : 'fin'}">${esc(etat)}</span></button>`;
+    }
+    function directHtml(listes, avecComp) {
+      const maintenant = Date.now();
+      const blocs = Object.entries(listes).map(([k, l]) => [k, (l || []).filter(x => directVisible(x, maintenant))]).filter(([, l]) => l.length);
+      if (!blocs.length) return '';
+      const enCours = blocs.reduce((t, [, l]) => t + l.filter(x => x.state === 'in').length, 0);
+      const info = infoBtn('<p>Scores, minute et fiches de match <b>en direct</b>, lus sur ESPN toutes les minutes pendant les matchs (fiche ouverte : toutes les 30 secondes). Données <b>provisoires</b> : la collecte habituelle les remplace après le match (UEFA pour les coupes). En direct : buts, cartons, remplacements, compositions et statistiques d\'équipe ; les notes, le momentum et les résumés sont calculés après le match.</p>', 'Le direct');
+      return `<div class="direct-bloc"><div class="direct-h"><span class="pt"></span>En direct${enCours ? ` · ${enCours} match${enCours > 1 ? 's' : ''}` : ''}<small>ESPN · provisoire</small>${info}</div>
+        ${blocs.map(([k, l]) => `${avecComp ? `<div class="direct-comp">${estLigue(k) ? drapeauLigue(k) + ' ' + esc(nomLigue(k)) : esc(COMP_FULL[k])}</div>` : ''}${l.map(directLigne).join('')}`).join('')}</div>`;
+    }
+    // Relance l'interrogation pour la vue affichée (accueil : coupes + championnats majeurs ; compétition : celle-ci)
+    function directDemarrer() {
+      clearTimeout(directEtat.minuterie);
+      const jeton = ++directEtat.jeton;
+      const tour = async () => {
+        if (jeton !== directEtat.jeton) return;
+        if (document.hidden) { directEtat.minuterie = setTimeout(tour, 60000); return; }
+        const accueil = vue === 'accueil';
+        const cles = (accueil ? [...COMP_KEYS, ...LIGUE_MAJEURS] : [currentComp]).filter(k => SLUG_ESPN[k]);
+        const res = await Promise.all(cles.map(directTableau));
+        if (jeton !== directEtat.jeton) return;
+        const listes = Object.fromEntries(cles.map((k, i) => [k, res[i] || []]));
+        const html = directHtml(listes, accueil);
+        const cible = document.getElementById(accueil ? 'direct-accueil' : 'direct-section');
+        if (cible) { cible.innerHTML = html; if (!accueil) cible.hidden = !html; }
+        const maintenant = Date.now();
+        const actif = Object.values(listes).flat().some(x => x.state === 'in' ||
+          (x.state === 'pre' && new Date(x.date).getTime() - maintenant < 20 * 60000 && new Date(x.date).getTime() > maintenant - 60 * 60000));
+        directEtat.minuterie = setTimeout(tour, actif ? 60000 : 300000);
+      };
+      tour();
+    }
+    document.addEventListener('visibilitychange', () => { if (!document.hidden) directDemarrer(); });
+
+    // Fiche de match en direct : résumé ESPN converti au format des fiches (déroulé, compos placées, stats d'équipe)
+    const LIGNE_POSTE = [[/^G$/, 0], [/^(SW|CD.*|LB|RB|LWB|RWB|D.*)$/, 1], [/^DM.*$/, 2], [/^(CM.*|LM|RM|M)$/, 3], [/^AM.*$/, 4], [/^(F|CF.*|LF|RF|RCF|S|LW|RW|ST)$/, 5]];
+    const PROFONDEUR_POSTE = [6.2, 15.0, 22.0, 29.0, 37.0, 45.0];   // même échelle que ligues.placer (Python)
+    function placerDirect(titulaires, side) {
+      const lignes = {};
+      titulaires.forEach((p, i) => {
+        const a = String(p.abbr || '').toUpperCase();
+        const ligne = (LIGNE_POSTE.find(([rx]) => rx.test(a)) || [null, 3])[1];
+        const largeur = ['RB', 'RWB', 'RM', 'RF', 'RW'].includes(a) ? 0 : ['LB', 'LWB', 'LM', 'LF', 'LW'].includes(a) ? 4 : a.endsWith('-R') ? 1 : a.endsWith('-L') ? 3 : 2;
+        (lignes[ligne] = lignes[ligne] || []).push([i, largeur]);
+      });
+      const pos = [];
+      Object.entries(lignes).forEach(([ligne, membres]) => {
+        membres.sort((a, b) => a[1] - b[1] || a[0] - b[0]);
+        const n = membres.length;
+        membres.forEach(([i, largeur], k) => {
+          const x = n > 1 ? 15 + 70 * k / (n - 1) : 15 + 17.5 * largeur, y = PROFONDEUR_POSTE[ligne];
+          pos[i] = [Math.round((side === 'home' ? x : 100 - x) * 10) / 10, Math.round((side === 'home' ? y : 100 - y) * 10) / 10];
+        });
+      });
+      return pos;
+    }
+    const POSTE_ABBR = (a) => a === 'G' ? 'GOALKEEPER' : /^(SW|CD|LB|RB|LWB|RWB|D)/.test(a) ? 'DEFENDER' : /^(F|CF|LF|RF|S|LW|RW|ST)/.test(a) ? 'FORWARD' : 'MIDFIELDER';
+    const STATS_DIRECT = [['possessionPct', 'ball_possession', 'Possession (%)', 1], ['totalShots', 'attempts', 'Tirs', 1], ['shotsOnTarget', 'attempts_on_target', 'Tirs cadrés', 1],
+      ['blockedShots', 'attempts_blocked', 'Tirs contrés', 1], ['wonCorners', 'corners', 'Corners', 1], ['offsides', 'offsides', 'Hors-jeu', 1],
+      ['saves', 'saves', 'Arrêts du gardien', 1], ['accuratePasses', 'passes_completed', 'Passes réussies', 1], ['totalPasses', 'passes_attempted', 'Passes tentées', 1],
+      ['passPct', 'passes_accuracy', 'Précision des passes (%)', 100], ['totalCrosses', 'cross_attempted', 'Centres tentés', 1],
+      ['accurateLongBalls', 'long_balls', 'Longs ballons réussis', 1], ['effectiveTackles', 'tackles_won', 'Tacles réussis', 1],
+      ['interceptions', 'interceptions', 'Interceptions', 1], ['totalClearance', 'clearances', 'Dégagements', 1],
+      ['foulsCommitted', 'fouls_committed', 'Fautes commises', 1], ['yellowCards', 'yellow_cards', 'Cartons jaunes', 1], ['redCards', 'red_cards', 'Cartons rouges', 1]];
+    function directVersMatch(k, sm, id) {
+      const h = ((sm.header || {}).competitions || [{}])[0] || {}, cs = h.competitors || [];
+      const ch = cs.find(c => c.homeAway === 'home') || {}, ca = cs.find(c => c.homeAway === 'away') || {};
+      const cote = { [String((ch.team || {}).id)]: 'home', [String((ca.team || {}).id)]: 'away' };
+      const st = h.status || {}, ty = st.type || {};
+      const home = espnEquipe(ch), away = espnEquipe(ca);
+      const nom = (p) => ((p || {}).athlete || {}).displayName || '';
+      const pid = (p) => ((p || {}).athlete || {}).id ? 'espn-' + p.athlete.id : '';
+      const events = [];
+      (sm.keyEvents || []).forEach(e => {
+        const t = String((e.type || {}).type || ''), ps = e.participants || [], team = cote[String((e.team || {}).id)];
+        if (!team || !ps.length) return;
+        const base = { minute: parseInt((e.clock || {}).displayValue, 10) || 0, minute_label: (e.clock || {}).displayValue || '', team, player: nom(ps[0]), player_id: pid(ps[0]) };
+        if (t.startsWith('goal') || t.startsWith('penalty---scored') || t === 'own-goal') {
+          events.push({ ...base, type: 'goal', detail: t === 'own-goal' ? 'Contre son camp' : t.startsWith('penalty') ? 'Penalty' : ps[1] ? 'Passe déc. : ' + nom(ps[1]) : 'But', other_id: pid(ps[1]) });
+        } else if (t.includes('red')) events.push({ ...base, type: 'red_card', detail: t.includes('yellow') ? 'Deuxième jaune' : 'Carton rouge' });
+        else if (t.includes('yellow')) events.push({ ...base, type: 'yellow_card', detail: 'Carton jaune' });
+        else if (t === 'substitution') events.push({ ...base, type: 'sub', detail: ps[1] ? 'Remplace ' + nom(ps[1]) : 'Entrée en jeu', other_id: pid(ps[1]) });
+      });
+      const lineups = {};
+      (sm.rosters || []).forEach(ro => {
+        const side = ro.homeAway === 'away' ? 'away' : 'home', r = ro.roster || [];
+        const minuteSub = (p) => ((p.plays || []).find(x => x.substitution) || {}).clock;
+        const tit = r.filter(p => p.starter).map(p => ({ p, abbr: ((p.position || {}).abbreviation) || '' }));
+        const pos = placerDirect(tit, side);
+        lineups[side] = tit.map(({ p, abbr }, i) => ({ id: pid(p), number: String(p.jersey || ''), name: (p.athlete || {}).lastName || (p.athlete || {}).shortName || nom(p),
+          pos: POSTE_ABBR(abbr), captain: false, potm: false, x: pos[i][0], y: pos[i][1], rating: null,
+          subbed_out: p.subbedOut ? ((minuteSub(p) || {}).displayValue || null) : null }));
+        lineups[side + '_subs'] = r.filter(p => p.subbedIn).map(p => ({ id: pid(p), number: String(p.jersey || ''), name: (p.athlete || {}).lastName || nom(p),
+          minute: (minuteSub(p) || {}).displayValue || '', potm: false, rating: null }));
+        if (ro.formation) (side === 'home' ? home : away).formation = ro.formation;
+      });
+      const parEq = {};
+      (((sm.boxscore || {}).teams) || []).forEach(t => { parEq[cote[String((t.team || {}).id)]] = Object.fromEntries((t.statistics || []).map(s => [s.name, parseFloat(s.displayValue)])); });
+      const all = STATS_DIRECT.filter(([n]) => parEq.home && parEq.away && isFinite(parEq.home[n]) && isFinite(parEq.away[n]))
+        .map(([n, key, label, f]) => ({ key, label, home: Math.round(parEq.home[n] * f * 10) / 10, away: Math.round(parEq.away[n] * f * 10) / 10 }));
+      const venue = (((sm.gameInfo || {}).venue) || {}).fullName || '';
+      return { match_id: 'direct-' + id, espn_id: String(id), direct: true, source: 'ESPN (direct)', finished: !!ty.completed,
+        status: ty.state === 'in' ? (ty.name === 'STATUS_HALFTIME' ? 'Mi-temps' : 'En direct · ' + (st.displayClock || '')) : ty.completed ? 'Terminé · provisoire' : 'À venir',
+        kickoff: h.date ? new Date(h.date).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', timeZone: 'Europe/Paris' }) : '',
+        venue, home_team: home, away_team: away, events, goals: [], momentum: [], lineups: Object.keys(lineups).length ? lineups : null, players: {},
+        stats: { all, '1st': [], '2nd': [] } };
+    }
+    async function lireDirect(k, id) {
+      try {
+        const r = await fetch(`${ESPN_WEB}/${SLUG_ESPN[k]}/summary?event=${encodeURIComponent(id)}`, { cache: 'no-store' });
+        return r.ok ? directVersMatch(k, await r.json(), id) : null;
+      } catch (e) { return null; }
+    }
+    async function ouvrirDirect(k, id) {
+      closeInfo();
+      const m = await lireDirect(k, id);
+      if (!m) { toast('Fiche du match en direct indisponible pour le moment.'); return; }
+      openMatchModal(m.match_id, { competitions: { [k]: { name: estLigue(k) ? nomLigue(k) : COMP_FULL[k], matches: [m] } } }, k);
+      clearInterval(directEtat.ficheMinuterie);
+      directEtat.ficheMinuterie = setInterval(async () => {
+        const ouvert = document.getElementById('match-modal').classList.contains('open');
+        if (!ouvert || !activeMatch || activeMatch.match_id !== m.match_id) { clearInterval(directEtat.ficheMinuterie); return; }
+        if (document.hidden) return;
+        const n = await lireDirect(k, id);
+        if (!n || !activeMatch || activeMatch.match_id !== m.match_id) return;
+        const avant = JSON.stringify([activeMatch.events, activeMatch.lineups, activeMatch.stats, activeMatch.status, activeMatch.home_team.score, activeMatch.away_team.score]);
+        Object.assign(activeMatch, n);
+        if (JSON.stringify([n.events, n.lineups, n.stats, n.status, n.home_team.score, n.away_team.score]) === avant) return;
+        document.getElementById('modal-score').textContent = `${n.home_team.score} - ${n.away_team.score}`;
+        document.getElementById('modal-comp-label').textContent = [estLigue(k) ? nomLigue(k) : COMP_FULL[k], n.kickoff, n.status].filter(Boolean).join(' • ');
+        const body = document.getElementById('modal-body-content'), haut = body.scrollTop;
+        renderModalContent();
+        body.scrollTop = haut;
+        if (n.finished) clearInterval(directEtat.ficheMinuterie);
+      }, 30000);
     }
 
     // ---------- Championnats : classements finaux des saisons passées (historique_classements.py, donnees-football) ----------
@@ -2155,7 +2345,7 @@
           return;
         }
         const iconMap = { goal: '⚽', yellow_card: '🟨', red_card: '🟥', sub: '🔄', var: '📺' };
-        const info = [m.venue ? '🏟️ ' + esc(m.venue) : '', m.attendance ? esc(Number(m.attendance).toLocaleString('fr-FR')) + ' spectateurs' : '',
+        const info = [m.direct ? '🔴 En direct (ESPN) · données provisoires, remplacées après le match' : '', m.venue ? '🏟️ ' + esc(m.venue) : '', m.attendance ? esc(Number(m.attendance).toLocaleString('fr-FR')) + ' spectateurs' : '',
                       m.player_of_match ? '⭐ Homme du match : ' + esc(m.player_of_match) : '', m.penalties ? 'Tirs au but : ' + esc(m.penalties) : '']
                      .filter(Boolean).join(' · ');
         container.innerHTML = (info ? `<p class="momentum-note" style="margin:0 0 10px">${info}</p>` : '') + evs.map(e => `
@@ -2447,6 +2637,7 @@
     function momentumHtml(m) {
       const pts = m.momentum || [];
       if (pts.length === 0) {
+        if (m.direct) return `<h4 class="st-sec">Momentum</h4><div class="empty-state">En direct, le graphique de pression n'est pas encore disponible : il est calculé à partir des actions du match, après la rencontre.</div>`;
         if (m.flux === 'reduit') return `<h4 class="st-sec">Momentum</h4><div class="empty-state">ESPN ne publie pour ce championnat que les actions clés (buts, cartons, remplacements) : pas de graphique de pression, pas de stats par mi-temps, pas de note des joueurs ni de buts attendus (xG). Les statistiques ci-dessous sont celles du match entier.</div>`;
         return `<h4 class="st-sec">Momentum</h4><div class="empty-state">Actions du match indisponibles : pas de graphique de pression pour cette rencontre.</div>`;
       }

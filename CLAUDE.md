@@ -424,6 +424,22 @@ nationalité, photo). La compo et le déroulé référencent les joueurs par `id
   espace `autres`, 7 onglets `n7`) ; les « Derniers résultats » de l'accueil ne montrent que coupes + majeurs. À faire : historique des classements
   des secondaires ; formules à poules finales (Belgique, Autriche, Grèce : points divisés / groupes) à traiter avant la fin de leur phase régulière.
 
+## Suivi en direct (`index.html`, bloc `EN DIRECT`, 26/11/2026)
+
+La page interroge ELLE-MÊME ESPN pendant les matchs (aucun serveur, aucun workflow ; GitHub Actions serait trop lent : 2 à 5 min par
+mise à jour) : `site.web.api.espn.com/.../<slug>/scoreboard?dates=AAAAMMJJ` (jour de Paris) et `.../summary?event=<id>` ; en-tête CORS
+« * ». **Ne pas utiliser `site.api.espn.com`** dans la page : il répond « Access Denied » à certains navigateurs (constaté le 26/11/2026).
+`SLUG_ESPN` (coupes : `uefa.champions` / `uefa.europa` / `uefa.europa.conf` ; championnats : slugs de `ligues.py`) ; `directDemarrer` (appelé
+par `afficherAccueil` et `renderCompetition`) : accueil = coupes + championnats majeurs, compétition = elle seule ; toutes les 60 s s'il y a un
+match en cours ou à moins de 20 min de son coup d'envoi, sinon 5 min, jamais page cachée. Bloc `#direct-accueil` / `#direct-section` : matchs
+en cours + terminés depuis moins de 165 min après le coup d'envoi (`directVisible`), « Terminé · provisoire ». `ouvrirDirect(k, id)` :
+`directVersMatch` convertit le résumé ESPN au format des fiches (déroulé depuis `keyEvents` : buts / penalty / csc, cartons, remplacements
+[entrant, sortant] ; compos placées par `placerDirect` = port JS de `ligues.placer` ; `stats.all` depuis `boxscore` via `STATS_DIRECT`) et
+l'ouvre dans `openMatchModal` ; rafraîchie toutes les 30 s tant qu'elle est ouverte (rendu refait seulement si quelque chose a changé, défilement
+gardé). `m.direct` : bandeau « En direct (ESPN) · provisoire », pas de momentum ni de note ni de résumé (calculés après le match par la collecte
+habituelle, qui remplace tout). Rien n'est enregistré. Étape suivante prévue : momentum en direct (actions Opta d'ESPN, port JS de
+`uefa.compute_momentum` avec test de parité Python / JS).
+
 ## API UEFA : pièges vérifiés sur les données réelles
 
 Endpoints et identifiants dans `uefa.py` (compétitions 1 = LDC, 14 = EL, 2019 = ECL ; `seasonYear` = année de fin
