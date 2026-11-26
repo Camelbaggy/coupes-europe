@@ -432,7 +432,7 @@ mise à jour) : `site.web.api.espn.com/.../<slug>/scoreboard?dates=AAAAMMJJ` (jo
 `SLUG_ESPN` (coupes : `uefa.champions` / `uefa.europa` / `uefa.europa.conf` ; championnats : slugs de `ligues.py`) ; `directDemarrer` (appelé
 par `afficherAccueil` et `renderCompetition`) : accueil = coupes + championnats majeurs, compétition = elle seule ; toutes les 60 s s'il y a un
 match en cours ou à moins de 20 min de son coup d'envoi, sinon 5 min, jamais page cachée. Bloc `#direct-accueil` / `#direct-section` : matchs
-en cours + terminés depuis moins de 165 min après le coup d'envoi (`directVisible`), « Terminé · provisoire ». `ouvrirDirect(k, id)` :
+en cours + terminés depuis moins de 165 min après le coup d'envoi (`directVisible`), « Terminé · provisoire ». Pastilles (`marquerDirect`, `directEtat.live` = matchs en cours par compétition) : « En direct · N » sur les tuiles de l'accueil (toutes, `data-k`) et point rouge sur les onglets (`.tab-btn.live`) ; l'accueil interroge aussi `LIGUE_AUTRES`, une compétition toute sa rangée d'onglets, mais le bloc détaillé reste coupes + majeurs / compétition affichée. `ouvrirDirect(k, id)` :
 `directVersMatch` convertit le résumé ESPN au format des fiches (déroulé depuis `keyEvents` : buts / penalty / csc, cartons, remplacements
 [entrant, sortant] ; compos placées par `placerDirect` = port JS de `ligues.placer` ; `stats.all` depuis `boxscore` via `STATS_DIRECT`) et
 l'ouvre dans `openMatchModal` ; rafraîchie toutes les 30 s tant qu'elle est ouverte (rendu refait seulement si quelque chose a changé, défilement

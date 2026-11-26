@@ -192,6 +192,13 @@
     .acc-grille { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 18px; }
     .acc-tuile { background: var(--bg-card); border: 1px solid var(--border); border-top: 3px solid var(--c-accent, var(--accent-ucl)); border-radius: 12px; padding: 12px; text-align: left; color: var(--text-main); font: inherit; cursor: pointer; min-height: 86px; display: flex; flex-direction: column; gap: 4px; }
     .acc-tuile:hover { background: var(--bg-card-hover); }
+    .acc-tuile .live-badge { position: relative; align-self: flex-start; font-style: normal; font-size: 0.62rem; font-weight: 700; color: #fff; background: #dc2626; border-radius: 999px; padding: 2px 7px 2px 16px; line-height: 1.4; }
+    .acc-tuile .live-badge::before, .tab-btn.live::after { content: ''; position: absolute; width: 6px; height: 6px; border-radius: 50%; animation: pulse-direct 1.4s ease-in-out infinite; }
+    .acc-tuile .live-badge::before { left: 6px; top: 50%; margin-top: -3px; background: #fff; }
+    .tab-btn { position: relative; }
+    .tab-btn.live::after { top: 5px; right: 4px; width: 7px; height: 7px; background: #ef4444; }
+    @keyframes pulse-direct { 50% { opacity: 0.35; } }
+    @media (prefers-reduced-motion: reduce) { .acc-tuile .live-badge::before, .tab-btn.live::after { animation: none; } }
     .acc-tuile:focus-visible, .acc-bloc-h:focus-visible, .acc-m:focus-visible { outline: 2px solid var(--c-accent, var(--accent-ucl)); outline-offset: -2px; }
     .acc-tuile b { font-size: 0.92rem; }
     .acc-tuile span { font-size: 0.75rem; color: var(--text-muted); }
@@ -1744,6 +1751,7 @@
       bar.classList.toggle('n6', keys.length === 6);
       bar.classList.toggle('n7', keys.length >= 7);
       bar.innerHTML = keys.map(k => `<button class="tab-btn ${k === currentComp ? 'active' : ''}" data-comp="${k}" style="--tab-accent: var(--accent-${k})" onclick="switchCompetition('${k}')" aria-label="${esc(estLigue(k) ? nomLigue(k) + ' (' + DRAPEAU_LIGUE[k][1] + ')' : COMP_FULL[k])}">${estLigue(k) ? `<span class="tab-ligue">${drapeauLigue(k)}<span>${esc(LIGUE_COURT[k])}</span></span>` : esc(COMP_FULL[k])}</button>`).join('');
+      marquerDirect();
     }
     function afficherVue(v) {
       vue = v;
@@ -1835,7 +1843,7 @@
         const t = defaultTour(k);
         const desc = t ? `<span class="tt">${esc(t.titre)}</span><span>${esc(tourSousTitre(t))}</span>`
           : `<span>${estLigue(k) ? 'Données bientôt disponibles' : 'Aucune soirée conservée'}</span>`;
-        return `<button type="button" class="acc-tuile" style="--c-accent: var(--accent-${k})" onclick="entrer('${k}', ${t ? `'${esc(t.id)}'` : 'null'})"><b>${estLigue(k) ? drapeauLigue(k) + ' ' : ''}${esc(estLigue(k) ? nomLigue(k) : COMP_FULL[k])}</b>${desc}</button>`;
+        return `<button type="button" class="acc-tuile" data-k="${k}" style="--c-accent: var(--accent-${k})" onclick="entrer('${k}', ${t ? `'${esc(t.id)}'` : 'null'})"><b>${estLigue(k) ? drapeauLigue(k) + ' ' : ''}${esc(estLigue(k) ? nomLigue(k) : COMP_FULL[k])}</b>${desc}</button>`;
       };
       html += `<h2 class="acc-h">Coupes d'Europe</h2><div class="acc-grille">${COMP_KEYS.map(tuile).join('')}</div>`;
       html += `<h2 class="acc-h">Championnats majeurs</h2><div class="acc-grille">${LIGUE_MAJEURS.map(tuile).join('')}</div>`;
@@ -2000,7 +2008,7 @@
     const SLUG_ESPN = { ucl: 'uefa.champions', uel: 'uefa.europa', uecl: 'uefa.europa.conf', fl1: 'fra.1', fl2: 'fra.2', pl: 'eng.1', liga: 'esp.1',
       sa: 'ita.1', bl: 'ger.1', por: 'por.1', ned: 'ned.1', bel: 'bel.1', tur: 'tur.1', aut: 'aut.1', gre: 'gre.1', nor: 'nor.1' };
     const DIRECT_APRES_FIN_MIN = 165;   // un match terminé reste dans le bloc jusqu'à 165 min après son coup d'envoi
-    const directEtat = { minuterie: null, jeton: 0, fiche: null, ficheMinuterie: null };
+    const directEtat = { live: {}, minuterie: null, jeton: 0, fiche: null, ficheMinuterie: null };
     const jourParisCompact = () => new Date().toLocaleDateString('en-CA', { timeZone: 'Europe/Paris' }).replace(/-/g, '');
     const espnEquipe = (c) => {
       const t = (c && c.team) || {};
@@ -2045,11 +2053,15 @@
         if (jeton !== directEtat.jeton) return;
         if (document.hidden) { directEtat.minuterie = setTimeout(tour, 60000); return; }
         const accueil = vue === 'accueil';
-        const cles = (accueil ? [...COMP_KEYS, ...LIGUE_MAJEURS] : [currentComp]).filter(k => SLUG_ESPN[k]);
+        // interrogées : toutes les tuiles de l'accueil, ou toute la rangée d'onglets (pastilles) ; bloc détaillé : coupes + majeurs / compétition affichée
+        const cles = (accueil ? [...COMP_KEYS, ...LIGUE_MAJEURS, ...LIGUE_AUTRES] : ESPACES[espaceDe(currentComp)].keys).filter(k => SLUG_ESPN[k]);
         const res = await Promise.all(cles.map(directTableau));
         if (jeton !== directEtat.jeton) return;
         const listes = Object.fromEntries(cles.map((k, i) => [k, res[i] || []]));
-        const html = directHtml(listes, accueil);
+        directEtat.live = Object.fromEntries(cles.map(k => [k, listes[k].filter(x => x.state === 'in').length]));
+        marquerDirect();
+        const montres = accueil ? [...COMP_KEYS, ...LIGUE_MAJEURS] : [currentComp];
+        const html = directHtml(Object.fromEntries(montres.filter(k => listes[k]).map(k => [k, listes[k]])), accueil);
         const cible = document.getElementById(accueil ? 'direct-accueil' : 'direct-section');
         if (cible) { cible.innerHTML = html; if (!accueil) cible.hidden = !html; }
         const maintenant = Date.now();
@@ -2060,6 +2072,23 @@
       tour();
     }
     document.addEventListener('visibilitychange', () => { if (!document.hidden) directDemarrer(); });
+    // Pastilles « en direct » : tuiles de l'accueil (« En direct · N ») et onglets de compétition (point rouge)
+    function marquerDirect() {
+      const live = directEtat.live || {};
+      document.querySelectorAll('.acc-tuile[data-k]').forEach(t => {
+        const n = live[t.dataset.k] || 0;
+        let b = t.querySelector('.live-badge');
+        if (!n) { if (b) b.remove(); return; }
+        if (!b) { b = document.createElement('i'); b.className = 'live-badge'; t.prepend(b); }
+        b.textContent = `En direct · ${n}`;
+        t.setAttribute('aria-label', `${t.querySelector('b').textContent.trim()} : ${n} match${n > 1 ? 's' : ''} en direct`);
+      });
+      document.querySelectorAll('.tab-btn[data-comp]').forEach(t => {
+        const n = live[t.dataset.comp] || 0;
+        t.classList.toggle('live', n > 0);
+        t.title = n ? `${n} match${n > 1 ? 's' : ''} en direct` : '';
+      });
+    }
 
     // Fiche de match en direct : résumé ESPN converti au format des fiches (déroulé, compos placées, stats d'équipe)
     const LIGNE_POSTE = [[/^G$/, 0], [/^(SW|CD.*|LB|RB|LWB|RWB|D.*)$/, 1], [/^DM.*$/, 2], [/^(CM.*|LM|RM|M)$/, 3], [/^AM.*$/, 4], [/^(F|CF.*|LF|RF|RCF|S|LW|RW|ST)$/, 5]];
