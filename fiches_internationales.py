@@ -64,6 +64,7 @@ NB_FICHIERS_JOUEURS = 64
 JOURS_CACHE = 30
 JOURS_CACHE_EFFECTIFS = 7
 ESSAIS_WIKI = 2              # tentatives par requête Wikimedia (une réponse HTTP 429 attend `Retry-After`, jusqu'à 90 s)
+REGLE_CLUBS = 2              # version de la règle de rapprochement des clubs (1 : P31/P279* ; 2 : P31 direct) : un bloc d'une règle plus ancienne est refait
 PAUSE_RECHERCHE = 1.0        # entre deux recherches Wikidata de nom de club (Wikimedia répond HTTP 429 au-delà)
 UEFA_COMP = {"cdm": 17, "euro": 3, "ldn": 2014}          # = internationales.COMPETITIONS (copie : ce module n'importe pas le collecteur)
 POURCENTAGES = {"ball_possession", "passes_accuracy", "ppda"}   # moyennes (jamais additionnées)
@@ -837,7 +838,7 @@ def wikidata_clubs(equipes: Dict[str, Dict[str, Any]], pays_qid: Dict[str, str],
     for tid, q in choix.items():
         f = faits.get(q)
         if f and f.get("club"):
-            out[tid] = dict({k: v for k, v in f.items() if k != "club"}, preuve="nom exact + club de football + pays", maj=maintenant)
+            out[tid] = dict({k: v for k, v in f.items() if k != "club"}, preuve="nom exact + club de football + pays", regle=REGLE_CLUBS, maj=maintenant)
     return out, essayes
 
 
@@ -1164,7 +1165,8 @@ def construire(donnees: str, coupes: Optional[str] = None, budget_joueurs_s: flo
     wd_clb: Dict[str, Dict[str, Any]] = {}
     wp_clb: Dict[str, Dict[str, Any]] = {}
     if avec_wiki and nouveaux:
-        a_faire = {tid: e for tid, e in nouveaux.items() if clubs.a_rafraichir(anc_clb[tid].get("wikidata"), auj, JOURS_CACHE)}
+        a_faire = {tid: e for tid, e in nouveaux.items() if clubs.a_rafraichir(anc_clb[tid].get("wikidata"), auj, JOURS_CACHE)
+                   or (anc_clb[tid].get("wikidata") or {}).get("regle") != REGLE_CLUBS}
         if a_faire:
             essayes: Set[str] = set()
             try:
@@ -1174,8 +1176,9 @@ def construire(donnees: str, coupes: Optional[str] = None, budget_joueurs_s: flo
         for tid, e in nouveaux.items():
             if tid not in wd_clb:
                 pas_de_pays = tid in a_faire and e["code"] not in pays_qid
-                wd_clb[tid] = anc_clb[tid].get("wikidata") or (
-                    {"qid": None, "statut": "pays_inconnu" if pas_de_pays else "non_rapproche", "maj": maintenant}
+                ancien_wd = anc_clb[tid].get("wikidata")
+                wd_clb[tid] = (ancien_wd if (ancien_wd or {}).get("regle") == REGLE_CLUBS else None) or (
+                    {"qid": None, "statut": "pays_inconnu" if pas_de_pays else "non_rapproche", "regle": REGLE_CLUBS, "maj": maintenant}
                     if tid in a_faire and (tid in essayes or pas_de_pays) else None)
         voulus = [tid for tid in nouveaux if (wd_clb.get(tid) or {}).get("titre_wikipedia") and clubs.a_rafraichir(anc_clb[tid].get("wikipedia"), auj, JOURS_CACHE)]
         for i in range(0, len(voulus), 20):
