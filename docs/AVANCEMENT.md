@@ -35,12 +35,20 @@ Tout ce qui suit est fusionné sur `main` et en ligne (https://camelbaggy.github
 
 ## Chantier en cours : compétitions internationales (26/11/2026)
 
-Étude et décisions du propriétaire (`docs/etude_internationales.md` § 6-7). **Étape 1 faite** (§ 8) : `internationales.py`,
-`run_internationales.py`, workflow `reconstitution_internationales.yml` dans donnees-football (branche `ccr-6eb51b68-vzkhg2` des deux dépôts,
-à fusionner puis lancer : `gh workflow run reconstitution_internationales.yml --repo Camelbaggy/donnees-football --ref main`, ~2-3 passages).
-Suite : étape 2 (interface : coupes de clubs mondiales avec les coupes d'Europe, sélections à part, groupes, tableau final, focus France), étape 3
-(collecte des soirs, notification France + phases finales, alertes en direct des Bleus). Échéance : finale de la Coupe intercontinentale
-Paris SG le 16/12/2026 (collecte du jour et alertes à prévoir avant) ; Ligue des nations : mars 2027.
+Étude et décisions du propriétaire : `docs/etude_internationales.md` (§ 6-9). Fait et fusionné :
+- Étape 1 : collecteur (`internationales.py` ; UEFA, FIFA + ESPN), `run_internationales.py`, reconstitution des 6 éditions récentes
+  (`reconstitution_internationales.yml` de donnees-football, lancée le 26/11, se relance seule).
+- Étape 2 : interface (accueil « Coupes de clubs » avec CdM des clubs et Coupe intercontinentale, « Sélections nationales », menu des
+  tours par édition, groupes, tableau final, focus France ; `tools/test_internationales_ui.js`).
+- Étape 3 : collecte du jour (`collecte_internationales.yml` lancé par la veille de donnees-football), `etat_internationales.json`,
+  notification commune (France, phases finales Euro / CdM, toujours CdM des clubs et Coupe intercontinentale), alertes en direct des Bleus
+  et des clubs français en CdM des clubs / Coupe intercontinentale (`direct_clubs.py`, ESPN pour ces deux-là).
+À vérifier : fin de la reconstitution (tableau final complet de la CdM 2026 à regarder sur la page), premier passage réel de la veille
+internationale ; **16/12/2026, finale intercontinentale du PSG** : événement ESPN pas encore programmé au 26/11 (alertes à confirmer le jour
+même : `python direct_clubs.py --veille` vers 15 h 40 UTC) ; Ligue des nations en mars 2027. Reste à faire : résumés (IA pour les nouveaux
+matchs de la France, déterministes pour les anciens), fiches de sélection et historique (FIFA depuis 1930, UEFA depuis 1960), classement
+d'un groupe à une date passée, alerte ntfy d'échec de la collecte internationale, éliminatoires Euro 2028 / CdM 2030 quand l'UEFA les publie,
+puis autres continents et amicaux.
 
 ## À vérifier à la reprise
 

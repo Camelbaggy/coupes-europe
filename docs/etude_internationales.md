@@ -171,3 +171,16 @@ donnees-football, reconstitution ; `--test`). Essais réels depuis le conteneur 
 Limites connues : classement d'une date passée non recalculé (seul l'état final / actuel des groupes est publié) ; pas de tirs au but relevés
 dans la phase finale 2026 chez la FIFA (aucune séance ? à vérifier sur l'interface) ; les joueurs des matchs ESPN ont des identifiants `espn-…`,
 ceux des matchs UEFA les identifiants UEFA (rapprochement à faire avec les fiches de sélection, étape 4).
+
+## 9. Étapes 2 et 3 livrées (26/11/2026)
+
+- **Interface** : espace « Sélections nationales » (cdm, euro, ldn) ; cdmc et ci dans l'espace des coupes (« Coupes de clubs », 5 onglets) ;
+  menu des tours par édition (id `<édition>-<tour>`, ex. `?c=cdm&tour=2026-finale`), tableaux de groupe repliables (groupe de la France
+  d'abord), tableau final, programme (« À déterminer (W4) »), direct ESPN. Essai `tools/test_internationales_ui.js` : 51 contrôles verts.
+- **Collecte du jour** : `run_internationales.py --date J --etat` (toutes compétitions ; éditions candidates = édition de la date + 1 à 4
+  années pour cdm / euro), `etat_internationales.json` (`france`, `phase_finale` par compétition) ; veille dans `veille_ligues.py` (famille
+  « internationales » : ne lance rien un jour sans match international).
+- **Notification commune** : cdmc / ci toujours ; cdm / euro / ldn si la France joue ou phase finale (groupes / élimination directe) de
+  l'Euro ou de la Coupe du monde. Un jour sans état international n'est jamais attendu.
+- **Alertes en direct** : Euro, Ligue des nations, Coupe du monde (UEFA) pour l'équipe de France ; cdmc / ci (ESPN + liste FIFA pour
+  reconnaître un club français). Rejeu simulé : France 2-1 Turquie (Ligue des nations, 15/11/2026), Chelsea 3-0 PSG (finale CdMC 2025).

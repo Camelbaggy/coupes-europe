@@ -54,6 +54,8 @@ python internationales.py --test && python run_internationales.py --test   # com
 python internationales.py --comp cdm --edition 2026 --liste             # liste d'une édition (UEFA / FIFA), sans écriture
 python run_internationales.py --comp euro --edition 2024 --date 2024-06-17 --donnees /tmp/donnees   # un jour -> internationales/
 python run_internationales.py --liste --donnees DIR      # jours restant à reconstituer par édition (EDITIONS)
+python run_internationales.py --date 2026-11-15 --donnees /tmp/donnees --etat   # UN jour, TOUTES les compétitions qui jouent ce jour-là (+ etat_internationales.json)
+python veille_ligues.py --test                           # veille des championnats ET des compétitions internationales (sans réseau)
 ```
 
 `AI_BUDGET_SECONDS=0` désactive tout appel Gemini (résumés de repli déterministes). Sans `GEMINI_API_KEY`, même
@@ -120,6 +122,7 @@ index.html  : page unique (CSS + JS inline), lit soirees/index.json + soirees/<d
 | `direct_clubs.yml` | dispatch (veille du battement / secours, 20 min avant un match d'un club français) | `direct-clubs` | rien (ntfy : coup d'envoi, buts, fin) |
 | `test_ligues.yml` | push sur `ccr-*` avec `[test-ligues]` | — | rien (championnats d'un jour) |
 | (donnees-football) `collecte_championnats.yml` / `battement.yml` / `veille_secours.yml` | dispatch de la veille des championnats / se relance / cron :37 | `championnats` / `battement` / `veille-secours` | championnats/, etat_championnats.json (dans donnees-football) ; alerte ntfy |
+| (donnees-football) `collecte_internationales.yml` / `reconstitution_internationales.yml` | dispatch de la veille (`date` obligatoire) / dispatch + auto-relance | `internationales` (les deux) | internationales/, etat_internationales.json (dans donnees-football) ; pas d'alerte ntfy |
 
 Secrets / variables : `GEMINI_API_KEY` (facultatif : sans clé, résumés déterministes), `NTFY_TOPIC` (topic ntfy ; absent = simulation),
 `DASHBOARD_URL` (page publique, sert à vérifier la publication avant la notification), `AI_BUDGET_SECONDS` (budget Gemini, 900 s ; 0 = pas d'IA).
@@ -179,6 +182,10 @@ GitHub retarde ou saute les crons ; plusieurs mécanismes garantissent une mise 
   à partir de 12 h UTC le lendemain ; famille sans état attendue jusqu'à 13 h UTC le lendemain. Une seule fois par jour : `etat_notifications.json`
   (publié par `publier.sh --etat-seul`). La veille du battement (`veille_notification.sh` -> `notification_jour.py --veille`, fichiers PUBLIÉS) relance
   `notification_jour.yml` pour un jour prêt (refait la décision sur main). Tests : `python notification_jour.py --test`.
+  **Compétitions internationales** (décision du 26/11/2026, § Compétitions internationales) : lues dans `etat_internationales.json` (donnees-football) ;
+  nommées seulement la Coupe du monde des clubs et la Coupe intercontinentale (rangées avec les coupes d'Europe, toujours) et les sélections (Coupe du
+  monde, Euro, Ligue des nations) les jours où la France joue ou en phase finale d'Euro / de Coupe du monde ; les autres ne bloquent ni ne déclenchent rien ;
+  un jour sans état international n'est jamais attendu.
 - **Notification unique (règles historiques, désormais = règle de REMISE de la soirée)** : push ntfy seulement si la soirée est `complet` et non notifiée ; une soirée restée `partiel` est notifiée une fois
   à partir de 12 h UTC le lendemain ; `aucun_match` jamais ; `--renotifier` force. Un passage sur une soirée `complet` + notifiée + déjà dans
   `data.json` s'arrête avant toute collecte (sans Gemini) sauf `--forcer`. Sans `NTFY_TOPIC` (simulation), la soirée est marquée notifiée.
@@ -430,7 +437,7 @@ nationalité, photo). La compo et le déroulé référencent les joueurs par `id
   espace `autres`, 7 onglets `n7`) ; les « Derniers résultats » de l'accueil ne montrent que coupes + majeurs. À faire : historique des classements
   des secondaires ; formules à poules finales (Belgique, Autriche, Grèce : points divisés / groupes) à traiter avant la fin de leur phase régulière.
 
-## Compétitions internationales (`internationales.py`, `run_internationales.py`, étape 1 livrée le 26/11/2026)
+## Compétitions internationales (`internationales.py`, `run_internationales.py`, étapes 1 et 3 livrées le 26/11/2026)
 
 Étude, mesures et décisions du propriétaire : `docs/etude_internationales.md` (§ 7). Deux familles : SÉLECTIONS (Coupe du monde `cdm`, Euro `euro`,
 Ligue des nations `ldn`, éliminatoires compris) et CLUBS, monde (Coupe du monde des clubs `cdmc`, Coupe intercontinentale `ci`, compétitions à part
@@ -452,8 +459,38 @@ affichées AVEC les coupes d'Europe). Données dans donnees-football, `internati
 - **Édition** = `seasonYear` UEFA (Ligue des nations 2026-27 -> 2027) ou année du tournoi FIFA. `run_internationales.EDITIONS` = éditions
   détaillées (récentes, décision 8). Reconstitution : `reconstitution_internationales.yml` (donnees-football, dispatch `comp` / `edition` / `ref`,
   auto-relance, groupe `internationales`) ; jamais d'état ni de notification.
-- À faire (étude § 5) : interface (étape 2), collecte des soirs de match + notification (France et phases finales Euro / Coupe du monde) + alertes
-  en direct de la France (étape 3), résumés (IA pour les nouveaux matchs de la France, déterministes pour les anciens), fiches de sélection et
+- **Collecte d'un jour, toutes compétitions** (étape 3, `run_internationales.py --date J --donnees DIR [--etat]` SANS `--comp`, workflow
+  `collecte_internationales.yml` de donnees-football : dispatch `date` obligatoire + `ref`, groupe `internationales` = celui de la reconstitution,
+  timeout 50 min, `publier.sh` ajoute `etat_internationales.json`) : `editions_candidates` = édition de la date + 1 à 4 années suivantes pour `cdm` /
+  `euro` (éliminatoires de l'Euro 2028 joués en 2027, de la Coupe du monde 2030 en 2027-2029) ; une édition est retenue si `liste_edition` a au moins
+  un match ce jour-là (heure de Paris) ; pour chacune `collecter` (match fini depuis moins de 2 h = `en_attente`) puis `annexes`. Une liste illisible
+  ou une compétition en erreur n'empêche pas les autres (jour `partiel`, entrée précédente de la compétition conservée). **Pas d'alerte ntfy d'échec** à
+  cette étape (la veille relance tant que des matchs terminés ne sont pas collectés).
+- **État** `etat_internationales.json` (racine de donnees-football, 60 jours, `maj` inchangé si rien d'autre ne change) :
+  `{J: {statut: complet|partiel|aucun_match, matchs, termines, maj, comps: {<comp>: {edition, statut, matchs, termines, france, phase_finale}}, alertes?}}`.
+  `matchs` = matchs de la LISTE du jour (reportés / annulés exclus : un match pas commencé compte, le jour est « partiel » dès le matin) ; `termines` =
+  terminés ET collectés en entier ; `france` = une équipe française (sélection ou club) joue ; `phase_finale` = match de groupes ou à élimination
+  directe d'une compétition `majeure` (Coupe du monde, Euro ; jamais la Ligue des nations ni les éliminatoires). Un jour sans match est écrit
+  `aucun_match` (la veille sait qu'il est relevé).
+- **Veille** (`veille_ligues.py`, famille « internationales » en plus de `ligues.FAMILLES`, workflow `WF_INTER` = `collecte_internationales.yml`) : pour les
+  jours de `jours_a_examiner`, état publié + matchs prêts d'après les listes UEFA / FIFA (`run_internationales.editions_du_jour`, terminés, coup d'envoi
+  il y a >= 2 h) ; mêmes règles que les championnats (`a_lancer(..., cle="comps")` : premier relevé >= 9 h UTC puis prêts > termines connus ; aucun passage
+  en file ou en cours, 15 min d'écart, `lancer_collecte` partagé) SAUF qu'un jour sans AUCUN match international n'est jamais lancé. Listes UEFA relues à
+  chaque passage (`_UEFA` vidé), une édition sans match un jour donné retenue 1 h par processus (`_SANS_MATCH`). Le battement et la veille de secours de
+  donnees-football appellent déjà `veille_ligues.py` : aucun changement de workflow. Limite : un match terminé que ESPN ne fournit pas (collecte
+  `partiel` définitif) est relancé toutes les 15 min tant que le jour est examiné (aujourd'hui, hier jusqu'à 12 h UTC) ; une collecte en attente derrière
+  une reconstitution (même groupe) peut être remplacée par une autre : la veille relance au passage suivant.
+- **Notification commune** : voir la section Fiabilité (nommées : `cdmc` / `ci` toujours, sélections si `france` ou `phase_finale`).
+- **Alertes en direct** (`direct_clubs.py`, mêmes règles et mêmes messages que les clubs, § Alertes en direct) : équipe de France et clubs français de
+  `cdmc` / `ci`. UEFA (requête dédiée `fetch_uefa_jour`, `uefa.COMPETITION_IDS` inchangé) : `euro` (3), `ldn` (2014), `cdm` (17, éliminatoires ET phase
+  finale) ; ESPN : `cdmc`, `ci` (`matchs_espn_jour` : scoreboard du jour, veille lue avant 6 h UTC, liste FIFA de l'édition lue seulement s'il y a un match
+  et gardée par processus ; illisible = club français non reconnu, jamais deviné). `espn_vers_uefa` convertit l'événement au format UEFA (id
+  `espn-<id>`, `countryCode` FRA pour un club français rapproché par la FIFA, statut UEFA par `statut_espn`, `score.penalty` = `shootoutScore`) ; les buts
+  viennent du `summary` ESPN (`keyEvents` -> `buts_depuis_resume`, même format que `uefa.build_events(...)[1]` ; contre son camp = équipe bénéficiaire,
+  tirs au but ignorés ; `buts_uefa` aiguille sur le préfixe `espn-`). Lien `?c=<clé>` (`euro`, `ldn`, `cdm`, `cdmc`, `ci`). Fixtures réelles allégées :
+  `tools/fixtures/espn_direct/`. Mesuré le 26/11/2026 : `ldn` 2026-11-15 (France 2-1 Turquie, buts avec buteur et passeur), finale CdMC 2025 (3 buts
+  Chelsea, PSG reconnu français) ; ESPN n'a pas encore de match `ci` programmé le 16/12/2026 (la FIFA l'a : 16 h UTC).
+- À faire (étude § 5) : interface (étape 2), résumés (IA pour les nouveaux matchs de la France, déterministes pour les anciens), fiches de sélection et
   historique (FIFA depuis 1930, UEFA depuis 1960), éliminatoires de l'Euro 2028 / Coupe du monde 2030 dès leur publication.
 
 ## Suivi en direct (`index.html`, bloc `EN DIRECT`, 26/11/2026)
@@ -515,6 +552,8 @@ commune du jour) : « 🟢 Coup d'envoi », « ⚽ But de <club> : score » (pri
 baisse), « 🏁 Fin du match » (tirs au but), « ⚠️ Match arrêté » ; lien `?c=<coupe>`. Anti-doublon : titres uniques (score dedans), relus sur
 le topic depuis 12 h au démarrage (`?poll=1&since=12h`). Un match déjà fini au premier relevé n'est pas annoncé. Statut « en direct » de
 l'UEFA : toute valeur hors UPCOMING / FINISHED / POSTPONED / CANCELLED / ABANDONED (valeur exacte vérifiée au premier soir réel).
+**Étendu le 26/11/2026** à l'équipe de France (Euro, Ligue des nations, Coupe du monde via l'UEFA) et aux clubs français de la Coupe du monde des clubs
+et de la Coupe intercontinentale (via ESPN, convertis au format UEFA) : voir § Compétitions internationales.
 
 ## API UEFA : pièges vérifiés sur les données réelles
 

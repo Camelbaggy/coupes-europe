@@ -16,6 +16,8 @@ Usage :
   python run_internationales.py --comp euro --edition 2024 --reconstituer --budget-min 40     jours joués sans fichier
   python run_internationales.py --reconstituer --budget-min 40                                 toutes les éditions de EDITIONS
   python run_internationales.py --liste                                                        éditions et jours restants
+  python run_internationales.py --date 2026-11-14 --donnees DIR [--etat]                       un jour, TOUTES les compétitions :
+      éditions qui jouent ce jour-là (étape 3, collecte_internationales.yml) ; --etat écrit etat_internationales.json
 
 Une reconstitution (`reconstituee: true`) ne touche jamais à un état ni à une notification. Reprenable : un jour écrit et complet
 n'est plus demandé ; un jour incomplet (match sans détail) est repris au passage suivant.
@@ -24,17 +26,21 @@ n'est plus demandé ; un jour incomplet (match sans détail) est repris au passa
 import argparse
 import json
 import os
-from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional, Tuple
+import time
+from datetime import datetime, timedelta, timezone
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 import internationales as I
-from run_ligues import _lire, ecrire_si_change
+from run_ligues import GARDE_JOURS, _lire, _sans_horodatage, ecrire_si_change
 
 # Éditions détaillées (décision du propriétaire du 26/11/2026 : fiches complètes pour les éditions récentes seulement), de la plus
 # récente à la plus ancienne. Une édition future (éliminatoires de l'Euro 2028…) s'ajoute ici quand l'UEFA la publie.
 FORMAT = 2   # 2 : `tour_court` / `journee` des matchs, `par_tour` de l'index ; un fichier d'un format plus ancien est refait
 
 EDITIONS: List[Tuple[str, int]] = [("ci", 2026), ("ldn", 2027), ("cdm", 2026), ("cdmc", 2025), ("ldn", 2025), ("euro", 2024)]
+ETAT = "etat_internationales.json"   # racine du dépôt de données ; lu par la veille et par notification_jour.py (dépôt de code)
+EXCLUS_COMPTE = ("Reporté", "Annulé")  # statuts des matchs jamais comptés (comme ligne_index)
+ANNEES_SUIVANTES = {"cdm": 4, "euro": 4}   # éliminatoires joués jusqu'à 4 ans avant le tournoi (édition = année du tournoi)
 
 
 def dossier_edition(donnees: str, comp: str, edition: int) -> str:
@@ -174,6 +180,131 @@ def reconstituer(editions: List[Tuple[str, int]], donnees: str, budget_min: floa
     return {"traites": faits, "restants": restants}
 
 
+# ------------------------------------------------------------------------------
+# Étape 3 : un jour, toutes les compétitions
+# ------------------------------------------------------------------------------
+def editions_candidates(comp: str, jour: str) -> List[int]:
+    """Éditions qui PEUVENT avoir des matchs le `jour` : celle de la date et, pour la Coupe du monde et l'Euro (édition = année
+    du tournoi), les 1 à 4 suivantes (éliminatoires de l'Euro 2028 joués en 2027, de la Coupe du monde 2030 en 2027-2029)."""
+    base = I.edition_de(comp, jour)
+    return [base + k for k in range(0, ANNEES_SUIVANTES.get(comp, 0) + 1)]
+
+
+_SANS_MATCH: Dict[Tuple[str, int, str], float] = {}   # (comp, édition, jour) -> instant du dernier constat « aucun match »
+TTL_SANS_MATCH_S = 3600       # l'absence de match un jour donné est retenue 1 h par processus (la veille tourne toutes les 10 min)
+
+
+def entrees_du_jour(liste: List[Dict[str, Any]], jour: str) -> List[Dict[str, Any]]:
+    """Entrées de la liste d'une édition jouées le `jour` (heure de Paris), reportés / annulés exclus."""
+    return [e for e in liste if e["jour"] == jour and e["statut"] not in EXCLUS_COMPTE]
+
+
+def editions_du_jour(jour: str, liste_fn: Optional[Callable[[str, int], Optional[List[Dict[str, Any]]]]] = None,
+                     comps: Optional[List[str]] = None, cache_negatif: bool = False
+                     ) -> Tuple[List[Tuple[str, int, List[Dict[str, Any]]]], List[Tuple[str, int]]]:
+    """((comp, édition, liste) des éditions ayant au moins un match le `jour`, (comp, édition) des listes ILLISIBLES).
+    `liste_fn(comp, édition)` : `internationales.liste_edition` par défaut. `cache_negatif` : n'interroge plus une édition
+    sans match ce jour-là pendant TTL_SANS_MATCH_S (veille)."""
+    liste_fn = liste_fn or I.liste_edition
+    trouvees: List[Tuple[str, int, List[Dict[str, Any]]]] = []
+    illisibles: List[Tuple[str, int]] = []
+    for comp in comps or list(I.COMPETITIONS):
+        for ed in editions_candidates(comp, jour):
+            cle = (comp, ed, jour)
+            if cache_negatif and time.time() - _SANS_MATCH.get(cle, 0) < TTL_SANS_MATCH_S:
+                continue
+            liste = liste_fn(comp, ed)
+            if liste is None:
+                illisibles.append((comp, ed))
+            elif any(e["jour"] == jour for e in liste):
+                trouvees.append((comp, ed, liste))
+            else:
+                _SANS_MATCH[cle] = time.time()
+    return trouvees, illisibles
+
+
+def resume_comp(comp: str, edition: int, jour: str, liste: List[Dict[str, Any]], bilan: Dict[str, Any]) -> Dict[str, Any]:
+    """Entrée d'état d'une compétition pour le jour : {edition, statut, matchs, termines, france, phase_finale}.
+    `matchs` = matchs de la LISTE du jour (reportés / annulés exclus : un match pas encore commencé compte, donc le jour est
+    « partiel » dès le matin) ; `termines` = terminés ET collectés en entier ; `france` = une équipe française joue ce jour-là ;
+    `phase_finale` = match de groupes / à élimination directe d'une compétition `majeure` (Coupe du monde, Euro)."""
+    jour_l = entrees_du_jour(liste, jour)
+    n = len(jour_l)
+    termines = min(int(bilan.get("termines") or 0), n)
+    complet = n > 0 and bilan.get("statut") == "complet" and termines == n
+    return {"edition": edition, "statut": "complet" if complet else "partiel" if n else "aucun_match", "matchs": n,
+            "termines": termines,
+            "france": any(bool((e.get("home_team") or {}).get("is_french") or (e.get("away_team") or {}).get("is_french"))
+                          for e in jour_l),
+            "phase_finale": bool(I.COMPETITIONS[comp].get("majeure")) and any(e["phase"] in ("groupes", "finale") for e in jour_l)}
+
+
+def statut_jour(comps: Dict[str, Dict[str, Any]], incomplet: bool = False) -> str:
+    st = [c.get("statut") for c in comps.values()]
+    if incomplet or any(s == "partiel" for s in st):
+        return "partiel"
+    return "complet" if any(s == "complet" for s in st) else "aucun_match"
+
+
+def ecrire_etat(donnees: str, jour: str, comps: Dict[str, Dict[str, Any]], maintenant: datetime,
+                incomplet: bool = False) -> Dict[str, Any]:
+    """etat_internationales.json : {jour: {statut, matchs, termines, comps: {comp: résumé}, maj, alertes?}} (60 jours gardés ;
+    écrit aussi un jour `aucun_match`, pour que la veille sache que le jour est relevé). `maj` ne change que si le reste change."""
+    chemin = os.path.join(donnees, ETAT)
+    etat = _lire(chemin) or {}
+    ancien = etat.get(jour) or {}
+    entree = {"statut": statut_jour(comps, incomplet), "matchs": sum(c["matchs"] for c in comps.values()),
+              "termines": sum(c["termines"] for c in comps.values()), "comps": comps,
+              "maj": _horo(maintenant), **({"alertes": ancien["alertes"]} if ancien.get("alertes") else {})}
+    if _sans_horodatage(entree) == _sans_horodatage(ancien) and ancien.get("maj"):
+        entree["maj"] = ancien["maj"]
+    etat[jour] = entree
+    limite = (maintenant.date() - timedelta(days=GARDE_JOURS)).isoformat()
+    etat = {j: v for j, v in sorted(etat.items()) if j >= limite}
+    os.makedirs(donnees, exist_ok=True)
+    tmp = chemin + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump(etat, f, ensure_ascii=False, indent=1)
+    os.replace(tmp, chemin)
+    print(f"[ÉTAT] {jour} : {entree['statut']}{'' if jour in etat else ' (hors des ' + str(GARDE_JOURS) + ' jours gardés)'} " +
+          (", ".join(f"{k} {v['edition']} {v['termines']}/{v['matchs']}" + (" FRA" if v["france"] else "") +
+                     (" phase finale" if v["phase_finale"] else "") for k, v in comps.items()) or "aucun match"))
+    return etat
+
+
+def collecter_jour_toutes(jour: str, donnees: str, avec_etat: bool = False, maintenant: Optional[datetime] = None,
+                          liste_fn: Optional[Callable[[str, int], Optional[List[Dict[str, Any]]]]] = None
+                          ) -> Dict[str, Dict[str, Any]]:
+    """Toutes les compétitions qui jouent le `jour` (heure de Paris) : pour chaque édition retenue, `collecter` (match fini depuis
+    moins de 2 h = `en_attente`, repris au passage suivant) puis `annexes`. Retourne {comp: résumé} ; `avec_etat` écrit
+    etat_internationales.json (même quand aucun match). Une liste illisible n'empêche pas les autres compétitions : le jour est alors
+    « partiel » et l'entrée précédente de la compétition est conservée."""
+    maintenant = maintenant or datetime.now(timezone.utc)
+    trouvees, illisibles = editions_du_jour(jour, liste_fn)
+    for comp, ed in illisibles:
+        print(f"[WARN] {comp} {ed} : liste de l'édition illisible ; rien pour cette édition ce passage")
+    comps: Dict[str, Dict[str, Any]] = {}
+    for comp, ed, liste in trouvees:
+        print(f"[JOUR] {I.COMPETITIONS[comp]['nom']} {I.libelle_edition(comp, ed)} : "
+              f"{len(entrees_du_jour(liste, jour))} match(s) le {jour}")
+        try:
+            bilan = collecter(comp, ed, jour, donnees, liste, maintenant=maintenant)
+            annexes(comp, ed, donnees, liste, datetime.now(timezone.utc))
+        except Exception as e:   # une compétition en erreur ne bloque pas les autres : elle reste « partiel »
+            print(f"[WARN] {comp} {ed} {jour} : erreur de collecte ({type(e).__name__}: {e})")
+            bilan = {"statut": "partiel", "termines": 0}
+        r = resume_comp(comp, ed, jour, liste, bilan)
+        if comp not in comps or r["termines"] >= comps[comp]["termines"]:   # deux éditions le même jour : cas non attendu
+            comps[comp] = r
+    if avec_etat:
+        ancien = (_lire(os.path.join(donnees, ETAT)) or {}).get(jour) or {}
+        for comp, ed in illisibles:   # édition illisible : on garde ce qu'on savait d'elle
+            if comp not in comps and comp in (ancien.get("comps") or {}):
+                comps[comp] = ancien["comps"][comp]
+        ecrire_etat(donnees, jour, comps, maintenant, incomplet=bool(illisibles))
+    return comps
+
+
 def _test() -> None:
     import tempfile
     bloc = {"incomplet": False, "matches": [
@@ -200,6 +331,63 @@ def _test() -> None:
         os.makedirs(dossier_edition(d, "cdm", 2026))
         os.replace(ch, os.path.join(dossier_edition(d, "cdm", 2026), "2026-06-16.json"))
         assert a_faire("cdm", 2026, d, liste, datetime(2026, 11, 26, tzinfo=timezone.utc)) == ["2026-06-17", "2026-06-16"]
+
+    # --- étape 3 : un jour, toutes les compétitions ---
+    assert editions_candidates("cdm", "2027-03-25") == [2027, 2028, 2029, 2030, 2031]
+    assert editions_candidates("euro", "2026-11-14") == [2026, 2027, 2028, 2029, 2030]
+    assert editions_candidates("ldn", "2026-11-14") == [2027] and editions_candidates("ci", "2026-12-16") == [2026]
+    assert editions_candidates("cdmc", "2025-07-13") == [2025]
+
+    def ent(jour, h, a, fini, phase="groupes", statut="Terminé"):
+        eq = lambda c: {"is_french": c == "FRA", "country": c} if c else None  # noqa: E731
+        return {"jour": jour, "home_team": eq(h), "away_team": eq(a), "fini": fini, "statut": statut, "phase": phase}
+    L = [ent("2026-11-14", "FRA", "ITA", True), ent("2026-11-14", "ESP", "DEN", False, statut="À venir"),
+         ent("2026-11-14", "BEL", "SUI", False, statut="Reporté"), ent("2026-11-15", "POR", "CRO", False, statut="À venir")]
+    assert len(entrees_du_jour(L, "2026-11-14")) == 2
+    r = resume_comp("ldn", 2027, "2026-11-14", L, {"statut": "partiel", "termines": 1})
+    assert (r["statut"], r["matchs"], r["termines"], r["france"], r["phase_finale"]) == ("partiel", 2, 1, True, False), r
+    assert resume_comp("ldn", 2027, "2026-11-14", L[:1], {"statut": "complet", "termines": 1})["statut"] == "complet"
+    # collecte « complète » du fichier mais un match de la liste manque (ex. FIFA sans ESPN) : partiel
+    assert resume_comp("ldn", 2027, "2026-11-14", L, {"statut": "complet", "termines": 1})["statut"] == "partiel"
+    # phase finale d'une compétition majeure sans la France ; éliminatoires ; ldn n'est jamais « phase finale »
+    G = [ent("2026-06-20", "BRA", "MAR", True)]
+    assert resume_comp("cdm", 2026, "2026-06-20", G, {"statut": "complet", "termines": 1}) | {} == \
+        {"edition": 2026, "statut": "complet", "matchs": 1, "termines": 1, "france": False, "phase_finale": True}
+    assert not resume_comp("cdm", 2030, "2027-03-25", [ent("2027-03-25", "SWE", "POL", False, "qualification", "À venir")],
+                           {"statut": "partiel", "termines": 0})["phase_finale"]
+    assert not resume_comp("ldn", 2027, "2026-11-14", [ent("2026-11-14", "ESP", "DEN", True, "groupes")],
+                           {"statut": "complet", "termines": 1})["phase_finale"]
+    # club : france = club français
+    assert resume_comp("ci", 2026, "2026-12-16", [ent("2026-12-16", "FRA", None, False, "finale", "À venir")],
+                       {"statut": "partiel", "termines": 0})["france"]
+    # éditions retenues : seulement celles qui jouent ce jour-là ; liste illisible signalée à part
+    listes = {("ldn", 2027): L, ("cdm", 2030): None, ("euro", 2028): [ent("2026-11-15", "ESP", "DEN", False)]}
+    trouvees, illis = editions_du_jour("2026-11-14", lambda c, e: listes.get((c, e), []), ["ldn", "cdm", "euro"])
+    assert [(c, e) for c, e, _ in trouvees] == [("ldn", 2027)] and illis == [("cdm", 2030)], (trouvees, illis)
+    # état : jour sans match, jour partiel, jour complet ; conservation de `maj` si rien ne change ; alertes conservées
+    with tempfile.TemporaryDirectory() as d:
+        t1 = datetime(2026, 11, 14, 9, 0, tzinfo=timezone.utc)
+        etat = ecrire_etat(d, "2026-11-13", {}, t1)
+        assert etat["2026-11-13"]["statut"] == "aucun_match" and etat["2026-11-13"]["comps"] == {}
+        comps = {"ldn": resume_comp("ldn", 2027, "2026-11-14", L, {"statut": "partiel", "termines": 1})}
+        etat = ecrire_etat(d, "2026-11-14", comps, t1)
+        e = etat["2026-11-14"]
+        assert e["statut"] == "partiel" and e["matchs"] == 2 and e["termines"] == 1 and e["comps"]["ldn"]["france"] is True
+        assert ecrire_etat(d, "2026-11-14", comps, t1 + timedelta(minutes=30))["2026-11-14"]["maj"] == _horo(t1)
+        brut = _lire(os.path.join(d, ETAT))
+        brut["2026-11-14"]["alertes"] = {"workflow": "x"}
+        with open(os.path.join(d, ETAT), "w", encoding="utf-8") as f:
+            json.dump(brut, f)
+        comps2 = {"ldn": resume_comp("ldn", 2027, "2026-11-14", L[:1], {"statut": "complet", "termines": 1})}
+        e = ecrire_etat(d, "2026-11-14", comps2, t1 + timedelta(hours=5))["2026-11-14"]
+        assert e["statut"] == "complet" and e["alertes"] == {"workflow": "x"} and e["maj"] != _horo(t1)
+        assert ecrire_etat(d, "2026-11-14", comps2, t1, incomplet=True)["2026-11-14"]["statut"] == "partiel"
+        # purge au-delà de 60 jours
+        assert "2026-11-13" not in ecrire_etat(d, "2027-02-01", {}, datetime(2027, 2, 1, tzinfo=timezone.utc))
+        # collecter_jour_toutes sans réseau : listes injectées, aucun match -> état aucun_match, rien d'écrit dans internationales/
+        assert collecter_jour_toutes("2026-11-20", d, True, t1, lambda c, e: []) == {}
+        assert _lire(os.path.join(d, ETAT))["2026-11-20"]["statut"] == "aucun_match"
+        assert not os.path.exists(os.path.join(d, "internationales"))
     print("[OK] run_internationales : tests passés")
 
 
@@ -213,6 +401,7 @@ if __name__ == "__main__":
     ap.add_argument("--reconstituer", action="store_true")
     ap.add_argument("--budget-min", type=float, default=40)
     ap.add_argument("--liste", action="store_true", help="jours restants par édition (sans écriture)")
+    ap.add_argument("--etat", action="store_true", help="avec --date seul : écrit aussi etat_internationales.json")
     a = ap.parse_args()
     eds = [(a.comp, a.edition)] if a.comp and a.edition else [e for e in EDITIONS if not a.comp or e[0] == a.comp]
     if a.test:
@@ -225,6 +414,8 @@ if __name__ == "__main__":
                   f"{len(L)} matchs, {len(I.jours_joues(L))} jours joués, {len(a_faire(c, e, a.donnees, L, maint))} à faire"))
     elif a.reconstituer:
         reconstituer(eds, a.donnees, a.budget_min)
+    elif a.date and not a.comp:
+        collecter_jour_toutes(a.date, a.donnees, a.etat)
     elif a.date and len(eds) == 1:
         c, e = eds[0]
         L = I.liste_edition(c, e)

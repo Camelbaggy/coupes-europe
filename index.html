@@ -28,6 +28,8 @@
       --accent-fl2: #fb7185;
       --accent-por: #4ade80; --accent-ned: #fb923c; --accent-bel: #fde047; --accent-tur: #f87171;
       --accent-aut: #fca5a5; --accent-gre: #60a5fa; --accent-nor: #93c5fd;
+      /* Compétitions internationales : sélections (CdM, Euro, Ligue des nations) et compétitions mondiales de clubs */
+      --accent-cdm: #f472b6; --accent-euro: #818cf8; --accent-ldn: #2dd4bf; --accent-cdmc: #e0a96d; --accent-ci: #c4b5fd;
       --zone-ucl: #38bdf8;
       --zone-uel: #fb923c;
       --zone-uecl: #34d399;
@@ -250,6 +252,42 @@
     .tour-opt[aria-selected="true"] { background: color-mix(in srgb, var(--tour-accent) 16%, var(--bg-card)); border-color: var(--tour-accent); }
     .tour-opt[aria-selected="true"]::after { content: "✓"; color: var(--tour-accent); font-weight: 800; }
     .tour-opt .tour-n { font-size: 0.74rem; color: var(--text-muted); white-space: nowrap; }
+    /* Compétitions internationales : tableaux de groupe repliables, tableau final, ligne de tour dans la fiche de match */
+    .grp { border-top: 1px solid var(--border); }
+    .grp:first-child { border-top: none; }
+    .grp > summary { list-style: none; cursor: pointer; display: flex; align-items: center; gap: 8px; min-height: 44px; padding: 8px 12px; font-weight: 700; font-size: 0.86rem; }
+    .grp > summary::-webkit-details-marker { display: none; }
+    .grp > summary::after { content: ""; margin-left: auto; width: 7px; height: 7px; border-right: 2px solid var(--text-muted); border-bottom: 2px solid var(--text-muted); transform: rotate(45deg); transition: transform 0.15s; flex-shrink: 0; }
+    .grp[open] > summary::after { transform: rotate(-135deg); }
+    .grp > summary:focus-visible { outline: 2px solid var(--tour-accent, var(--accent-ucl)); outline-offset: -2px; }
+    .grp > summary .grp-fr { font-size: 0.64rem; font-weight: 700; padding: 1px 6px; border-radius: 4px; background: rgba(56, 189, 248, 0.2); color: var(--french-accent); }
+    .grp > summary small { color: var(--text-muted); font-weight: 500; font-size: 0.72rem; }
+    tr.zone-qualifie .rank-cell::before { background: var(--zone-top8); }
+    tr.zone-meilleur_troisieme .rank-cell::before { background: var(--zone-playoff); }
+    tr.zone-elimine .rank-cell::before { background: var(--zone-elim); }
+    .tile-team-score small { font-weight: 600; font-size: 0.72rem; color: var(--text-muted); margin-right: 4px; }
+    .tile-grp { font-size: 0.68rem; color: var(--text-muted); }
+    .bracket { position: relative; display: flex; gap: 10px; overflow-x: auto; overscroll-behavior-x: contain; padding: 2px 2px 10px; scroll-snap-type: x proximity; }
+    .br-col { flex: 0 0 158px; display: flex; flex-direction: column; gap: 8px; scroll-snap-align: start; }
+    .br-t { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); padding: 2px 2px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .br-col.cur .br-t { color: var(--tour-accent, var(--accent-ucl)); }
+    .br-m { display: block; width: 100%; text-align: left; font: inherit; color: var(--text-main); background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; padding: 4px 8px; cursor: pointer; }
+    .br-m.prog { cursor: default; }
+    .br-m.fr { border-color: var(--french-accent); }
+    .br-m:not(.prog):hover { background: var(--bg-card-hover); }
+    .br-m:focus-visible, .bracket:focus-visible { outline: 2px solid var(--tour-accent, var(--accent-ucl)); outline-offset: 1px; }
+    .br-r { display: flex; align-items: center; gap: 6px; min-height: 26px; font-size: 0.8rem; }
+    .br-r + .br-r { border-top: 1px solid rgba(255, 255, 255, 0.06); }
+    .br-r .nm { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .br-r .nm i { color: var(--text-muted); }
+    .br-r b { font-variant-numeric: tabular-nums; min-width: 12px; text-align: right; }
+    .br-r small { font-size: 0.68rem; color: var(--text-muted); }
+    .br-r.l { color: var(--text-muted); }
+    .br-r.w .nm { font-weight: 800; }
+    .br-r.is-fr .nm { color: var(--french-accent); }
+    .br-d { font-size: 0.66rem; color: var(--text-muted); padding: 2px 0 1px; }
+    #bracket-section { margin-top: 18px; }
+    .modal-round { text-align: center; font-size: 0.74rem; color: var(--text-muted); margin: 6px 0 2px; }
     main.loading { opacity: 0.45; pointer-events: none; transition: opacity 0.15s ease; }
     .sr-only { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); border: 0; }
 
@@ -1210,6 +1248,12 @@
       <div id="matches-grid-container" class="matches-grid"></div>
     </section>
 
+    <!-- COMPÉTITIONS INTERNATIONALES : tableau final (phase finale) -->
+    <section id="bracket-section" hidden>
+      <div class="section-header"><h2 class="section-title" id="bracket-title">Tableau final</h2></div>
+      <div id="bracket-container"></div>
+    </section>
+
     <!-- 4. CLASSEMENT GÉNÉRAL DES 36 ÉQUIPES OU BRACKET -->
     <section id="standings-section">
       <div class="section-header">
@@ -1245,6 +1289,7 @@
           <div class="score-box" id="modal-score"></div>
           <div class="team-name away" id="modal-away-name"></div>
         </div>
+        <div class="modal-round" id="modal-round" hidden></div>
         <div class="duo-bar" aria-hidden="true"><i class="home"></i><i class="away"></i></div>
       </div>
 
@@ -1302,7 +1347,7 @@
     // Drapeau de la nationalité d'un club (code fourni par le collecteur à partir du pays UEFA)
     // Championnats (clubs ESPN : logo sur a.espncdn.com) : le LOGO du club remplace le drapeau du pays, tous les clubs étant du même pays.
     // Image réduite par le service d'ESPN (40 px) ; les coupes gardent le drapeau.
-    const logoEspn = (t) => t && typeof t.logo === 'string' && /^https:\/\/a\.espncdn\.com\/i\/teamlogos\//.test(t.logo)
+    const logoEspn = (t) => t && typeof t.logo === 'string' && /^https:\/\/a\.espncdn\.com\/i\/teamlogos\//.test(t.logo) && !(t.flag && /\/teamlogos\/countries\//.test(t.logo))
       ? `https://a.espncdn.com/combiner/i?img=${encodeURIComponent(t.logo.replace('https://a.espncdn.com', ''))}&w=40&h=40` : '';
     const flag = (t) => logoEspn(t)
       ? `<img class="flag logo-club" src="${esc(logoEspn(t))}" alt="" loading="lazy" width="18" height="18">`
@@ -1370,7 +1415,18 @@
     const COMP_FULL = { ucl: 'Ligue des Champions', uel: 'Ligue Europa', uecl: 'Ligue Conférence',
       fl1: 'Ligue 1', fl2: 'Ligue 2', pl: 'Premier League', liga: 'Liga', sa: 'Serie A', bl: 'Bundesliga',
       por: 'Liga Portugal', ned: 'Eredivisie', bel: 'Pro League (Belgique)', tur: 'Süper Lig', aut: 'Bundesliga (Autriche)',
-      gre: 'Super League (Grèce)', nor: 'Eliteserien' };
+      gre: 'Super League (Grèce)', nor: 'Eliteserien',
+      cdm: 'Coupe du monde', euro: 'Euro', ldn: 'Ligue des nations', cdmc: 'Coupe du monde des clubs', ci: 'Coupe intercontinentale' };
+    // Compétitions internationales (étape 2) : sélections (espace propre) et compétitions mondiales de clubs (rangées avec les coupes d'Europe)
+    const SEL_KEYS = ['cdm', 'euro', 'ldn'];
+    const CLUB_MONDE = ['cdmc', 'ci'];
+    const INTL_KEYS = [...SEL_KEYS, ...CLUB_MONDE];
+    const COUPES_KEYS = [...COMP_KEYS, ...CLUB_MONDE];
+    const estIntl = (k) => INTL_KEYS.includes(k);
+    const estSelection = (k) => SEL_KEYS.includes(k);
+    // Libellés courts des onglets (5 onglets de clubs à 390 px)
+    const TAB_COURT = { cdmc: 'CdM clubs', ci: 'Intercont.' };
+    const tabTexte = (k) => TAB_COURT[k] || COMP_FULL[k];
     // Championnats nationaux : données du dépôt Camelbaggy/donnees-football (GitHub Pages) ; ?donnees=<url ou dossier> pour un essai local
     // Championnats majeurs (notifiés) et autres championnats (décision du 26/11/2026 : collectés et affichés de la même façon, sans
     // notification ni place dans les « Derniers résultats » de l'accueil)
@@ -1386,10 +1442,10 @@
     const NOM_LIGUE = { por: 'Liga Portugal', ned: 'Eredivisie', bel: 'Pro League', tur: 'Süper Lig', aut: 'Bundesliga', gre: 'Super League', nor: 'Eliteserien' };
     const drapeauLigue = (k) => DRAPEAU_LIGUE[k] ? `<img class="flag" src="https://flagcdn.com/w40/${DRAPEAU_LIGUE[k][0]}.png" alt="" title="${esc(DRAPEAU_LIGUE[k][1])}" width="18" height="13">` : '';
     const nomLigue = (k) => NOM_LIGUE[k] || COMP_FULL[k];
-    const ESPACES = { coupes: { titre: "Coupes d'Europe", keys: COMP_KEYS }, championnats: { titre: 'Championnats majeurs', keys: LIGUE_MAJEURS },
-      autres: { titre: 'Autres championnats', keys: LIGUE_AUTRES } };
+    const ESPACES = { coupes: { titre: 'Coupes de clubs', keys: COUPES_KEYS }, selections: { titre: 'Sélections nationales', keys: SEL_KEYS },
+      championnats: { titre: 'Championnats majeurs', keys: LIGUE_MAJEURS }, autres: { titre: 'Autres championnats', keys: LIGUE_AUTRES } };
     const estLigue = (k) => LIGUE_KEYS.includes(k);
-    const espaceDe = (k) => LIGUE_AUTRES.includes(k) ? 'autres' : estLigue(k) ? 'championnats' : 'coupes';
+    const espaceDe = (k) => estSelection(k) ? 'selections' : LIGUE_AUTRES.includes(k) ? 'autres' : estLigue(k) ? 'championnats' : 'coupes';
     const DONNEES = (() => {
       const v = new URLSearchParams(location.search).get('donnees');
       const b = v || 'https://camelbaggy.github.io/donnees-football/';
@@ -1449,7 +1505,7 @@
       if (dates.length === 1 || dates[0] === dates[dates.length - 1]) return `${a.j} ${a.m}`;
       return a.m === b.m ? `${a.j}-${b.j} ${a.m}` : `${a.j} ${a.m}-${b.j} ${b.m}`;
     }
-    const tourSousTitre = (t) => (t.dates.length ? datesCourtes(t.dates) : '') + (t.matchs ? ` · ${t.matchs} match${t.matchs > 1 ? 's' : ''}` : '');
+    const tourSousTitre = (t) => (estIntl(t.comp) ? t.edLib + ' · ' : '') + (t.dates.length ? datesCourtes(t.dates) : '') + (t.matchs ? ` · ${t.matchs} match${t.matchs > 1 ? 's' : ''}` : '');
 
     function buildTours() {
       toursByComp = {};
@@ -1525,6 +1581,7 @@
     }
     // Par défaut : le tour le plus récent qui a des matchs terminés
     function defaultTour(k) {
+      if (estIntl(k)) return defaultTourIntl(k);
       const l = toursByComp[k] || [];
       return l.filter(t => t.jouee).sort((a, b) => b.fin.localeCompare(a.fin))[0] || l[0] || null;
     }
@@ -1591,6 +1648,7 @@
     // Fusionne la coupe de toutes les soirées du tour : matchs (soirée puis heure, sans doublon), cartes des clubs français ;
     // classement et reste = ceux de la soirée la plus récente du tour (officiel ou calculé, règles inchangées).
     async function loadTour(t) {
+      if (estIntl(t.comp)) return loadTourIntl(t);
       const key = t.comp + '|' + t.id;
       if (tourCache.has(key)) return tourCache.get(key);
       if (t.futur) {
@@ -1634,6 +1692,171 @@
       return hit;
     }
 
+    // ---------- Compétitions internationales (donnees-football : internationales/index.json, <comp>/<édition>/{index,classements,programme,<date>}.json) ----------
+    // Une édition (Coupe du monde 2026, Euro 2024, Ligue des nations 2026-27…) a ses propres tours ; l'id d'un tour porte l'édition
+    // (`2026-phase-de-groupes-j1`). Un tour = tous les jours de l'édition dont `par_tour` contient ce `tour_court` ; ses matchs = ceux dont
+    // `tour_court` est ce tour. Accueil : seulement l'index de l'édition la plus récente ; la compétition ouverte charge les index (légers)
+    // de toutes ses éditions ; les fichiers de jour, classements et programmes ne sont lus qu'à la demande.
+    let intlMetaP = null, intlMeta = {};
+    const intlEds = {};              // 'comp|édition' -> { lignes (date décroissante), programme (normalisé), progSource }
+    const intlComplet = {};          // comp -> toutes les éditions lues (menu des tours)
+    const intlClassCache = new Map(), intlFinaleCache = new Map();
+    const intlBase = (k, ed) => `${DONNEES}internationales/${k}/${ed}/`;
+    const intlEditions = (k) => (intlMeta[k] || {}).editions || [];
+    const intlEd = (k, ed) => intlEds[k + '|' + ed];
+    let ctxSelection = false;        // vrai quand la page / la fiche affichée est une sélection : jamais de lien vers une fiche de club (ids UEFA de sélections != clubs)
+
+    // Rang d'un tour dans le tableau final (colonnes de gauche à droite) ; 0 = autre tour de phase finale (barrages…)
+    function rangTour(tour) {
+      const s = slug(tour || '');
+      if (/seiz/.test(s)) return 1;
+      if (/huit/.test(s)) return 2;
+      if (/quart/.test(s)) return 3;
+      if (/demi/.test(s)) return 4;
+      if (/place/.test(s)) return 6;
+      return /finale/.test(s) ? 5 : 0;
+    }
+    function phaseDeTour(tour, phases) {
+      if (phases && phases.length === 1) return phases[0];
+      if (/finale|quart|huiti|seizi|place/i.test(tour)) return 'finale';
+      if (/^éliminatoires/i.test(tour)) return 'qualification';
+      return (phases || [])[0] || 'groupes';
+    }
+    // Équipe encore inconnue (programme : home_team / away_team null) : « À déterminer (W4) » ; les codes viennent de `a_determiner`, dans l'ordre domicile puis extérieur
+    function intlProgNormalise(x) {
+      const att = (x.a_determiner || []).slice();
+      const eq = (t) => t || { a_determiner: true, name: 'À déterminer' + (att.length ? ` (${att.shift()})` : '') };
+      const home = eq(x.home_team), away = eq(x.away_team);
+      return { ...x, home_team: home, away_team: away };
+    }
+    function loadIntlMeta() {
+      if (!intlMetaP) intlMetaP = fetchJson(DONNEES + 'internationales/index.json').then(d => (intlMeta = (d && d.competitions) || {}));
+      return intlMetaP;
+    }
+    async function loadIntlEdition(k, ed) {
+      const cle = k + '|' + ed;
+      if (intlEds[cle]) return intlEds[cle];
+      const [idx, prog] = await Promise.all([fetchJson(intlBase(k, ed) + 'index.json'), fetchJson(intlBase(k, ed) + 'programme.json')]);
+      return (intlEds[cle] = {
+        lignes: Array.isArray(idx) ? idx.filter(l => l && /^\d{4}-\d{2}-\d{2}$/.test(l.date)).sort((a, b) => b.date.localeCompare(a.date)) : [],
+        programme: prog && Array.isArray(prog.matchs) ? prog.matchs.map(intlProgNormalise) : [],
+        progSource: (prog && prog.source) || '' });
+    }
+    // tout = false : édition la plus récente seulement (tuiles de l'accueil) ; true : toutes (menu des tours)
+    async function chargerIntl(k, tout) {
+      await loadIntlMeta();
+      const eds = intlEditions(k).map(e => e.edition);
+      await Promise.all((tout ? eds : eds.slice(0, 1)).map(ed => loadIntlEdition(k, ed)));
+      if (tout) intlComplet[k] = true;
+      buildToursIntl(k);
+    }
+    function buildToursIntl(k) {
+      const joues = [], futurs = new Map();
+      intlEditions(k).forEach(e => {
+        const E = intlEd(k, e.edition);
+        if (!E) return;
+        const map = new Map();
+        E.lignes.forEach(l => Object.entries(l.par_tour || {}).forEach(([tour, n]) => {
+          let t = map.get(tour);
+          if (!t) {
+            t = { comp: k, edition: e.edition, edLib: e.libelle, stage: '', tour, titre: tour, dates: [], matchs: 0, jouee: false, reconstituee: false, avenir: [],
+                  phase: phaseDeTour(tour, l.phases), groupe: 'ed-' + e.edition, id: e.edition + '-' + slug(tour) };
+            map.set(tour, t);
+          }
+          t.dates.push(l.date); t.matchs += n;
+          if ((l.termines || 0) > 0) t.jouee = true;
+          if (l.reconstituee) t.reconstituee = true;
+        }));
+        const list = [...map.values()];
+        list.forEach(t => { t.dates.sort(); t.fin = t.dates[t.dates.length - 1]; });
+        list.sort((a, b) => b.fin.localeCompare(a.fin) || rangTour(b.tour) - rangTour(a.tour));
+        progVisibles(E.programme).forEach(x => {
+          const tour = x.tour_court || x.tour || '';
+          let t = map.get(tour);
+          if (!t) {
+            const cle = e.edition + '|' + tour;
+            t = futurs.get(cle);
+            if (!t) {
+              t = { comp: k, edition: e.edition, edLib: e.libelle, stage: '', tour, titre: tour || 'À venir', dates: [], matchs: 0, jouee: false, futur: true, avenir: [],
+                    phase: x.phase || phaseDeTour(tour, []), groupe: 'avenir', id: e.edition + '-' + slug(tour || 'a-venir') };
+              futurs.set(cle, t);
+            }
+            t.matchs++; if (x.date && !t.dates.includes(x.date)) t.dates.push(x.date);
+          }
+          t.avenir.push(x);
+        });
+        joues.push(...list);
+      });
+      const nv = [...futurs.values()];
+      nv.forEach(t => { t.dates.sort(); t.fin = t.dates[t.dates.length - 1] || ''; });
+      nv.sort((a, b) => (b.dates[0] || '').localeCompare(a.dates[0] || ''));   // la prochaine juste au-dessus de la dernière jouée
+      toursByComp[k] = [...nv, ...joues];
+    }
+    // Par défaut : tour le plus récent joué de l'édition la plus récente qui a des matchs terminés ; sinon le prochain tour à venir
+    function defaultTourIntl(k) {
+      const l = toursByComp[k] || [];
+      for (const e of intlEditions(k)) {
+        const ts = l.filter(t => t.edition === e.edition && t.jouee && !t.futur).sort((a, b) => b.fin.localeCompare(a.fin) || rangTour(b.tour) - rangTour(a.tour));
+        if (ts.length) return ts[0];
+      }
+      return l.filter(t => t.futur).sort((a, b) => (a.dates[0] || '').localeCompare(b.dates[0] || ''))[0] || l[0] || null;
+    }
+    async function loadJourIntl(k, ed, date) {
+      const cle = `${k}@${ed}@${date}`;
+      let d = soireeCache.get(cle);
+      if (!d) { d = await fetchJson(intlBase(k, ed) + date + '.json'); if (d) soireeCache.set(cle, d); }
+      return d;
+    }
+    function loadClassementsIntl(k, ed) {
+      const cle = k + '|' + ed;
+      if (!intlClassCache.has(cle)) intlClassCache.set(cle, fetchJson(intlBase(k, ed) + 'classements.json'));
+      return intlClassCache.get(cle);
+    }
+    // Matchs de phase finale de l'édition (jours dont l'index annonce la phase `finale`) + matchs à venir du programme, pour le tableau final
+    async function loadFinaleIntl(k, ed) {
+      const cle = k + '|' + ed;
+      if (intlFinaleCache.has(cle)) return intlFinaleCache.get(cle);
+      const E = intlEd(k, ed) || { lignes: [], programme: [] };
+      const dates = E.lignes.filter(l => (l.phases || []).includes('finale')).map(l => l.date);
+      const datas = await Promise.all(dates.map(d => loadJourIntl(k, ed, d)));
+      const vus = new Set(), matches = [];
+      datas.forEach((d, i) => (((d || {}).competitions || {})[k] || {}).matches && d.competitions[k].matches.forEach(m => {
+        if (m.phase !== 'finale' || vus.has(m.match_id)) return;
+        vus.add(m.match_id); m._soiree = dates[i]; matches.push(m);
+      }));
+      const hit = { matches, prog: progVisibles(E.programme).filter(x => x.phase === 'finale') };
+      intlFinaleCache.set(cle, hit);
+      return hit;
+    }
+    // Un tour : matchs fusionnés des jours concernés (ceux dont tour_court est ce tour), classements de l'édition, tableau final si phase finale
+    async function loadTourIntl(t) {
+      const key = t.comp + '|' + t.id;
+      if (tourCache.has(key)) return tourCache.get(key);
+      const [cl, finale] = await Promise.all([loadClassementsIntl(t.comp, t.edition), t.phase === 'finale' ? loadFinaleIntl(t.comp, t.edition) : null]);
+      const datas = t.futur ? [] : await Promise.all(t.dates.map(d => loadJourIntl(t.comp, t.edition, d)));
+      if (datas.some(d => !d)) return null;
+      const matches = [], vus = new Set();
+      let rec = false;
+      datas.forEach((d, i) => {
+        if (d.reconstituee) rec = true;
+        const c = (d.competitions || {})[t.comp] || {};
+        (c.matches || []).map((m, j) => [m, j]).filter(([m]) => (m.tour_court || (m.round || {}).name) === t.tour)
+          .sort((a, b) => minutesKickoff(a[0]) - minutesKickoff(b[0]) || a[1] - b[1]).forEach(([m]) => {
+            if (vus.has(m.match_id)) return;
+            vus.add(m.match_id); m._soiree = t.dates[i]; matches.push(m);
+          });
+      });
+      const last = datas[datas.length - 1] || {};
+      const E = intlEd(t.comp, t.edition) || {};
+      const hit = {
+        comp: { name: `${COMP_FULL[t.comp]} ${t.edLib}`, type: 'international', standings: [], standings_source: 'absent', matches, french_clubs_focus: [], matchday_label: '',
+                _multi: t.dates.length > 1, _intl: { edition: t.edition, edLib: t.edLib, phase: t.phase, tour: t.tour, classements: cl || null, finale: finale || null, progSource: E.progSource || '' } },
+        meta: { last_updated: last.last_updated || (cl || {}).maj || '', reconstituee: rec },
+      };
+      tourCache.set(key, hit);
+      return hit;
+    }
+
     function updateBadge(meta) {
       const badge = document.getElementById('last-updated-badge');
       if (meta && meta.last_updated) {
@@ -1646,6 +1869,7 @@
 
     // Bouton du menu, en tête du contenu de la coupe affichée (+ info-bulle discrète si une soirée du tour est reconstituée)
     const RECONSTITUEE_LIGUE_INFO = '<p>Cette journée (ou un de ses jours) a été rejouée après coup avec le même traitement que la collecte du jour : scores, buteurs, statistiques, xG, momentum et notes viennent d\'ESPN (données Opta).</p><p>Le classement est recalculé d\'après les scores (voir son info-bulle).</p>';
+    const RECONSTITUEE_INTL_INFO = '<p>Ce tour (ou un de ses jours) a été rejoué après coup avec le même traitement que la collecte du jour : scores, buteurs, statistiques, momentum et notes viennent de l\'UEFA (Euro, Ligue des nations, éliminatoires de la Coupe du monde en Europe) ou d\'ESPN (flux Opta) avec la liste officielle de la FIFA (phase finale de la Coupe du monde, compétitions mondiales de clubs).</p><p>Les classements des groupes sont les classements officiels actuels de l\'édition, non recalculés à la date du tour.</p>';
     function renderTourBar(t) {
       const bar = document.getElementById('tour-bar');
       bar.hidden = !t;
@@ -1654,9 +1878,16 @@
       bar.innerHTML = `<button type="button" class="tour-btn" id="tour-btn" aria-haspopup="dialog" aria-expanded="false" aria-label="${esc(t.titre + (t.futur ? ' (à venir)' : '') + ', ' + tourSousTitre(t) + '. Changer de journée ou de tour')}" onclick="openTourMenu()">
           <span class="tour-txt"><span class="tour-t">${esc(t.titre)}${t.futur ? '<span class="tour-avenir">à venir</span>' : ''}</span><span class="tour-d">${esc(tourSousTitre(t))}</span></span>
           <svg class="tour-chev" viewBox="0 0 12 8" aria-hidden="true"><path d="M1 1l5 5 5-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        </button>${t.reconstituee ? infoBtn(estLigue(t.comp) ? RECONSTITUEE_LIGUE_INFO : RECONSTITUEE_INFO, 'Journée reconstituée') : ''}`;
+        </button>${t.reconstituee ? infoBtn(estIntl(t.comp) ? RECONSTITUEE_INTL_INFO : estLigue(t.comp) ? RECONSTITUEE_LIGUE_INFO : RECONSTITUEE_INFO, estIntl(t.comp) ? 'Tour reconstitué' : 'Journée reconstituée') : ''}`;
     }
 
+    // Groupes du menu : coupes / championnats = GROUPES ; compétitions internationales = « À venir » puis une rubrique par ÉDITION (la plus récente d'abord)
+    function groupesMenu(k, list) {
+      if (!estIntl(k)) return GROUPES.map(g => ({ id: g.k, t: g.t, ts: list.filter(t => t.groupe === g.k) })).filter(g => g.ts.length);
+      const out = [{ id: 'avenir', t: 'À venir', ts: list.filter(t => t.futur) }];
+      intlEditions(k).forEach(e => out.push({ id: 'ed-' + e.edition, t: `${COMP_FULL[k]} ${e.libelle}`, ts: list.filter(t => !t.futur && t.edition === e.edition) }));
+      return out.filter(g => g.ts.length);
+    }
     // Feuille du bas : la liste des tours de la coupe affichée, regroupés, le tour courant surligné
     function openTourMenu() {
       const k = currentComp, list = toursByComp[k] || [];
@@ -1666,12 +1897,10 @@
       sheet.style.setProperty('--tour-accent', `var(--accent-${k})`);
       document.getElementById('tour-head').innerHTML = `<div><b id="tour-sheet-title">${estLigue(k) ? drapeauLigue(k) + ' ' + esc(nomLigue(k)) : esc(COMP_FULL[k])}</b><small>Choisir une journée ou un tour</small></div>
         <button type="button" class="btn-close" onclick="closeTourMenu()" aria-label="Fermer">✕</button>`;
-      document.getElementById('tour-list').innerHTML = GROUPES.map(g => {
-        const ts = list.filter(t => t.groupe === g.k);
-        if (!ts.length) return '';
-        return `<div role="group" aria-labelledby="tg-${g.k}"><div class="tour-grp" id="tg-${g.k}">${esc(g.t)}</div>${ts.map(t =>
+      document.getElementById('tour-list').innerHTML = groupesMenu(k, list).map(g => {
+        return `<div role="group" aria-labelledby="tg-${esc(g.id)}"><div class="tour-grp" id="tg-${esc(g.id)}">${esc(g.t)}</div>${g.ts.map(t =>
           `<button type="button" role="option" class="tour-opt" data-id="${esc(t.id)}" aria-selected="${t.id === cur}" tabindex="${t.id === cur ? 0 : -1}" onclick="chooseTour('${esc(t.id)}')">
-            <span class="tour-txt"><span class="tour-t">${esc(t.titre)}${t.futur ? '<span class="tour-avenir">à venir</span>' : ''}</span><span class="tour-d">${esc(t.dates.length ? datesCourtes(t.dates) : '')}</span></span>
+            <span class="tour-txt"><span class="tour-t">${esc(t.titre)}${t.futur ? '<span class="tour-avenir">à venir</span>' : ''}</span><span class="tour-d">${esc((t.dates.length ? datesCourtes(t.dates) : '') + (estIntl(k) && t.futur ? ' · ' + t.edLib : ''))}</span></span>
             <span class="tour-n">${t.matchs} match${t.matchs > 1 ? 's' : ''}</span></button>`).join('')}</div>`;
       }).join('');
       const modal = document.getElementById('tour-modal');
@@ -1737,12 +1966,18 @@
         if (token !== tourToken) return;
         main.classList.remove('loading');
       }
+      if (estIntl(compKey) && !intlComplet[compKey]) {   // compétition internationale : index de toutes ses éditions (menu des tours)
+        main.classList.add('loading');
+        await chargerIntl(compKey, true);
+        if (token !== tourToken) return;
+        main.classList.remove('loading');
+      }
       const t = (toursByComp[compKey] || []).find(x => x.id === id) || defaultTour(compKey);
       const err = document.getElementById('soiree-err'); if (err) err.remove();
       if (!t) {   // coupe sans aucune soirée conservée
         tourChoice[compKey] = null; renderTourBar(null); syncUrl();
         main.classList.remove('loading');
-        appData.competitions[compKey] = { name: COMP_FULL[compKey], type: estLigue(compKey) ? 'championnat' : undefined, french_clubs_focus: [], matches: [], standings: [], standings_source: 'absent' };
+        appData.competitions[compKey] = { name: COMP_FULL[compKey], type: estLigue(compKey) ? 'championnat' : undefined, french_clubs_focus: [], matches: [], standings: [], standings_source: 'absent', _intl: estIntl(compKey) ? {} : undefined };
         renderCompetition(compKey);
         return;
       }
@@ -1783,6 +2018,7 @@
         if (u.saison) histChoix[u.c] = u.saison;
         await showTour(u.c, u.tour); return;
       }
+      if (estIntl(u.c)) { vueLigue = 'saison'; await showTour(u.c, u.tour); return; }
       if (!u.c && !u.soiree) { await afficherAccueil(); return; }
       await ouvrirCoupes(u);
     }
@@ -1832,7 +2068,7 @@
       bar.classList.toggle('n5', keys.length === 5 || keys.length === 4);
       bar.classList.toggle('n6', keys.length === 6);
       bar.classList.toggle('n7', keys.length >= 7);
-      bar.innerHTML = keys.map(k => `<button class="tab-btn ${k === currentComp ? 'active' : ''}" data-comp="${k}" style="--tab-accent: var(--accent-${k})" onclick="switchCompetition('${k}')" aria-label="${esc(estLigue(k) ? nomLigue(k) + ' (' + DRAPEAU_LIGUE[k][1] + ')' : COMP_FULL[k])}">${estLigue(k) ? `<span class="tab-ligue">${drapeauLigue(k)}<span>${esc(LIGUE_COURT[k])}</span></span>` : esc(COMP_FULL[k])}</button>`).join('');
+      bar.innerHTML = keys.map(k => `<button class="tab-btn ${k === currentComp ? 'active' : ''}" data-comp="${k}" style="--tab-accent: var(--accent-${k})" onclick="switchCompetition('${k}')" aria-label="${esc(estLigue(k) ? nomLigue(k) + ' (' + DRAPEAU_LIGUE[k][1] + ')' : COMP_FULL[k])}">${estLigue(k) ? `<span class="tab-ligue">${drapeauLigue(k)}<span>${esc(LIGUE_COURT[k])}</span></span>` : esc(tabTexte(k))}</button>`).join('');
       marquerDirect();
     }
     function afficherVue(v) {
@@ -1843,7 +2079,7 @@
       document.getElementById('tabs-bar').hidden = acc;
       document.getElementById('app-header').classList.toggle('accueil', acc);
       document.getElementById('home-btn').setAttribute('aria-label', acc ? 'Accueil' : 'Retour à l\'accueil');
-      document.getElementById('espace-titre').textContent = acc ? '' : '· ' + (espaceDe(currentComp) === 'coupes' ? ESPACES.coupes.titre : 'Championnats');
+      document.getElementById('espace-titre').textContent = acc ? '' : '· ' + ({ coupes: 'Coupes de clubs', selections: 'Sélections' }[espaceDe(currentComp)] || 'Championnats');
       if (!acc) renderTabs(espaceDe(currentComp));
       document.title = acc ? 'Football · Coupes d\'Europe et championnats' : COMP_FULL[currentComp] + ' · Football';
     }
@@ -1867,6 +2103,10 @@
 
     // Dernière date jouée (au moins un match terminé) d'une compétition, et le tour qui la contient
     function derniereDate(k) {
+      if (estIntl(k)) {   // édition la plus récente qui a des matchs terminés (parmi les éditions lues)
+        for (const e of intlEditions(k)) { const E = intlEd(k, e.edition), l = E && E.lignes.find(x => (x.termines || 0) > 0); if (l) return l.date; }
+        return null;
+      }
       if (estLigue(k)) { const l = (ligueIndex[k] || []).find(x => (x.termines || 0) > 0); return l ? l.date : null; }
       const l = (soireeIndex || []).find(x => x.competitions && x.competitions[k] && (x.termines || 0) > 0);
       return l ? l.date : null;
@@ -1883,6 +2123,7 @@
         <span class="eq ${m.away_team.is_french && !estLigue(k) ? 'is-fr' : ''}">${flag(m.away_team)} ${esc(m.away_team.name)}</span></button>`;
     };
     async function donneesDuJour(k, date) {
+      if (estIntl(k)) { const e = intlEditions(k).find(x => { const E = intlEd(k, x.edition); return E && E.lignes.some(l => l.date === date); }); return e ? loadJourIntl(k, e.edition, date) : null; }
       return estLigue(k) ? loadJourLigue(k, date) : loadSoiree(date);
     }
     async function ouvrirMatchAccueil(k, date, matchId) {
@@ -1896,9 +2137,9 @@
       syncUrl();
       const box = document.getElementById('accueil');
       box.innerHTML = '<div class="acc-note">Chargement…</div>';
-      await Promise.all(LIGUE_KEYS.map(loadLigueIndex));
+      await Promise.all([...LIGUE_KEYS.map(loadLigueIndex), ...INTL_KEYS.map(k => chargerIntl(k, false))]);
       if (vue !== 'accueil') return;
-      const toutes = [...COMP_KEYS, ...LIGUE_MAJEURS];   // derniers résultats : coupes et championnats majeurs seulement
+      const toutes = [...COMP_KEYS, ...LIGUE_MAJEURS, ...INTL_KEYS];   // derniers résultats : coupes, championnats majeurs et compétitions internationales
       const dates = Object.fromEntries(toutes.map(k => [k, derniereDate(k)]));
       const jour = Object.values(dates).filter(Boolean).sort().pop() || null;
       let html = '<div id="direct-accueil"></div>';
@@ -1924,10 +2165,11 @@
       const tuile = (k) => {
         const t = defaultTour(k);
         const desc = t ? `<span class="tt">${esc(t.titre)}</span><span>${esc(tourSousTitre(t))}</span>`
-          : `<span>${estLigue(k) ? 'Données bientôt disponibles' : 'Aucune soirée conservée'}</span>`;
+          : `<span>${estLigue(k) || estIntl(k) ? 'Données bientôt disponibles' : 'Aucune soirée conservée'}</span>`;
         return `<button type="button" class="acc-tuile" data-k="${k}" style="--c-accent: var(--accent-${k})" onclick="entrer('${k}', ${t ? `'${esc(t.id)}'` : 'null'})"><b>${estLigue(k) ? drapeauLigue(k) + ' ' : ''}${esc(estLigue(k) ? nomLigue(k) : COMP_FULL[k])}</b>${desc}</button>`;
       };
-      html += `<h2 class="acc-h">Coupes d'Europe</h2><div class="acc-grille">${COMP_KEYS.map(tuile).join('')}</div>`;
+      html += `<h2 class="acc-h">Coupes de clubs</h2><div class="acc-grille">${COUPES_KEYS.map(tuile).join('')}</div>`;
+      html += `<h2 class="acc-h">Sélections nationales</h2><div class="acc-grille">${SEL_KEYS.map(tuile).join('')}</div>`;
       html += `<h2 class="acc-h">Championnats majeurs</h2><div class="acc-grille">${LIGUE_MAJEURS.map(tuile).join('')}</div>`;
       html += `<h2 class="acc-h">Autres championnats</h2><div class="acc-grille">${LIGUE_AUTRES.map(tuile).join('')}</div>`;
       box.innerHTML = html;
@@ -1938,7 +2180,7 @@
 
     function switchCompetition(compKey, slide) {
       closeInfo();
-      if (!soireeIndex && !estLigue(compKey)) {   // sans index : data.json seul
+      if (!soireeIndex && !estLigue(compKey) && !estIntl(compKey)) {   // sans index : data.json seul
         currentComp = compKey;
         document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.comp === compKey));
         renderCompetition(compKey);
@@ -1962,9 +2204,9 @@
       const sec = document.getElementById('prog-section'), ms = progVisibles(comp._avenir);
       sec.hidden = !ms.length;
       if (!ms.length) { document.getElementById('prog-container').innerHTML = ''; return; }
-      const ligue = estLigue(k), maintenant = Date.now();
-      document.getElementById('prog-title').textContent = comp._futur ? 'Programme' : 'À venir dans cette journée';
-      document.getElementById('prog-sub').innerHTML = infoBtn(`<p>${ligue ? 'Calendrier ESPN' : 'Calendrier officiel de l\'UEFA'}, relevé une fois par jour${ligue ? '' : ' (et après chaque soirée)'} : dates et heures (heure de Paris) peuvent encore changer.</p>${ligue ? (JOURNEES_DEDUITES.has(k) ? '<p>Le numéro de journée est déduit du calendrier : chaque club joue une fois par journée, la journée d\'un match est celle dont il partage la date avec tous les autres matchs de ses deux clubs (contrôlé : 0 erreur sur 850 matchs joués des championnats où Wikipédia donne les journées ; un match reporté peut rester sans journée ou, rarement, être mal placé tant qu\'il n\'est pas joué). Sans journée déduite : rangé par semaine.</p>' : '<p>Le numéro de journée vient de Wikipédia ; un match sans journée connue est rangé par semaine.</p>') : '<p>Les affiches des phases à élimination directe n\'apparaissent qu\'après le tirage.</p>'}`, 'Source du programme');
+      const ligue = estLigue(k), intl = estIntl(k), maintenant = Date.now();
+      document.getElementById('prog-title').textContent = comp._futur ? 'Programme' : intl ? 'À venir dans ce tour' : 'À venir dans cette journée';
+      document.getElementById('prog-sub').innerHTML = infoBtn(`<p>${intl ? 'Calendrier ' + esc((comp._intl || {}).progSource || 'officiel') : ligue ? 'Calendrier ESPN' : 'Calendrier officiel de l\'UEFA'}, relevé régulièrement : dates et heures (heure de Paris) peuvent encore changer.</p>${intl ? '<p>Une équipe encore inconnue est notée « À déterminer » avec le code donné par la source (ex. W4) ; elle apparaît quand le tour précédent est joué.</p>' : ligue ? (JOURNEES_DEDUITES.has(k) ? '<p>Le numéro de journée est déduit du calendrier : chaque club joue une fois par journée, la journée d\'un match est celle dont il partage la date avec tous les autres matchs de ses deux clubs (contrôlé : 0 erreur sur 850 matchs joués des championnats où Wikipédia donne les journées ; un match reporté peut rester sans journée ou, rarement, être mal placé tant qu\'il n\'est pas joué). Sans journée déduite : rangé par semaine.</p>' : '<p>Le numéro de journée vient de Wikipédia ; un match sans journée connue est rangé par semaine.</p>') : '<p>Les affiches des phases à élimination directe n\'apparaissent qu\'après le tirage.</p>'}`, 'Source du programme');
       const nomEq = (t) => t.a_determiner ? `<i>${esc(t.name || 'À déterminer')}</i>` : clubLink(t.id, esc(t.name));
       const estFr = (t) => !ligue && t.is_french;
       let dernier = null;
@@ -1990,13 +2232,117 @@
       }).join('');
     }
 
+    // ---------- Compétitions internationales : tableaux de groupe et tableau final (rendu) ----------
+    const ZONES_INTL = { qualifie: ['Qualifié', 'var(--zone-top8)'], meilleur_troisieme: ['Meilleur troisième (qualifié)', 'var(--zone-playoff)'], elimine: ['Éliminé', 'var(--zone-elim)'] };
+    const zoneIntl = (r) => r.zone || (r.qualifie ? 'qualifie' : '');
+    // Groupes concernés par le tour affiché : phase de groupes -> groupes de la phase `groupes` ; éliminatoires -> groupes `qualification` ;
+    // on ne garde que les groupes dont un match figure dans le tour (ou son programme), sinon tous ceux de la phase. Phase finale : groupes de la phase `groupes`.
+    function groupesIntl(comp) {
+      const I = comp._intl || {};
+      if (!I.classements || !Array.isArray(I.classements.groupes)) return [];
+      let gs = I.classements.groupes.filter(g => g.phase === (I.phase === 'qualification' ? 'qualification' : 'groupes'));
+      if (I.phase !== 'finale') {
+        const noms = new Set([...(comp.matches || []), ...(comp._avenir || [])].map(m => m.groupe).filter(Boolean).map(slug));
+        const r = gs.filter(g => noms.has(slug(g.nom)));
+        if (r.length) gs = r;
+      }
+      return gs;
+    }
+    function groupeIntlHtml(g, ouvert) {
+      const fr = (g.lignes || []).some(r => r.is_french);
+      const lignes = (g.lignes || []).map(r => {
+        const z = zoneIntl(r);
+        return `<tr class="${z ? 'zone-' + esc(z) : ''} ${r.is_french ? 'is-fr-row' : ''}">
+          <td class="rank-cell">${esc(r.rank)}</td>
+          <td class="col-team">${flag(r)} ${esc(r.team)}${r.is_french ? '<span class="fr-badge-inline">FRA</span>' : ''}</td>
+          <td>${esc(r.played)}</td><td>${esc(r.gd)}</td><td style="font-weight:800">${esc(r.points)}</td></tr>`;
+      }).join('');
+      return `<details class="grp"${ouvert ? ' open' : ''}><summary>${esc(g.nom)}${fr ? '<span class="grp-fr">FRA</span>' : ''}<small>${(g.lignes || []).length} équipes</small></summary>
+        <table class="standings-table grp-table"><thead><tr><th>#</th><th class="col-team">Équipe</th><th>MJ</th><th>Diff</th><th>Pts</th></tr></thead><tbody>${lignes}</tbody></table></details>`;
+    }
+    function renderGroupesIntl(compKey, comp) {
+      const sec = document.getElementById('standings-section'), cont = document.getElementById('standings-container'), titre = document.getElementById('standings-title');
+      document.getElementById('standings-legend').hidden = true;
+      const gs = groupesIntl(comp), I = comp._intl || {}, cl = I.classements || {};
+      sec.hidden = !gs.length;
+      if (!gs.length) { cont.innerHTML = ''; return; }
+      const zones = [...new Set(gs.flatMap(g => (g.lignes || []).map(zoneIntl)).filter(Boolean))];
+      const maj = cl.maj ? new Date(cl.maj).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', timeZone: 'Europe/Paris' }) : '';
+      const info = `<p>Classement <b>officiel actuel</b> (ou final si l'édition est terminée) de l'édition ${esc(I.edLib || '')}, source : ${esc(cl.source || 'n.d.')}${maj ? `, relevé le ${esc(maj)}` : ''}. Il n'est pas recalculé à la date du tour affiché : pour un tour passé, il reflète tous les matchs joués depuis.</p>`
+        + `<p>MJ : matchs joués · Diff : différence de buts · Pts : points. Un groupe de l'équipe de France porte la pastille FRA et s'ouvre en premier.</p>`
+        + (zones.length ? `<div class="legend-bar">${zones.map(z => `<span class="legend-item"><i class="legend-dot" style="background:${ZONES_INTL[z] ? ZONES_INTL[z][1] : 'var(--text-muted)'}"></i>${esc(ZONES_INTL[z] ? ZONES_INTL[z][0] : z)}</span>`).join('')}</div>` : '');
+      titre.innerHTML = `${gs.length > 1 ? 'Classements des groupes' : 'Classement du groupe'} ${infoBtn(info, 'Source et légende des classements')}`;
+      const ordre = gs.filter(g => (g.lignes || []).some(r => r.is_french)).concat(gs.filter(g => !(g.lignes || []).some(r => r.is_french)));
+      cont.innerHTML = ordre.map((g, i) => groupeIntlHtml(g, ordre.length <= 4 || i === 0)).join('');
+    }
+    // Vainqueur d'un match terminé : score, puis tirs au but ; null si nul sans départage ou pas fini
+    function gagnantIntl(m) {
+      if (m._prog || !m.finished) return null;
+      const h = Number(m.home_team.score), a = Number(m.away_team.score);
+      if (h !== a) return h > a ? 'home' : 'away';
+      const tab = m.tab;
+      return tab && tab[0] !== tab[1] ? (tab[0] > tab[1] ? 'home' : 'away') : null;
+    }
+    function brLigne(m, cote) {
+      const t = m[cote + '_team'], g = gagnantIntl(m);
+      const nom = t.a_determiner ? `<i>${esc(t.name)}</i>` : esc(t.name);
+      const tab = !m._prog && m.tab ? `<small>(${esc(m.tab[cote === 'home' ? 0 : 1])})</small>` : '';
+      return `<span class="br-r ${g === cote ? 'w' : g ? 'l' : ''} ${t.is_french ? 'is-fr' : ''}">${t.a_determiner ? '' : flag(t)}<span class="nm">${nom}</span>${tab}<b>${m._prog ? '' : esc(t.score ?? '')}</b></span>`;
+    }
+    function brMatchHtml(m, k, ed) {
+      const fr = m.home_team.is_french || m.away_team.is_french;
+      if (m._prog) {
+        const quand = [m.date ? jourCourt(m.date) : '', m.debut && m.statut !== 'Reporté' ? heureParis(m.debut) : (m.statut === 'Reporté' ? 'Reporté' : '')].filter(Boolean).join(' · ');
+        return `<div class="br-m prog ${fr ? 'fr' : ''}">${brLigne(m, 'home')}${brLigne(m, 'away')}${quand ? `<div class="br-d">${esc(quand)}</div>` : ''}</div>`;
+      }
+      return `<button type="button" class="br-m ${fr ? 'fr' : ''}" onclick="ouvrirMatchTableau('${esc(k)}', '${esc(ed)}', '${esc(m.match_id)}')" aria-label="${esc(`${m.home_team.name} ${m.home_team.score} - ${m.away_team.score} ${m.away_team.name}`)}">${brLigne(m, 'home')}${brLigne(m, 'away')}</button>`;
+    }
+    function ouvrirMatchTableau(k, ed, id) {
+      closeInfo();
+      const F = intlFinaleCache.get(k + '|' + ed);
+      if (!F) return;
+      const E = intlEditions(k).find(e => String(e.edition) === String(ed)) || {};
+      openMatchModal(id, { competitions: { [k]: { name: `${COMP_FULL[k]} ${E.libelle || ed}`, matches: F.matches } } }, k);
+    }
+    // Tableau final : une colonne par tour de la phase finale (matchs joués + matchs à venir du programme), défilement horizontal dans ce seul bloc
+    function renderTableauIntl(compKey, comp) {
+      const sec = document.getElementById('bracket-section'), cont = document.getElementById('bracket-container'), I = comp._intl || {};
+      const F = I.finale;
+      const jeu = F ? [...F.matches] : [];
+      if (F) F.prog.forEach(x => {
+        const noms = (t) => t.a_determiner ? null : t.name;
+        const deja = jeu.some(m => m.tour_court === x.tour_court && noms(x.home_team) && noms(x.away_team) && m.home_team.name === x.home_team.name && m.away_team.name === x.away_team.name);
+        if (!deja) jeu.push({ ...x, _prog: true });
+      });
+      sec.hidden = I.phase !== 'finale' || !jeu.length;
+      if (sec.hidden) { cont.innerHTML = ''; return; }
+      const cols = new Map();
+      jeu.forEach(m => {
+        const tour = m.tour_court || (m.round || {}).name || 'Phase finale';
+        const jour = m._soiree || m.date || '';
+        let c = cols.get(tour);
+        if (!c) { c = { tour, rang: rangTour(tour), jour, ms: [] }; cols.set(tour, c); }
+        if (jour && (!c.jour || jour < c.jour)) c.jour = jour;
+        c.ms.push(m);
+      });
+      const liste = [...cols.values()].sort((a, b) => a.rang - b.rang || a.jour.localeCompare(b.jour));
+      liste.forEach(c => c.ms.sort((a, b) => (a._soiree || a.date || '').localeCompare(b._soiree || b.date || '') || minutesKickoff(a) - minutesKickoff(b)));
+      document.getElementById('bracket-title').innerHTML = `Tableau final ${infoBtn(`<p>Matchs de la phase finale de l'édition ${esc(I.edLib || '')}, un tour par colonne (faire défiler vers la droite) ; le vainqueur est en gras, les tirs au but sont entre parenthèses. Toucher un match joué ouvre sa fiche.</p><p>Les matchs à venir viennent du programme officiel${I.progSource ? ' (' + esc(I.progSource) + ')' : ''} : une équipe encore inconnue est notée « À déterminer » avec le code donné par la source (ex. W4).</p>`, 'Lecture du tableau final')}`;
+      cont.innerHTML = `<div class="bracket" data-noswipe tabindex="0" role="group" aria-label="Tableau final : faire défiler horizontalement">${liste.map(c =>
+        `<div class="br-col ${c.tour === I.tour ? 'cur' : ''}"><div class="br-t" title="${esc(c.tour)}">${esc(c.tour)}</div>${c.ms.map(m => brMatchHtml(m, compKey, I.edition)).join('')}</div>`).join('')}</div>`;
+      const br = cont.firstElementChild, cur = br.querySelector('.br-col.cur');
+      if (cur) br.scrollLeft = Math.max(0, cur.offsetLeft - 2);
+    }
+
     function renderCompetition(compKey) {
       const comp = (appData && appData.competitions && appData.competitions[compKey]) ||
         { name: '', french_clubs_focus: [], matches: [], standings: [] };
 
       document.getElementById('matchday-indicator').textContent = dateEnToutesLettres(comp.matchday_label || '');
-      const ligue = estLigue(compKey);
-      document.getElementById('focus-section').hidden = ligue || !!comp._futur;   // championnats : pas de focus clubs français
+      const ligue = estLigue(compKey), intl = estIntl(compKey);
+      ctxSelection = estSelection(compKey);
+      document.getElementById('bracket-section').hidden = true;   // tableau final : compétitions internationales (phase finale) seulement
+      document.getElementById('focus-section').hidden = ligue || intl || !!comp._futur;   // championnats et compétitions internationales : pas de cartes de clubs français
       document.getElementById('results-section').hidden = !!comp._futur;           // journée entièrement à venir : programme seul
       renderProgramme(compKey, comp);
       document.getElementById('comp-view').classList.toggle('ligue', ligue);
@@ -2054,22 +2400,30 @@
             <div class="tile-teams">
               <div class="tile-team-row">
                 <span class="tile-team-name ${estFr(m.home_team) ? 'is-fr' : ''}">${flag(m.home_team)} ${esc(m.home_team.name)}</span>
-                <span class="tile-team-score">${m.status === 'À venir' ? '' : m.home_team.score}</span>
+                <span class="tile-team-score">${m.tab ? `<small>(${esc(m.tab[0])})</small>` : ''}${m.status === 'À venir' ? '' : m.home_team.score}</span>
               </div>
               <div class="tile-team-row">
                 <span class="tile-team-name ${estFr(m.away_team) ? 'is-fr' : ''}">${flag(m.away_team)} ${esc(m.away_team.name)}</span>
-                <span class="tile-team-score">${m.status === 'À venir' ? '' : m.away_team.score}</span>
+                <span class="tile-team-score">${m.tab ? `<small>(${esc(m.tab[1])})</small>` : ''}${m.status === 'À venir' ? '' : m.away_team.score}</span>
               </div>
             </div>
             <div class="tile-meta">
               <div>${esc(m.kickoff || '')}</div>
               <div>${esc(m.status)}</div>
+              ${m.groupe ? `<div class="tile-grp">${esc(m.groupe)}</div>` : ''}
               <div style="margin-top:4px;color:var(--accent-ucl)">Détails ›</div>
             </div>
           </div>`;
         }).join('');
       }
 
+      if (intl) {   // compétitions internationales : tableau final (phase finale) puis tableaux de groupe (classements officiels de l'édition)
+        renderTableauIntl(compKey, comp);
+        renderGroupesIntl(compKey, comp);
+        renderHistLigue(compKey);
+        directDemarrer();
+        return;
+      }
       // 4. Classement : officiel UEFA (soirée récente) ou recalculé depuis les scores (soirée passée) ; rien pour les préliminaires
       const stSection = document.getElementById('standings-section');
       const stContainer = document.getElementById('standings-container');
@@ -2124,7 +2478,8 @@
     // site.web.api.espn.com (et non site.api.espn.com : ce dernier répond « Access Denied » à certains navigateurs, constaté le 26/11/2026)
     const ESPN_WEB = 'https://site.web.api.espn.com/apis/site/v2/sports/soccer';
     const SLUG_ESPN = { ucl: 'uefa.champions', uel: 'uefa.europa', uecl: 'uefa.europa.conf', fl1: 'fra.1', fl2: 'fra.2', pl: 'eng.1', liga: 'esp.1',
-      sa: 'ita.1', bl: 'ger.1', por: 'por.1', ned: 'ned.1', bel: 'bel.1', tur: 'tur.1', aut: 'aut.1', gre: 'gre.1', nor: 'nor.1' };
+      sa: 'ita.1', bl: 'ger.1', por: 'por.1', ned: 'ned.1', bel: 'bel.1', tur: 'tur.1', aut: 'aut.1', gre: 'gre.1', nor: 'nor.1',
+      cdm: 'fifa.world', euro: 'uefa.euro', ldn: 'uefa.nations', cdmc: 'fifa.cwc', ci: 'fifa.intercontinental_cup' };
     const DIRECT_APRES_FIN_MIN = 165;   // un match terminé reste dans le bloc jusqu'à 165 min après son coup d'envoi
     const directEtat = { live: {}, minuterie: null, jeton: 0, fiche: null, ficheMinuterie: null };
     const jourParisCompact = () => new Date().toLocaleDateString('en-CA', { timeZone: 'Europe/Paris' }).replace(/-/g, '');
@@ -2172,13 +2527,13 @@
         if (document.hidden) { directEtat.minuterie = setTimeout(tour, 60000); return; }
         const accueil = vue === 'accueil';
         // interrogées : toutes les tuiles de l'accueil, ou toute la rangée d'onglets (pastilles) ; bloc détaillé : coupes + majeurs / compétition affichée
-        const cles = (accueil ? [...COMP_KEYS, ...LIGUE_MAJEURS, ...LIGUE_AUTRES] : ESPACES[espaceDe(currentComp)].keys).filter(k => SLUG_ESPN[k]);
+        const cles = (accueil ? [...COUPES_KEYS, ...SEL_KEYS, ...LIGUE_MAJEURS, ...LIGUE_AUTRES] : ESPACES[espaceDe(currentComp)].keys).filter(k => SLUG_ESPN[k]);
         const res = await Promise.all(cles.map(directTableau));
         if (jeton !== directEtat.jeton) return;
         const listes = Object.fromEntries(cles.map((k, i) => [k, res[i] || []]));
         directEtat.live = Object.fromEntries(cles.map(k => [k, listes[k].filter(x => x.state === 'in').length]));
         marquerDirect();
-        const montres = accueil ? [...COMP_KEYS, ...LIGUE_MAJEURS] : [currentComp];
+        const montres = accueil ? [...COUPES_KEYS, ...SEL_KEYS, ...LIGUE_MAJEURS] : [currentComp];
         const html = directHtml(Object.fromEntries(montres.filter(k => listes[k]).map(k => [k, listes[k]])), accueil);
         const cible = document.getElementById(accueil ? 'direct-accueil' : 'direct-section');
         if (cible) { cible.innerHTML = html; if (!accueil) cible.hidden = !html; }
@@ -2475,7 +2830,14 @@
       if (!found) return false;
       activeMatch = found;
       currentStatsPeriod = 'all';
-      const meta = [comp.name, activeMatch.matchday, activeMatch.kickoff, activeMatch.status].filter(Boolean).join(' • ');
+      const intl = estIntl(compKey || currentComp);
+      ctxSelection = estSelection(compKey || currentComp);
+      const meta = [comp.name, intl ? '' : activeMatch.matchday, activeMatch.kickoff, activeMatch.status].filter(Boolean).join(' • ');
+      // Compétitions internationales : tour (round.name), groupe et journée ; tirs au but
+      const rond = document.getElementById('modal-round');
+      const lig = intl ? [(found.round || {}).name || found.tour_court, found.groupe, found.journee && found.phase !== 'finale' ? 'J' + found.journee : '',
+        found.tab ? `tirs au but ${found.tab[0]}-${found.tab[1]}` : ''].filter(Boolean) : [];
+      rond.hidden = !lig.length; rond.textContent = lig.join(' · ');
       document.getElementById('modal-comp-label').textContent = meta;
       document.getElementById('modal-home-name').innerHTML = clubLink(activeMatch.home_team.id, `${esc(activeMatch.home_team.name)} ${flag(activeMatch.home_team)}`);
       document.getElementById('modal-away-name').innerHTML = clubLink(activeMatch.away_team.id, `${flag(activeMatch.away_team)} ${esc(activeMatch.away_team.name)}`);
@@ -2489,6 +2851,7 @@
     }
 
     function closeMatchModal() {
+      ctxSelection = estSelection(currentComp);
       document.getElementById('match-modal').classList.remove('open');
       syncBodyLock();
     }
@@ -2526,7 +2889,7 @@
         }
         const iconMap = { goal: '⚽', yellow_card: '🟨', red_card: '🟥', sub: '🔄', var: '📺' };
         const info = [m.direct ? '🔴 En direct (ESPN) · données provisoires, remplacées après le match' : '', m.venue ? '🏟️ ' + esc(m.venue) : '', m.attendance ? esc(Number(m.attendance).toLocaleString('fr-FR')) + ' spectateurs' : '',
-                      m.player_of_match ? '⭐ Homme du match : ' + esc(m.player_of_match) : '', m.penalties ? 'Tirs au but : ' + esc(m.penalties) : '']
+                      m.player_of_match ? '⭐ Homme du match : ' + esc(m.player_of_match) : '', (m.penalties || m.tab) ? 'Tirs au but : ' + esc(m.penalties || m.tab.join('-')) : '']
                      .filter(Boolean).join(' · ');
         container.innerHTML = (info ? `<p class="momentum-note" style="margin:0 0 10px">${info}</p>` : '') + evs.map(e => `
           <div class="event-row ${esc(e.team)}">
@@ -2818,7 +3181,7 @@
       const pts = m.momentum || [];
       if (pts.length === 0) {
         if (m.direct) return `<h4 class="st-sec">Momentum</h4><div class="empty-state">En direct, le graphique de pression n'est pas encore disponible : il est calculé à partir des actions du match, après la rencontre.</div>`;
-        if (m.flux === 'reduit') return `<h4 class="st-sec">Momentum</h4><div class="empty-state">ESPN ne publie pour ce championnat que les actions clés (buts, cartons, remplacements) : pas de graphique de pression, pas de stats par mi-temps, pas de note des joueurs ni de buts attendus (xG). Les statistiques ci-dessous sont celles du match entier.</div>`;
+        if (m.flux === 'reduit') return `<h4 class="st-sec">Momentum</h4><div class="empty-state">ESPN ne publie pour ce match que les actions clés (buts, cartons, remplacements) : pas de graphique de pression, pas de stats par mi-temps, pas de note des joueurs ni de buts attendus (xG). Les statistiques ci-dessous sont celles du match entier.</div>`;
         return `<h4 class="st-sec">Momentum</h4><div class="empty-state">Actions du match indisponibles : pas de graphique de pression pour cette rencontre.</div>`;
       }
       const { W, X0, MID, AMP, BOTTOM } = MO;
@@ -3140,7 +3503,7 @@
     const hasClub = (id) => !!(clubIndex && id != null && clubIndex.has(String(id)));
     // Lien vers la fiche d'un club (texte simple si le club n'a pas de fiche) ; `html` est déjà échappé par l'appelant
     function clubLink(id, html) {
-      return hasClub(id) ? `<button type="button" class="club-link" onclick="event.stopPropagation(); openClub('${esc(id)}')">${html}</button>` : html;
+      return hasClub(id) && !ctxSelection ? `<button type="button" class="club-link" onclick="event.stopPropagation(); openClub('${esc(id)}')">${html}</button>` : html;
     }
 
     const jourCourt = (iso) => iso ? new Date(iso + 'T12:00:00Z').toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' }) : '';
