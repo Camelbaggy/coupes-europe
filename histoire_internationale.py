@@ -362,12 +362,17 @@ def hotes_uefa(comp: str, edition: int, matchs: List[Dict[str, Any]]) -> Dict[st
 
 
 def charger_json_racine(nom: str) -> Dict[str, Any]:
+    """Table MANUELLE de la racine du dépôt de code. Absente ou illisible = ERREUR (et non une table vide) : un workflow qui ne la
+    récupère pas (checkout partiel `*.py`, constaté le 26/11/2026) publierait sinon en silence un historique sans corrections ni lignées."""
+    chemin = os.path.join(RACINE, nom)
     try:
-        with open(os.path.join(RACINE, nom), encoding="utf-8") as f:
+        with open(chemin, encoding="utf-8") as f:
             d = json.load(f)
-        return d if isinstance(d, dict) else {}
-    except (OSError, json.JSONDecodeError):
-        return {}
+    except (OSError, json.JSONDecodeError) as e:
+        raise RuntimeError(f"table manuelle {nom} illisible ({e}) : vérifier que le workflow récupère les *.json de la racine") from e
+    if not isinstance(d, dict):
+        raise RuntimeError(f"table manuelle {nom} : objet JSON attendu")
+    return d
 
 
 def corrections_edition(comp: str, edition: int, corrections: Optional[Dict[str, Any]]) -> Dict[str, Dict[str, Any]]:
