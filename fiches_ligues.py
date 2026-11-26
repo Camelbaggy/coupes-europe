@@ -371,6 +371,10 @@ def construire(donnees: str, ligues_demandees: List[str], avec_effectifs: bool =
                           "drapeau": f["drapeau"], "francais": f["francais"], "ligue": lg, "logos": f["logos"],
                           "competitions": [lg], "fichier": f"championnats/clubs/espn-{cid}.json",
                           **({"uefa_id": f["uefa_id"]} if f.get("uefa_id") else {}),
+                          # id UEFA lu dans Wikidata (P7361 unique, encyclo_ligues) : sert au parcours européen du classement
+                          # (clubs/europe.json), jamais à la fusion des fiches (réservée à la correspondance prouvée `uefa_id`)
+                          **({"uefa_wd": str((f.get("wikidata") or {}).get("uefa_id"))}
+                             if not f.get("uefa_id") and (f.get("wikidata") or {}).get("uefa_id") else {}),
                           **({"couleurs": f["couleurs"]} if f.get("couleurs") else {})})
         print(f"[FICHES] {meta['name']} : {len(fiches)} fiches, {sum(1 for f in fiches.values() if f.get('uefa_id'))} rapprochée(s) d'une fiche UEFA")
     _ecrire(os.path.join(base, "wiki_qid.json"), qid_cache)

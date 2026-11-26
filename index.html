@@ -572,6 +572,13 @@
       border-bottom: 2px dashed rgba(148, 163, 184, 0.45);
     }
 
+    .eu-b { display: inline-block; margin-left: 5px; padding: 0 5px; border-radius: 4px; font-size: 0.62rem; font-weight: 800; line-height: 1.5;
+      vertical-align: middle; color: #0b1220; background: var(--eu-c); border: 1px solid var(--eu-c); white-space: nowrap; }
+    .eu-b.ucl { --eu-c: var(--accent-ucl); } .eu-b.uel { --eu-c: var(--accent-uel); } .eu-b.uecl { --eu-c: var(--accent-uecl); }
+    .eu-b.out { background: transparent; color: var(--eu-c); opacity: 0.75; text-decoration: line-through; }
+    .legend-eu { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; font-size: 0.74rem; color: var(--text-muted); padding: 10px 12px; border-bottom: 1px solid var(--border); }
+    .legend-eu > span:not(.eu-b) { margin-right: 4px; }
+    .legend-eu .eu-b { margin-left: 0; }
     .fr-badge-inline {
       font-size: 0.65rem;
       background: rgba(56, 189, 248, 0.2);
@@ -1414,7 +1421,7 @@
     // ---------- Menu des journées / tours : un par coupe, construit depuis soirees/index.json ----------
     // Un tour (journée de phase de ligue, barrages, tour préliminaire…) peut s'étaler sur plusieurs soirées : il charge
     // et fusionne les soirees/<date>.json concernées (index : competitions.<clé>.{stage, tour}).
-    const GROUPES = [   // ordre du menu : à venir (le plus proche d'abord), puis du plus récent au plus ancien
+    const GROUPES = [   // ordre du menu : à venir (le plus lointain d'abord), puis du plus récent au plus ancien
       { k: 'avenir', t: 'À venir' }, { k: 'finale', t: 'Phase finale' }, { k: 'ligue', t: 'Phase de ligue' }, { k: 'barrages', t: 'Barrages' }, { k: 'prelim', t: 'Tours préliminaires' },
       { k: 'journees', t: 'Journées' }, { k: 'autres', t: 'Matchs sans journée' }];
     let toursByComp = {};          // clé de coupe -> tours (groupe, puis date décroissante)
@@ -1514,7 +1521,7 @@
       });
       const nv = [...futurs.values()];
       nv.forEach(t => { t.dates.sort(); t.fin = t.dates[t.dates.length - 1] || ''; if (list.some(u => u.id === t.id)) t.id += '-a-venir'; });
-      nv.sort((a, b) => (a.dates[0] || '').localeCompare(b.dates[0] || ''));
+      nv.sort((a, b) => (b.dates[0] || '').localeCompare(a.dates[0] || ''));   // la prochaine juste au-dessus de la dernière jouée
       toursByComp[k] = [...nv, ...list];
     }
     // Par défaut : le tour le plus récent qui a des matchs terminés
@@ -2092,13 +2099,13 @@
           return `
             <tr class="${r.zone ? 'zone-' + esc(r.zone) : ''} ${estFr(r) ? 'is-fr-row' : ''} ${isCutoff} ${hasClub(r.team_id) ? 'clickable' : ''}"${hasClub(r.team_id) ? ` onclick="openClub('${esc(r.team_id)}')"` : ''}>
               <td class="rank-cell">${r.rank}${r.ex_aequo ? '=' : ''}</td>
-              <td class="col-team">${flag(r)} ${clubLink(r.team_id, esc(r.team))}${estFr(r) ? '<span class="fr-badge-inline">FRA</span>' : ''}</td>
+              <td class="col-team">${flag(r)} ${clubLink(r.team_id, esc(r.team))}${estFr(r) ? '<span class="fr-badge-inline">FRA</span>' : ''}${ligue ? badgeEurope(compKey, r.team_id) : ''}</td>
               <td>${r.played}</td>
               <td>${esc(r.gd)}</td>
               <td style="font-weight:800">${r.points}</td>
             </tr>`;
         }).join('');
-        stContainer.innerHTML = `
+        stContainer.innerHTML = (ligue ? legendeEurope(compKey, comp.standings) : '') + `
           <table class="standings-table">
             <thead><tr><th>#</th><th class="col-team">Club</th><th>MJ</th><th>Diff</th><th>Pts</th></tr></thead>
             <tbody>${rowsHtml}</tbody>
@@ -2408,6 +2415,37 @@
     // Légende des zones d'un championnat (codes ESPN ; libellé traduit, plage de rangs lue dans le classement)
     let LEGENDE_COUPES = null;
     const ZONES_FR = { ucl: 'Ligue des champions', uel: 'Ligue Europa', uecl: 'Ligue Conférence', barrage: 'Barrage de relégation', relegation: 'Relégation', promotion: 'Montée directe', barrage_promo: "Barrages d'accession" };
+    // Parcours européen de la saison (clubs/europe.json, calculé par clubs.py depuis les listes UEFA) : pastille LDC / LE / LC dans le
+    // classement d'un championnat ; pleine = en lice, barrée = éliminé, 🏆 = vainqueur. Club relié par l'id UEFA de sa fiche (correspondance
+    // prouvée `uefa_id`, sinon Wikidata `uefa_wd`) ; seulement pour la saison européenne du classement affiché.
+    let europeSaison = null;
+    const SIGLE_COUPE = { ucl: 'LDC', uel: 'LE', uecl: 'LC' };
+    function saisonEuropeDe(k) {   // « 2026-27 » -> 2027 ; Norvège « 2026 » (année civile : coupes de l'été 2026) -> 2027
+      const l = String(saisonDe[k] || SAISON_LIGUES || ''), m = /^(\d{4})-(\d{2})$/.exec(l);
+      return m ? Number(m[1].slice(0, 2) + m[2]) : /^\d{4}$/.test(l) ? Number(l) + 1 : null;
+    }
+    function europeDe(k, teamId) {
+      if (!europeSaison || !clubIndex || Number(europeSaison.saison) !== saisonEuropeDe(k)) return null;
+      const c = clubIndex.get(String(teamId));
+      const uid = c && (c.uefa_id || c.uefa_wd);
+      return uid ? europeSaison.clubs[String(uid)] || null : null;
+    }
+    function badgeEurope(k, teamId) {
+      const e = europeDe(k, teamId);
+      if (!e || !SIGLE_COUPE[e.comp]) return '';
+      const avant = (e.parcours || []).filter(c => c !== e.comp).map(c => COMP_FULL[c]).join(', ');
+      const etat = e.statut === 'vainqueur' ? 'vainqueur' : e.statut === 'elimine' ? 'éliminé' + (e.sortie ? ' (' + e.sortie + ')' : '') : 'en lice';
+      const txt = `${COMP_FULL[e.comp]} : ${etat}${avant ? ' · auparavant : ' + avant : ''}`;
+      return `<span class="eu-b ${e.comp} ${e.statut === 'elimine' ? 'out' : ''}" title="${esc(txt)}" aria-label="${esc(txt)}">${e.statut === 'vainqueur' ? '🏆 ' : ''}${SIGLE_COUPE[e.comp]}</span>`;
+    }
+    function legendeEurope(k, rows) {
+      if (!rows.some(r => europeDe(k, r.team_id))) return '';
+      return `<div class="legend-eu"><span>Coupes d'Europe ${esc(String(europeSaison.saison - 1) + '-' + String(europeSaison.saison).slice(2))} :</span>
+        <span class="eu-b ucl">LDC</span><span class="eu-b uel">LE</span><span class="eu-b uecl">LC</span><span>en lice</span>
+        <span class="eu-b ucl out">LDC</span><span>éliminé</span>
+        ${infoBtn('<p>Coupe d\'Europe de la saison où le club joue (ou a joué en dernier), d\'après les matchs officiels de l\'UEFA, tours préliminaires compris : pastille pleine = encore en lice, barrée = éliminé (tour de sortie au survol), 🏆 = vainqueur.</p><p>Un club éliminé d\'une coupe et reversé dans une autre porte la pastille de la seconde. Après la phase de ligue, les clubs classés 1 à 24 restent en lice jusqu\'au tirage. État actuel, quelle que soit la journée affichée.</p>', 'Pastilles des coupes d\'Europe')}</div>`;
+    }
+
     function legendeLigue(rows) {
       const plages = [];
       rows.forEach(r => {
@@ -3087,7 +3125,8 @@
     // championnats/clubs/index.json, ids `espn-…`). Un club présent des deux côtés (correspondance PROUVÉE par un match de coupe,
     // fiches_ligues.py) a UNE fiche : les deux entrées pointent l'une vers l'autre (`uefa_id` / `espn`).
     async function loadClubIndex() {
-      const [d, l] = await Promise.all([fetchJson('clubs/index.json'), fetchJson(DONNEES + 'championnats/clubs/index.json')]);
+      const [d, l, eu] = await Promise.all([fetchJson('clubs/index.json'), fetchJson(DONNEES + 'championnats/clubs/index.json'), fetchJson('clubs/europe.json')]);
+      europeSaison = eu && eu.clubs ? eu : null;
       const m = new Map();
       ((d && d.clubs) || []).forEach(c => m.set(String(c.id), c));
       ((l && l.clubs) || []).forEach(c => {
