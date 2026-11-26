@@ -165,7 +165,7 @@ def journees_saison(lg: str, annee: int, dossier: str, avec_wiki: bool) -> Dict[
     chemin = os.path.join(dossier, "journees.json")
     cache = _lire(chemin) or {}
     auj = datetime.now(timezone.utc).date().isoformat()
-    besoin_jr = (cache.get("maj") or "")[:10] != auj
+    besoin_jr = (cache.get("maj") or "")[:10] != auj or (lg in JOURNEES_DEDUITES and "deduites" not in cache)
     besoin_prog = ((_lire(os.path.join(dossier, "programme.json")) or {}).get("maj") or "")[:10] != auj
     if not avec_wiki or not (besoin_jr or besoin_prog):
         return cache
