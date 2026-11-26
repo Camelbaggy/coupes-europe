@@ -133,3 +133,22 @@ européennes, ESPN `fifa.friendly` inégal).
 7. **Stockage** dans donnees-football (`internationales/`) plutôt que dans ce dépôt ? Recommandation : donnees-football.
 8. **Profondeur de la reconstitution détaillée** (fiches de match complètes) : seulement les éditions récentes listées à l'étape 1, l'historique
    ancien se limitant aux résultats (palmarès, bilans) ? Recommandation : oui.
+
+## 7. Réponses du propriétaire (26/11/2026)
+
+1. **Éliminatoires** : oui (Euro, Coupe du monde zone Europe).
+2. **Coupe intercontinentale** : compétition À PART, rangée comme la Coupe du monde des clubs **avec les coupes européennes** (compétitions de
+   clubs), pas avec les sélections.
+3. **API de la FIFA** : oui.
+4. **Résumés** : IA (Gemini) pour les nouveaux matchs de l'équipe de France ; résumé automatique (déterministe) pour les anciens quand les
+   données le permettent.
+5. **Notification commune du jour** : les jours où joue la France, et les compétitions majeures (phases finales de l'Euro et de la Coupe du
+   monde) ; pas la Ligue des nations ni les éliminatoires sans la France.
+6. **Alertes en direct** des matchs de l'équipe de France : oui.
+7. **Stockage** : donnees-football.
+8. **Profondeur** : fiches de match complètes pour les éditions récentes seulement ; résultats seuls pour l'historique ancien.
+
+Conséquences sur le plan : deux familles. (a) **Sélections** : Coupe du monde (`cdm`), Euro (`euro`), Ligue des nations (`ldn`), avec leurs
+éliminatoires. (b) **Clubs, monde** : Coupe du monde des clubs (`cdmc`), Coupe intercontinentale (`ci`), affichées avec les coupes d'Europe
+(focus clubs français, fiches de club existantes). Même collecteur pour les deux (`internationales.py`), même dépôt de données
+(`donnees-football/internationales/<compétition>/<édition>/`).
