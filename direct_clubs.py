@@ -224,6 +224,9 @@ def boucle(duree_min: float, pas: float) -> None:
             if suivi.termine(matchs, now):
                 print("[DIRECT] tous les matchs français du jour sont terminés : fin du suivi")
                 return
+            if not a_suivre(matchs, now):
+                print("[DIRECT] aucun match français en cours ni imminent : fin (la veille relancera avant le prochain)")
+                return
         time.sleep(pas)
     print("[DIRECT] durée atteinte : fin (la veille relance un suivi si un match est encore en cours)")
 
