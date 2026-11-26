@@ -99,7 +99,14 @@
       display: flex;
       align-items: center;
       gap: 8px;
+      min-width: 0;
+      flex: 1 1 auto;
     }
+    .header-top { gap: 8px; }
+    .home-btn { min-width: 0; white-space: nowrap; overflow: hidden; }
+    .home-btn > span { flex: none; }
+    .home-btn > .espace-t { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+    .badge-live { flex: none; white-space: nowrap; }
 
     .badge-live {
       font-size: 0.7rem;
@@ -299,6 +306,7 @@
     .tile-grp { font-size: 0.68rem; color: var(--text-muted); }
     .bracket { position: relative; display: flex; gap: 10px; overflow-x: auto; overscroll-behavior-x: contain; padding: 2px 2px 10px; scroll-snap-type: x proximity; }
     .br-col { flex: 0 0 158px; display: flex; flex-direction: column; gap: 8px; scroll-snap-align: start; }
+    .br-ms { flex: 1; display: flex; flex-direction: column; justify-content: space-around; gap: 8px; }
     .br-t { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); padding: 2px 2px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
     .br-col.cur .br-t { color: var(--tour-accent, var(--accent-ucl)); }
     .br-m { display: block; width: 100%; text-align: left; font: inherit; color: var(--text-main); background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; padding: 4px 8px; cursor: pointer; }
@@ -1761,12 +1769,12 @@
       if (/huit/.test(s)) return 2;
       if (/quart/.test(s)) return 3;
       if (/demi/.test(s)) return 4;
-      if (/place/.test(s)) return 6;
+      if (/place|bronze/.test(s)) return 6;
       return /finale/.test(s) ? 5 : 0;
     }
     function phaseDeTour(tour, phases) {
       if (phases && phases.length === 1) return phases[0];
-      if (/finale|quart|huiti|seizi|place/i.test(tour)) return 'finale';
+      if (/finale|quart|huiti|seizi|place|bronze/i.test(tour)) return 'finale';
       if (/^éliminatoires/i.test(tour)) return 'qualification';
       return (phases || [])[0] || 'groupes';
     }
@@ -2514,11 +2522,14 @@
         if (jour && (!c.jour || jour < c.jour)) c.jour = jour;
         c.ms.push(m);
       });
-      const liste = [...cols.values()].sort((a, b) => a.rang - b.rang || a.jour.localeCompare(b.jour));
+      // à partir du tour affiché (sur mobile, la colonne la plus haute doit être la première visible : pas de vide au-dessus de la finale) ;
+      // les tours précédents s'ouvrent par le menu des tours
+      const rCur = rangTour(I.tour);
+      const liste = [...cols.values()].filter(c => !rCur || c.rang >= rCur).sort((a, b) => a.rang - b.rang || a.jour.localeCompare(b.jour));
       liste.forEach(c => c.ms.sort((a, b) => (a._soiree || a.date || '').localeCompare(b._soiree || b.date || '') || minutesKickoff(a) - minutesKickoff(b)));
-      document.getElementById('bracket-title').innerHTML = `Tableau final ${infoBtn(`<p>Matchs de la phase finale de l'édition ${esc(I.edLib || '')}, un tour par colonne (faire défiler vers la droite) ; le vainqueur est en gras, les tirs au but sont entre parenthèses. Toucher un match joué ouvre sa fiche.</p><p>Les matchs à venir viennent du programme officiel${I.progSource ? ' (' + esc(I.progSource) + ')' : ''} : une équipe encore inconnue est notée « À déterminer » avec le code donné par la source (ex. W4).</p>`, 'Lecture du tableau final')}`;
+      document.getElementById('bracket-title').innerHTML = `Tableau final ${infoBtn(`<p>Matchs de la phase finale de l'édition ${esc(I.edLib || '')}, un tour par colonne à partir du tour affiché (faire défiler vers la droite ; les tours précédents s'ouvrent par le menu des tours) ; le vainqueur est en gras, les tirs au but sont entre parenthèses. Toucher un match joué ouvre sa fiche.</p><p>Les matchs à venir viennent du programme officiel${I.progSource ? ' (' + esc(I.progSource) + ')' : ''} : une équipe encore inconnue est notée « À déterminer » avec le code donné par la source (ex. W4).</p>`, 'Lecture du tableau final')}`;
       cont.innerHTML = `<div class="bracket" data-noswipe tabindex="0" role="group" aria-label="Tableau final : faire défiler horizontalement">${liste.map(c =>
-        `<div class="br-col ${c.tour === I.tour ? 'cur' : ''}"><div class="br-t" title="${esc(c.tour)}">${esc(c.tour)}</div>${c.ms.map(m => brMatchHtml(m, compKey, I.edition)).join('')}</div>`).join('')}</div>`;
+        `<div class="br-col ${c.tour === I.tour ? 'cur' : ''}"><div class="br-t" title="${esc(c.tour)}">${esc(c.tour)}</div><div class="br-ms">${c.ms.map(m => brMatchHtml(m, compKey, I.edition)).join('')}</div></div>`).join('')}</div>`;
       const br = cont.firstElementChild, cur = br.querySelector('.br-col.cur');
       if (cur) br.scrollLeft = Math.max(0, cur.offsetLeft - 2);
     }
