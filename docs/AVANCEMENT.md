@@ -33,6 +33,12 @@ Tout ce qui suit est fusionné sur `main` et en ligne (https://camelbaggy.github
 **Suivi en direct (page)** : bloc « En direct » (accueil et compétition, ESPN depuis le navigateur), fiche de match provisoire, pastilles
 « En direct · N » sur les tuiles et point rouge sur les onglets. Pas encore vu sur un vrai match en cours (premier soir : 26/11).
 
+## Chantier en cours : compétitions internationales (26/11/2026)
+
+Étude faite (`docs/etude_internationales.md`, mesures réelles UEFA / ESPN / FIFA) : sources par compétition, plan en 5 étapes,
+**8 décisions demandées au propriétaire (§ 6)** avant d'écrire le collecteur. Échéance proche : finale de la Coupe intercontinentale
+Paris SG le 16/12/2026 ; prochains matchs de sélection : Ligue des nations, mars 2027.
+
 ## À vérifier à la reprise
 
 1. **Soir du 26/11** (tâches programmées dans cette session : 15 h 35, 17 h 47, 17 h 52, 20 h 02 UTC) : page en direct pendant Mjällby-Kairat,
