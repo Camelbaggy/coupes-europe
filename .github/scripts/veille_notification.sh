@@ -13,7 +13,7 @@ RACINE=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 wf=notification_jour.yml
 SEUIL_MIN=${SEUIL_NOTIF_MIN:-10}
 py=$(command -v python3 || command -v python) || { echo "[VEILLE-NOTIF] python introuvable : rien à faire"; exit 0; }
-jours=$("$py" "$RACINE/../../notification_jour.py" --veille) || { echo "[VEILLE-NOTIF] décision impossible : rien à faire"; exit 0; }
+jours=$("$py" "$RACINE/../../notification_jour.py" --veille | grep -E '^[0-9]{4}-[0-9]{2}-[0-9]{2}$' || true)
 if [ -z "$jours" ]; then echo "[VEILLE-NOTIF] aucun jour prêt à notifier"; exit 0; fi
 en_cours=$(nb_en_cours "$wf")
 if [ "$en_cours" != "0" ]; then echo "[VEILLE-NOTIF] $wf en file ou en cours ($en_cours) : rien à faire"; exit 0; fi

@@ -174,7 +174,7 @@ def fetch_json(url: str) -> Optional[Any]:
         with urllib.request.urlopen(req, timeout=20) as r:
             return json.loads(r.read().decode("utf-8"))
     except Exception as e:
-        print(f"[WARN] lecture impossible : {url} ({e})")
+        print(f"[WARN] lecture impossible : {url} ({e})", file=sys.stderr)
         return None
 
 
