@@ -449,6 +449,8 @@ affichées AVEC les coupes d'Europe). Données dans donnees-football, `internati
   `ligues.LIGUES` du processus) pour la phase finale de la Coupe du monde (l'UEFA l'a, mais sans aucune statistique), la Coupe du monde des clubs
   (FIFA 10005 / 107) et la Coupe intercontinentale (FIFA 107, motif « Intercontinentale »). Rapprochement ESPN -> FIFA strict : sélection par code,
   club par noms concordants (`espn._noms_concordent`), un seul candidat ; match = mêmes équipes, jour ±1 ; sinon nom ESPN, tour `TOURS_ESPN`.
+- **Drapeaux partout** (décision du 26/11/2026) : en compétition internationale, jamais de logo de club, même pour les clubs de la CdM des
+  clubs / Coupe intercontinentale (`logoEspn` ignore une équipe qui a `fifa_id`). Exception : le bloc « En direct » (ESPN, pays des clubs inconnu).
 - **Flux réduit** : moins de `SEUIL_FLUX_COMPLET` (500) actions ESPN = ancien flux (Euro / CdMC 2025 côté ESPN, Coupe intercontinentale) :
   momentum, mi-temps et notes retirés, `flux: "reduit"`. xG : Coupe du monde 2026 seulement (ESPN n'en a pas pour la Ligue des nations).
 - **Match** : schéma des coupes + `phase` (`qualification` / `groupes` / `finale`), `groupe`, `tab` ; `stage` league / qualifying / knockout ;
