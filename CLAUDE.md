@@ -532,6 +532,16 @@ et le classement actuel, sans focus ni résultats. Une journée en partie jouée
 - Page : `ajouterAvenir(k, matchs)` (fin de `buildTours` / `buildToursLigue`), `t.futur` / `t.avenir`, `loadTour` d'un tour futur = classement
   du dernier tour joué, `renderProgramme` (`#prog-section`), `#results-section` masquée pour un tour futur ; URL `?c=uel&tour=j6`.
 
+## Prochains matchs (accueil et onglet de compétition, 26/11/2026)
+
+Demande du propriétaire : section « Prochains matchs » sous « Derniers résultats » (accueil) et sous le classement (onglet de chaque compétition ;
+masquée sur un tour futur, dont le programme est déjà affiché, et en « Saisons passées »). Jour = aujourd'hui (Paris) s'il reste des matchs à jouer,
+sinon le prochain jour programmé ; matchs déjà commencés exclus (bloc « En direct ») ; tri : équipe française d'abord (championnats compris, sans
+surlignage), puis heure, puis compétition ; 10 lignes puis « Voir plus (N) » / « Voir moins ». Accueil : coupes d'Europe, internationales et championnats
+majeurs (pas les secondaires). Sources = programmes déjà chargés (`programmeDe` : `clubs/programme.json`, `programme.json` des championnats et des éditions
+internationales). Fonctions : `prochainsMatchs`, `pmLigne`, `prochainsListe`, `pmBascule`, `prochainsAccueil`, `renderProchains` (`#next-section`).
+Essai : `node tools/test_prochains_ui.js <url> <dossier>`.
+
 ## Parcours européen dans les classements des championnats (26/11/2026)
 
 `clubs/europe.json` `{saison, source: "UEFA", maj, clubs: {id UEFA: {comp, statut, sortie?, parcours[]}}}` écrit par `clubs.mettre_a_jour`
