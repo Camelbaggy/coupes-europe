@@ -43,7 +43,8 @@ Tout ce qui suit est fusionné sur `main` et en ligne (https://camelbaggy.github
 - Étape 3 : collecte du jour (`collecte_internationales.yml` lancé par la veille de donnees-football), `etat_internationales.json`,
   notification commune (France, phases finales Euro / CdM, toujours CdM des clubs et Coupe intercontinentale), alertes en direct des Bleus
   et des clubs français en CdM des clubs / Coupe intercontinentale (`direct_clubs.py`, ESPN pour ces deux-là).
-À vérifier : fin de la reconstitution (tableau final complet de la CdM 2026 à regarder sur la page), premier passage réel de la veille
+Reconstitution FINIE le 26/11 (185 jours, 6 éditions ; relancée à 9 h 40 UTC pour les libellés de tour FIFA, quelques minutes) ; page vérifiée
+sur les données complètes (tableau final, groupes). Accueil : menu latéral + Prochains matchs (26/11). À vérifier : premier passage réel de la veille
 internationale ; **16/12/2026, finale intercontinentale du PSG** : événement ESPN pas encore programmé au 26/11 (alertes à confirmer le jour
 même : `python direct_clubs.py --veille` vers 15 h 40 UTC) ; Ligue des nations en mars 2027. Reste à faire : résumés (IA pour les nouveaux
 matchs de la France, déterministes pour les anciens), fiches de sélection et historique (FIFA depuis 1930, UEFA depuis 1960), classement
