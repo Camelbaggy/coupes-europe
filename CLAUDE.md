@@ -50,6 +50,10 @@ python notification_jour.py --test && python veille_ligues.py --test && python c
 python direct_clubs.py --test                           # alertes en direct des clubs français (sans réseau) ; --veille : code 0 si un suivi doit tourner
 python notification_jour.py --veille                    # jours prêts à notifier d'après les fichiers PUBLIÉS (lecture seule)
 python run_ligues.py --date J --donnees DIR --etat      # + etat_championnats.json (collecte quotidienne) ; --alerte J --cause X : alerte d'échec
+python internationales.py --test && python run_internationales.py --test   # compétitions internationales (sans réseau)
+python internationales.py --comp cdm --edition 2026 --liste             # liste d'une édition (UEFA / FIFA), sans écriture
+python run_internationales.py --comp euro --edition 2024 --date 2024-06-17 --donnees /tmp/donnees   # un jour -> internationales/
+python run_internationales.py --liste --donnees DIR      # jours restant à reconstituer par édition (EDITIONS)
 ```
 
 `AI_BUDGET_SECONDS=0` désactive tout appel Gemini (résumés de repli déterministes). Sans `GEMINI_API_KEY`, même
@@ -425,6 +429,32 @@ nationalité, photo). La compo et le déroulé référencent les joueurs par `id
   Portugal, les Pays-Bas (page vide), la Belgique et la Grèce : journées DÉDUITES du calendrier ESPN (`journees_ordre.py`, `run_ligues.JOURNEES_DEDUITES`, idée et décision du propriétaire du 26/11/2026 ; date de référence de la journée k = médiane des k-ièmes matchs de tous les clubs, match rangé dans la journée la plus proche seulement si ses DEUX clubs n'y ont qu'un match, complément « journée manquante commune unique » pour les matchs joués seulement, fenêtre de 2 jours pour les matchs à venir ; mesuré sur les 8 championnats à journées Wikipédia : 0 erreur sur 850 matchs joués, 2 sur 1 634 à venir (reports reprogrammés) ; Wikipédia garde la priorité ; inapplicable à la Norvège, dont les journées officielles ne suivent pas l'ordre des dates). Sites officiels vérifiés le 26/11/2026 : Autriche (journées lisibles, mais AGB : publication sur un autre site soumise à accord écrit de l'ÖFBL), Portugal et Pays-Bas (reprise / robots interdits par les conditions), Belgique (accès refusé, HTTP 403), Grèce (robots d'IA exclus) : aucun utilisé. Interface : accueil « Championnats majeurs » (`LIGUE_MAJEURS`) puis « Autres championnats » (`LIGUE_AUTRES`,
   espace `autres`, 7 onglets `n7`) ; les « Derniers résultats » de l'accueil ne montrent que coupes + majeurs. À faire : historique des classements
   des secondaires ; formules à poules finales (Belgique, Autriche, Grèce : points divisés / groupes) à traiter avant la fin de leur phase régulière.
+
+## Compétitions internationales (`internationales.py`, `run_internationales.py`, étape 1 livrée le 26/11/2026)
+
+Étude, mesures et décisions du propriétaire : `docs/etude_internationales.md` (§ 7). Deux familles : SÉLECTIONS (Coupe du monde `cdm`, Euro `euro`,
+Ligue des nations `ldn`, éliminatoires compris) et CLUBS, monde (Coupe du monde des clubs `cdmc`, Coupe intercontinentale `ci`, compétitions à part
+affichées AVEC les coupes d'Europe). Données dans donnees-football, `internationales/<comp>/<édition>/` (jour, `index.json`, `classements.json`,
+`programme.json`) + `internationales/index.json` ; jamais dans ce dépôt.
+- **Sources par match** : UEFA (`collector.build_match`) pour l'Euro (`3`, éliminatoires compris), la Ligue des nations (`2014`) et les
+  éliminatoires de la Coupe du monde (`17`, phase QUALIFYING seulement) ; FIFA (`api.fifa.com/api/v3`, accord du 26/11/2026 : liste officielle,
+  noms français, tours, groupes, stades, pays des clubs, tirs au but) + ESPN (`ligues.completer_match` via une clé `int-<comp>` enregistrée dans
+  `ligues.LIGUES` du processus) pour la phase finale de la Coupe du monde (l'UEFA l'a, mais sans aucune statistique), la Coupe du monde des clubs
+  (FIFA 10005 / 107) et la Coupe intercontinentale (FIFA 107, motif « Intercontinentale »). Rapprochement ESPN -> FIFA strict : sélection par code,
+  club par noms concordants (`espn._noms_concordent`), un seul candidat ; match = mêmes équipes, jour ±1 ; sinon nom ESPN, tour `TOURS_ESPN`.
+- **Flux réduit** : moins de `SEUIL_FLUX_COMPLET` (500) actions ESPN = ancien flux (Euro / CdMC 2025 côté ESPN, Coupe intercontinentale) :
+  momentum, mi-temps et notes retirés, `flux: "reduit"`. xG : Coupe du monde 2026 seulement (ESPN n'en a pas pour la Ligue des nations).
+- **Match** : schéma des coupes + `phase` (`qualification` / `groupes` / `finale`), `groupe`, `tab` ; `stage` league / qualifying / knockout ;
+  `actions` jamais publiées. Notes par jour ET par source (UEFA, ESPN). Match fini depuis moins de 2 h : `en_attente`.
+- **Classements** : officiels ACTUELS des groupes (`classements.json` : UEFA, dont `phase=QUALIFYING` à demander à part ; ESPN pour les groupes des
+  compétitions FIFA, zones `qualifie` / `meilleur_troisieme` / `elimine`). Pas encore de classement recalculé à une date passée (départages par
+  compétition à vérifier, jamais devinés).
+- **Édition** = `seasonYear` UEFA (Ligue des nations 2026-27 -> 2027) ou année du tournoi FIFA. `run_internationales.EDITIONS` = éditions
+  détaillées (récentes, décision 8). Reconstitution : `reconstitution_internationales.yml` (donnees-football, dispatch `comp` / `edition` / `ref`,
+  auto-relance, groupe `internationales`) ; jamais d'état ni de notification.
+- À faire (étude § 5) : interface (étape 2), collecte des soirs de match + notification (France et phases finales Euro / Coupe du monde) + alertes
+  en direct de la France (étape 3), résumés (IA pour les nouveaux matchs de la France, déterministes pour les anciens), fiches de sélection et
+  historique (FIFA depuis 1930, UEFA depuis 1960), éliminatoires de l'Euro 2028 / Coupe du monde 2030 dès leur publication.
 
 ## Suivi en direct (`index.html`, bloc `EN DIRECT`, 26/11/2026)
 

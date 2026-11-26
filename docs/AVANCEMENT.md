@@ -33,6 +33,15 @@ Tout ce qui suit est fusionné sur `main` et en ligne (https://camelbaggy.github
 **Suivi en direct (page)** : bloc « En direct » (accueil et compétition, ESPN depuis le navigateur), fiche de match provisoire, pastilles
 « En direct · N » sur les tuiles et point rouge sur les onglets. Pas encore vu sur un vrai match en cours (premier soir : 26/11).
 
+## Chantier en cours : compétitions internationales (26/11/2026)
+
+Étude et décisions du propriétaire (`docs/etude_internationales.md` § 6-7). **Étape 1 faite** (§ 8) : `internationales.py`,
+`run_internationales.py`, workflow `reconstitution_internationales.yml` dans donnees-football (branche `ccr-6eb51b68-vzkhg2` des deux dépôts,
+à fusionner puis lancer : `gh workflow run reconstitution_internationales.yml --repo Camelbaggy/donnees-football --ref main`, ~2-3 passages).
+Suite : étape 2 (interface : coupes de clubs mondiales avec les coupes d'Europe, sélections à part, groupes, tableau final, focus France), étape 3
+(collecte des soirs, notification France + phases finales, alertes en direct des Bleus). Échéance : finale de la Coupe intercontinentale
+Paris SG le 16/12/2026 (collecte du jour et alertes à prévoir avant) ; Ligue des nations : mars 2027.
+
 ## À vérifier à la reprise
 
 1. **Soir du 26/11** (tâches programmées dans cette session : 15 h 35, 17 h 47, 17 h 52, 20 h 02 UTC) : page en direct pendant Mjällby-Kairat,
