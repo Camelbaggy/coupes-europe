@@ -1,5 +1,73 @@
 [
  {
+  "date": "2026-11-26",
+  "statut": "complet",
+  "matchs": 36,
+  "termines": 36,
+  "competitions": {
+   "uel": {
+    "matchs": 18,
+    "stage": "league",
+    "tour": "J5"
+   },
+   "uecl": {
+    "matchs": 18,
+    "stage": "league",
+    "tour": "J4"
+   }
+  },
+  "francais": [
+   {
+    "comp": "uel",
+    "match_id": "2050132",
+    "home": "Marseille",
+    "away": "Levski Sofia",
+    "home_fr": true,
+    "away_fr": false,
+    "score": "1-0",
+    "statut": "Terminé"
+   },
+   {
+    "comp": "uel",
+    "match_id": "2050130",
+    "home": "Lyon",
+    "away": "Lillestrøm",
+    "home_fr": true,
+    "away_fr": false,
+    "score": "0-0",
+    "statut": "Terminé"
+   },
+   {
+    "comp": "uel",
+    "match_id": "2050145",
+    "home": "N.E.C.",
+    "away": "Rennes",
+    "home_fr": false,
+    "away_fr": true,
+    "score": "3-1",
+    "statut": "Terminé"
+   },
+   {
+    "comp": "uecl",
+    "match_id": "2050371",
+    "home": "Hearts",
+    "away": "Monaco",
+    "home_fr": false,
+    "away_fr": true,
+    "score": "2-3",
+    "statut": "Terminé"
+   }
+  ],
+  "resumes": {
+   "gemini": 4,
+   "deterministe": 0,
+   "a_rattraper": 0
+  },
+  "reconstituee": false,
+  "maj": "2026-11-26T22:17:28Z",
+  "fichier": "soirees/2026-11-26.json"
+ },
+ {
   "date": "2026-11-25",
   "statut": "complet",
   "matchs": 9,
