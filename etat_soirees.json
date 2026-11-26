@@ -15,8 +15,8 @@
   },
   "2026-11-26": {
     "statut": "complet",
-    "notifie": false,
-    "maj": "2026-11-26T22:17:28Z",
+    "notifie": true,
+    "maj": "2026-11-26T22:27:20Z",
     "matchs": 36,
     "termines": 36
   }
