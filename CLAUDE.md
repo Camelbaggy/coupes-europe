@@ -369,7 +369,7 @@ nationalité, photo). La compo et le déroulé référencent les joueurs par `id
   « un club une fois par journée » ; jamais de journée devinée.
 - `run_ligues.py` : un jour (heure de Paris) par championnat, sans recollecter un match déjà complet ; classement officiel seulement tant
   qu'aucun match postérieur n'a commencé. Essai réel : commit `[test-ligues]` sur une branche `ccr-*` (`test_ligues.yml`).
-- **Interface** (étude § 12) : une seule application ; sans paramètre = ACCUEIL (`afficherAccueil` : derniers résultats en date, 8 tuiles) ;
+- **Interface** (étude § 12) : une seule application ; sans paramètre = ACCUEIL (`afficherAccueil` : en direct, derniers résultats, prochains matchs ; plus de tuiles depuis le 26/11/2026 : les compétitions sont dans le MENU LATÉRAL, ci-dessous) ;
   `?c=ucl|uel|uecl` / `?soiree=` = coupes (inchangé) ; `?c=fl1|pl|liga|sa|bl&tour=jN` = championnat (mêmes composants, `LIGUE_KEYS`,
   `buildToursLigue`, `loadJourLigue`, `DONNEES` = Pages de donnees-football ou `?donnees=`). `entrer` (pushState) / `goAccueil` / `route`
   (popstate). En championnat : logo du club à la place du drapeau (`flag()` / `logoEspn`), pas de focus ni de surlignage français, légende des zones ESPN (`legendeLigue`), sources « ESPN (Opta) »
@@ -506,7 +506,7 @@ mise à jour) : `site.web.api.espn.com/.../<slug>/scoreboard?dates=AAAAMMJJ` (jo
 `SLUG_ESPN` (coupes : `uefa.champions` / `uefa.europa` / `uefa.europa.conf` ; championnats : slugs de `ligues.py`) ; `directDemarrer` (appelé
 par `afficherAccueil` et `renderCompetition`) : accueil = coupes + championnats majeurs, compétition = elle seule ; toutes les 60 s s'il y a un
 match en cours ou à moins de 20 min de son coup d'envoi, sinon 5 min, jamais page cachée. Bloc `#direct-accueil` / `#direct-section` : matchs
-en cours + terminés depuis moins de 165 min après le coup d'envoi (`directVisible`), « Terminé · provisoire ». Pastilles (`marquerDirect`, `directEtat.live` = matchs en cours par compétition) : « En direct · N » sur les tuiles de l'accueil (toutes, `data-k`) et point rouge sur les onglets (`.tab-btn.live`) ; l'accueil interroge aussi `LIGUE_AUTRES`, une compétition toute sa rangée d'onglets, mais le bloc détaillé reste coupes + majeurs / compétition affichée. `ouvrirDirect(k, id)` :
+en cours + terminés depuis moins de 165 min après le coup d'envoi (`directVisible`), « Terminé · provisoire ». Pastilles (`marquerDirect`, `directEtat.live` = matchs en cours par compétition) : « En direct · N » sur les lignes du menu latéral (`.menu-ligne[data-k]`) et point rouge sur les onglets (`.tab-btn.live`) ; l'accueil interroge aussi `LIGUE_AUTRES`, une compétition toute sa rangée d'onglets, mais le bloc détaillé reste coupes + majeurs / compétition affichée. `ouvrirDirect(k, id)` :
 `directVersMatch` convertit le résumé ESPN au format des fiches (déroulé depuis `keyEvents` : buts / penalty / csc, cartons, remplacements
 [entrant, sortant] ; compos placées par `placerDirect` = port JS de `ligues.placer` ; `stats.all` depuis `boxscore` via `STATS_DIRECT`) et
 l'ouvre dans `openMatchModal` ; rafraîchie toutes les 30 s tant qu'elle est ouverte (rendu refait seulement si quelque chose a changé, défilement
@@ -531,6 +531,17 @@ et le classement actuel, sans focus ni résultats. Une journée en partie jouée
   Exclus : terminés, annulés, coup d'envoi passé de plus de 3 h (fichier) / 150 min (page, `progVisibles`) ; reportés gardés.
 - Page : `ajouterAvenir(k, matchs)` (fin de `buildTours` / `buildToursLigue`), `t.futur` / `t.avenir`, `loadTour` d'un tour futur = classement
   du dernier tour joué, `renderProgramme` (`#prog-section`), `#results-section` masquée pour un tour futur ; URL `?c=uel&tour=j6`.
+
+## Menu latéral des compétitions (26/11/2026)
+
+Demande du propriétaire : l'accueil ne montre plus que « En direct », « Derniers résultats » et « Prochains matchs » ; toutes les compétitions sont dans
+un tiroir à gauche (`#menu-btn` ☰ dans l'en-tête, accueil ET pages de compétition ; `#menu-modal` / `#menu-panel`, `role=dialog`, dans `SHEET_IDS` :
+Échap / fond / ✕ / glissement vers la gauche, focus piégé puis rendu au bouton, verrou de défilement). Sections déroulantes = `ESPACES` (Coupes de clubs,
+Sélections nationales, Championnats majeurs, Autres championnats) ; ligne = drapeau de ligue, nom, tour par défaut + dates, accent, `data-k` (pastille
+direct). État des sections dans `localStorage` `menu-sections-ouvertes` (try/catch) ; défaut : Coupes de clubs sur l'accueil, section de la compétition
+affichée (surlignée `aria-current`) ailleurs. Depuis une page de compétition, `entrer(k, tour, true)` remplace l'entrée d'historique (le bouton maison
+revient à l'accueil). Fonctions : `openMenu`, `closeMenu`, `renderMenu`, `menuBascule`, `menuLigne`, `menuSousTitre`, `menuAller`, `menuCharger`.
+Essai : `node tools/test_menu_ui.js <url> <dossier>`.
 
 ## Prochains matchs (accueil et onglet de compétition, 26/11/2026)
 

@@ -25,23 +25,30 @@ const { chromium, devices } = require('playwright');
   const q = `donnees=${encodeURIComponent(donnees)}`;
   const images = async () => { try { await page.waitForFunction(() => [...document.images].every(i => i.complete), null, { timeout: 8000 }); } catch (e) { /* capture quand même */ } };
   const aller = async (qs, sel) => { await page.goto(`${base}/?${qs}&${q}`); await page.waitForSelector(sel, { timeout: 20000 }); await page.waitForTimeout(500); };
+  const viaMenu = async (k) => {   // ouvre le menu latéral, déroule la section si besoin, choisit la compétition
+    await page.click('#menu-btn'); await page.waitForSelector('#menu-modal.open');
+    const sel = `#menu-corps .menu-ligne[data-k="${k}"]`;
+    if (!(await page.isVisible(sel))) { const id = await page.$eval(sel, e => e.closest('.menu-sec-c').id.replace('menu-c-', '')); await page.click(`#menu-h-${id}`); }
+    await page.click(sel);
+  };
   const tours = () => page.textContent('#tour-btn .tour-t');
 
   // 1. Accueil
-  await aller('', '#accueil .acc-tuile');
-  const titres = await page.$$eval('#accueil h2.acc-h', e => e.map(x => x.textContent));
-  ok(['Coupes de clubs', 'Sélections nationales', 'Championnats majeurs'].every((t, i) => titres.includes(t) && titres.indexOf(t) === titres.findIndex(x => x === t)) &&
-     titres.indexOf('Sélections nationales') < titres.indexOf('Championnats majeurs') && titres.indexOf('Coupes de clubs') < titres.indexOf('Sélections nationales'), 'accueil : sections ' + titres.join(' | '));
-  const tu = await page.$$eval('#accueil .acc-tuile', e => e.map(x => x.dataset.k));
-  ok(tu.length === 21 && ['cdmc', 'ci', 'cdm', 'euro', 'ldn'].every(k => tu.includes(k)), `accueil : ${tu.length} tuiles dont CdM clubs, Intercontinentale, CdM, Euro, Ligue des nations`);
+  await aller('', '#accueil .acc-bloc');
+  await page.click('#menu-btn'); await page.waitForSelector('#menu-modal.open');
+  const titres = await page.$$eval('#menu-corps .menu-sec-h > span:nth-child(2)', e => e.map(x => x.textContent));
+  const tu = await page.$$eval('#menu-corps .menu-ligne', e => e.map(x => x.dataset.k));
+  await page.keyboard.press('Escape'); await page.waitForTimeout(300);
+  ok(titres.join('|') === 'Coupes de clubs|Sélections nationales|Championnats majeurs|Autres championnats', 'menu : sections ' + titres.join(' | '));
+  ok(tu.length === 21 && ['cdmc', 'ci', 'cdm', 'euro', 'ldn'].every(k => tu.includes(k)), `accueil : ${tu.length} lignes du menu dont CdM clubs, Intercontinentale, CdM, Euro, Ligue des nations`);
   ok(await debord() <= 0, 'accueil : pas de débordement horizontal');
   await images();
   await page.screenshot({ path: `${out}/i01-accueil.png`, fullPage: true });
 
   // 2. Coupe du monde : défaut, menu des tours par édition
-  await page.click('#accueil .acc-tuile[data-k="cdm"]');
+  await viaMenu('cdm');
   await page.waitForSelector('#comp-view:not([hidden]) .match-tile', { timeout: 20000 });
-  ok(new URL(page.url()).searchParams.get('c') === 'cdm', 'tuile CdM -> ?c=cdm&tour=' + new URL(page.url()).searchParams.get('tour'));
+  ok(new URL(page.url()).searchParams.get('c') === 'cdm', 'menu CdM -> ?c=cdm&tour=' + new URL(page.url()).searchParams.get('tour'));
   ok(await page.$$eval('#tabs-bar .tab-btn', b => b.length) === 3, '3 onglets de sélections');
   ok(/^2026-/.test(new URL(page.url()).searchParams.get('tour') || ''), 'id de tour avec édition');
   ok(await tours() === 'Finale', 'défaut : tour le plus récent joué = ' + await tours());

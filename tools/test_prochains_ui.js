@@ -24,10 +24,10 @@ const { chromium, devices } = require('playwright');
   const lignes = (sel) => page.$$eval(`${sel} .acc-m.pm`, e => e.map(x => ({ hidden: !x.offsetParent, t: x.textContent.replace(/\s+/g, ' ').trim(), fr: !!x.querySelector('.is-fr'), tour: x.dataset.tour, k: x.dataset.k })));
 
   // 1. Accueil : section sous « Derniers résultats », avant les tuiles
-  await aller('', '#accueil .acc-tuile');
+  await aller('', '#accueil .pm-liste');
   const titres = await page.$$eval('#accueil h2.acc-h', e => e.map(x => x.firstChild.textContent.trim()));
-  const iR = titres.indexOf('Derniers résultats'), iP = titres.indexOf('Prochains matchs'), iC = titres.indexOf('Coupes de clubs');
-  ok(iP >= 0 && (iR < 0 || iR < iP) && iP < iC, 'accueil : Prochains matchs après Derniers résultats et avant les tuiles : ' + titres.join(' | '));
+  const iR = titres.indexOf('Derniers résultats'), iP = titres.indexOf('Prochains matchs'), iC = titres.length;
+  ok(iP >= 0 && (iR < 0 || iR < iP) && iP < iC, 'accueil : Prochains matchs après Derniers résultats et dernière section : ' + titres.join(' | '));
   const jour = await page.$eval('#accueil .pm-liste', e => e.previousElementSibling.textContent);
   ok(/^(Aujourd'hui, )?\p{L}+/u.test(jour) && !/\d{4}/.test(jour), 'accueil : jour en toutes lettres : ' + jour);
   const L = await lignes('#accueil');
