@@ -344,7 +344,7 @@ Chaque match : `home_team`/`away_team` (`flag`, `is_french`, `formation`…), `e
 `players` (dictionnaire par id : stats UEFA brutes sélectionnées, `rating`, `factors`, minutes, entrée/sortie,
 nationalité, photo). La compo et le déroulé référencent les joueurs par `id` ; la fiche joueur lit `players[id]`.
 
-## Championnats nationaux (big 5, en cours : étapes 1-5 livrées)
+## Championnats nationaux (big 5 + Ligue 2 + 7 secondaires : étapes 1-5 livrées)
 
 Étude, mesures, décisions du propriétaire et plan par étapes : `docs/etude_championnats.md` (§ 10-11). Données dans le dépôt SÉPARÉ
 **Camelbaggy/donnees-football** (`championnats/<ligue>/<saison>/<AAAA-MM-JJ>.json` + `index.json` + `journees.json`, servi par GitHub Pages,
@@ -453,7 +453,7 @@ et le classement actuel, sans focus ni résultats. Une journée en partie jouée
   placeholders de tirage (`isPlaceHolder`) marqués `a_determiner`. Les affiches à élimination directe n'existent qu'après le tirage.
 - **Championnats** : `championnats/<ligue>/<saison>/programme.json` (donnees-football) `{ligue, source: "ESPN", maj, matchs}` écrit par
   `run_ligues.journees_saison` (une fois par jour, même lecture du calendrier ESPN `ligues.saison`, qui garde désormais `equipes` et
-  `stade`) via `ligues.programme` ; journée = `journees.json` (Wikipédia), jamais devinée : sans journée, regroupement par semaine
+  `stade`) via `ligues.programme` ; journée = `journees.json` (Wikipédia, ou déduite du calendrier pour por / ned / bel / gre, `journees_ordre.py`) : sans journée, regroupement par semaine
   (« Semaine du … », id `sem-<lundi>`).
 - Match = `{id, debut (UTC), date, tour | journee, stage, home_team, away_team (schéma des équipes des matchs), statut, stade, ville}`.
   Exclus : terminés, annulés, coup d'envoi passé de plus de 3 h (fichier) / 150 min (page, `progVisibles`) ; reportés gardés.
