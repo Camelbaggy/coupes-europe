@@ -18,6 +18,12 @@ const { chromium, devices } = require('playwright');
   page.on('console', m => { if (m.type() === 'error') erreurs.push(m.text()); });
   page.on('pageerror', e => erreurs.push(String(e)));
   let echecs = 0;
+  const viaMenu = async (k) => {   // ouvre le menu latéral, déroule la section si besoin, choisit la compétition
+    await page.click('#menu-btn'); await page.waitForSelector('#menu-modal.open');
+    const sel = `#menu-corps .menu-ligne[data-k="${k}"]`;
+    if (!(await page.isVisible(sel))) { const id = await page.$eval(sel, e => e.closest('.menu-sec-c').id.replace('menu-c-', '')); await page.click(`#menu-h-${id}`); }
+    await page.click(sel);
+  };
   const ok = (cond, msg) => { console.log((cond ? '[OK] ' : '[ÉCHEC] ') + msg); if (!cond) echecs++; };
   const debord = async () => page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
   const q = `donnees=${encodeURIComponent(donnees)}`;
@@ -25,9 +31,9 @@ const { chromium, devices } = require('playwright');
 
   // 1. Accueil
   await page.goto(`${base}/?${q}`);
-  await page.waitForSelector('#accueil .acc-tuile', { timeout: 20000 });
+  await page.waitForSelector('#accueil .acc-bloc', { timeout: 20000 });
   ok(await page.isVisible('#accueil') && !(await page.isVisible('#comp-view')), 'accueil affiché sans paramètre');
-  ok((await page.$$('#accueil .acc-tuile')).length === 21, '21 tuiles (5 coupes de clubs + 3 sélections + 6 championnats majeurs + 7 autres)');
+  ok((await page.$$('#accueil .acc-tuile, #accueil .acc-grille')).length === 0, 'accueil sans tuiles de compétitions (menu latéral)');
   const blocs = await page.$$eval('#accueil .acc-bloc-h b', els => els.map(e => e.textContent));
   ok(blocs.length > 0, `derniers résultats : ${blocs.join(', ')}`);
   ok(await debord() <= 0, 'accueil : pas de débordement horizontal');
@@ -41,9 +47,8 @@ const { chromium, devices } = require('playwright');
   await page.keyboard.press('Escape');
   await page.waitForTimeout(400);
 
-  // 3. Entrer dans un championnat par sa tuile
-  const tuiles = await page.$$('#accueil .acc-tuile');
-  await tuiles[8].click();   // Ligue 1 (après 5 coupes de clubs et 3 sélections)
+  // 3. Entrer dans un championnat par le menu latéral
+  await viaMenu('fl1');   // Ligue 1 par le menu latéral
   await page.waitForSelector('#comp-view:not([hidden]) .match-tile', { timeout: 20000 });
   ok(new URL(page.url()).searchParams.get('c') === 'fl1', 'URL ?c=fl1 ; tour=' + new URL(page.url()).searchParams.get('tour'));
   ok((await page.$$('#tabs-bar .tab-btn')).length === 6, '6 onglets de championnat (big 5 + Ligue 2)');
