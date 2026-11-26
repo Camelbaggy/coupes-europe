@@ -47,6 +47,7 @@ LIBELLES = {**COUPES, "euro": "Euro", "ldn": "Ligue des nations", "cdm": "Coupe 
 ATTENTE_BUTEUR_S = 75          # délai max pour attendre l'événement GOAL avant d'envoyer le but sans buteur
 AVANCE_VEILLE_MIN = 20         # le suivi démarre 20 min avant le premier coup d'envoi
 APRES_COUP_ENVOI_MIN = 200     # au-delà, un match encore « en cours » n'est plus suivi (prolongations + tirs au but compris)
+RIEN_A_SUIVRE = 10            # code de sortie de --veille quand aucun suivi n'est à lancer (1 = plantage Python, à signaler)
 FINAUX = {"FINISHED", "POSTPONED", "CANCELLED", "ABANDONED"}
 
 
@@ -613,7 +614,7 @@ def main() -> None:
         matchs = matchs_du_jour(now.date().isoformat(), now)
         ok = bool(matchs) and a_suivre(matchs, now)
         print(f"[DIRECT] veille {now:%H:%M} UTC : {'suivi à lancer' if ok else 'rien à suivre'}")
-        sys.exit(0 if ok else 1)
+        sys.exit(0 if ok else RIEN_A_SUIVRE)   # tout autre code (plantage, import) = erreur pour la veille
     elif a.boucle:
         boucle(a.duree_min, a.pas)
     else:
