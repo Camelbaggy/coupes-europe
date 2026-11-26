@@ -19,7 +19,8 @@ Corée - Italie, Sénégal - Turquie). Le score FIFA est le score APRÈS prolong
 quand il n'y en a pas, d'où le test sur `ResultType`).
 
 Format (donnees-football, `internationales/historique/`) :
-  <comp>.json   {comp, nom, source, regle, maj, editions: [ED]} ; ED = {edition, libelle, hote?: [code], vainqueur?, finaliste?,
+  <comp>.json   {comp, nom, source, regle, maj, editions: [ED]} ; ED = {edition, libelle, hote?: [code], hote_source?, hote_note?, corrections?: [id], corrections_source?, corrections_ignorees?: [id],
+                vainqueur?, finaliste?,
                 troisieme?, regle?: "poule_finale", poule_finale?: [[code, j, v, n, d, bp, bc, pts]], ecarts?: [texte],
                 pourquoi?, avertissement?, en_cours?: true, equipes: {code: [nom, drapeau]}, tours: [libellé], groupes: [libellé], matchs: [M]}
                 `vainqueur` / `finaliste` / `troisieme` = code d'équipe, ou "?" (non déterminé). Absents : édition sans finale
@@ -40,9 +41,28 @@ Format (donnees-football, `internationales/historique/`) :
                 adversaire, pour, contre, tab pour, tab contre, dp, statut]]}} ; B = {ed, j, v, n, d, bp, bc, ntv, ntd} (n = nuls,
                 dont ntv gagnés et ntd perdus aux tirs au but) ; `finale` = phase de groupes + élimination directe, `elim` =
                 éliminatoires / barrages ; `matchs` : phase finale seulement.
+                `lignee` (sélections, si reliées) : {predecesseurs, successeurs, issue_de, issues, note} (voir plus haut).
   index.json    {maj, competitions: {comp: {nom, court, famille, editions, vainqueurs: [{edition, code}], en_cours?}},
                 equipes: {code: {nom, drapeau, titres: {comp: n}, club?}}}
   etat.json     {regle, maj, comps: {comp: {editions, en_cours: [édition], restantes: [édition]}}}
+
+Décisions du propriétaire du 26/11/2026 (REGLE 2) :
+  - LIGNÉES (`lignees_selections.json`, table MANUELLE avec sources) : RFA et Allemagne, URSS / CEI / Russie, Tchécoslovaquie / Tchéquie /
+    Slovaquie, Yougoslavie / Serbie-et-Monténégro / Serbie… restent des équipes DISTINCTES (aucun bilan ni titre fusionné) mais RELIÉES par
+    le champ `lignee` {predecesseurs, successeurs, issue_de, issues, note} des `equipes/<code>.json` et de `index.json` ; un lien n'est écrit
+    que si les deux codes figurent dans les données ; dans le doute, pas de lien (RDA : aucun).
+  - CORRECTIONS SOURCÉES (`corrections_internationales.json`, MANUEL) : `{"<comp>/<édition>/<id match>": {score, tab, dp, source, verifie_le,
+    fifa: valeurs d'origine}}` ; appliquée SEULEMENT si le match de la source a exactement les valeurs notées dans `fifa` (sinon la source a
+    changé : correction ignorée + avertissement, `corrections_ignorees`) ; l'édition porte `corrections: [ids]` et `corrections_source`
+    {id: {source, verifie_le, fifa}} ; la FIFA ayant tort, son vainqueur de match est mis de côté pour ce match. Cas : Coupe du monde des
+    clubs 2019 (ESPN), vainqueur Liverpool.
+  - HÔTES de l'Euro et de la Ligue des nations : pays des stades des matchs de la phase finale (UEFA, `stadium.countryCode` ; Ligue des
+    nations : le tour final à 4), convertis en pays de l'ÉPOQUE par la table minimale `HOTES_EPOQUE` (Euro 1976 : stades de Belgrade et
+    Zagreb -> YUG ; Euro 1988 -> FRG) ; plusieurs pays = liste ; `hote_source` / `hote_note` dans l'édition.
+  - DRAPEAUX D'ÉPOQUE des pays disparus : `drapeau` = `h-<code minuscule>` (URS, FRG, GDR, TCH, YUG, SCG, CIS, ZAI), table
+    `DRAPEAUX_HISTORIQUES` (fichiers Wikimedia Commons du domaine public, même modèle que le dépôt cyclisme) recopiée dans `index.html`
+    (`DRAPEAUX_HIST`, parité contrôlée par `--test`) ; sans fichier sûr (INH, Indes néerlandaises) : drapeau vide + `a_verifier`.
+  - Nom d'équipe UEFA : l'astérisque final (« Russie* » : renvoi de note de l'UEFA) est retiré.
 
 Règles de calcul (versionnées : REGLE) :
   - Édition = vainqueur de la FINALE : match unique = score, puis tirs au but ; match rejoué = le rejoué décide ; égalité sans tirs
@@ -84,11 +104,45 @@ import uefa
 from netutil import FLAG_CODES, fetch_json, fr
 from run_ligues import _lire, ecrire_si_change
 
-REGLE = 1
+REGLE = 2                           # 2 : hôtes UEFA, drapeaux d'époque, nom sans astérisque, corrections sourcées, lignées
+RACINE = os.path.dirname(os.path.abspath(__file__))
 DOSSIER = os.path.join("internationales", "historique")
 PAUSE_S = 0.3                       # politesse entre deux requêtes (FIFA et UEFA)
 PAUSE_ENTRE_ED = 0.0
 FLAGS_COMPLEMENT = {"KUW": "kw", "PRK": "kp", "PNG": "pg"}   # pays existants absents de netutil.FLAG_CODES (codes FIFA ; drapeaux flagcdn)
+
+# Drapeaux D'ÉPOQUE des pays disparus (décision du 26/11/2026, même modèle que le dépôt courses-cyclistes : `pays_historiques.json`).
+# `drapeau` d'une équipe = « h-<code minuscule> » ; la page (`index.html`, DRAPEAUX_HIST) charge le fichier Wikimedia Commons par
+# `Special:FilePath/<fichier>?width=40`. Fichiers du domaine public vérifiés par l'API Commons (extmetadata) ; le contrôle de parité
+# Python / JS est dans `--test`. Sans fichier sûr : « fichier » None -> pas de drapeau (jamais celui d'un pays successeur ni d'un voisin).
+DRAPEAUX_HISTORIQUES: Dict[str, Dict[str, Any]] = {
+    "URS": {"nom": "Union soviétique", "fichier": "Flag of the Soviet Union.svg", "origine": "cyclisme"},
+    "FRG": {"nom": "République fédérale d'Allemagne (RFA)", "fichier": "Flag of Germany.svg", "origine": "cyclisme",
+            "note": "même dessin que l'Allemagne actuelle (Commons n'a pas de fichier distinct pour la RFA)"},
+    "GDR": {"nom": "République démocratique allemande (RDA)", "fichier": "Flag of East Germany.svg", "origine": "cyclisme"},
+    "TCH": {"nom": "Tchécoslovaquie", "fichier": "Flag of the Czech Republic.svg", "origine": "cyclisme",
+            "note": "« Flag of Czechoslovakia.svg » est une redirection Commons vers ce fichier (même dessin)"},
+    "YUG": {"nom": "Yougoslavie", "fichier": "Flag of Yugoslavia (1946-1992).svg", "origine": "cyclisme",
+            "note": "drapeau de la RSFY, par simplification pour les autres périodes"},
+    "SCG": {"nom": "Serbie-et-Monténégro", "fichier": "Flag of Serbia and Montenegro (1992–2006).svg", "origine": "cyclisme"},
+    "CIS": {"nom": "Communauté des États indépendants (équipe unifiée de 1992)", "fichier": "Flag of the CIS.svg", "origine": "cyclisme",
+            "note": "code UEFA « CIS » (le dépôt cyclisme dit « EUN », code CIO) ; même fichier"},
+    "ZAI": {"nom": "Zaïre", "fichier": "Flag of Zaire (1971–1997).svg", "origine": "cyclisme"},
+    "INH": {"nom": "Indes orientales néerlandaises", "fichier": None, "a_verifier": True,
+            "note": "pas de drapeau propre à l'équipe de 1938 : l'administration coloniale portait le drapeau néerlandais, qui prêterait à confusion "
+                    "avec les Pays-Bas ; aucun fichier retenu"},
+}
+# Date de vérification de la licence (domaine public) par l'API Commons : voir `docs/etude_internationales.md` § 10.
+
+# Pays des stades de l'UEFA = pays ACTUELS ; les pays DISPARUS de l'époque sont rétablis par cette table MINIMALE
+# {(compétition, édition): {code pays du stade (UEFA, actuel): code d'équipe de l'époque}}. Source : UEFA (les stades d'Euro 1976 sont
+# Belgrade et Zagreb, en Yougoslavie ; ceux d'Euro 1988 en Allemagne de l'Ouest). Toute autre édition : le pays du stade EST celui de l'époque
+# (vérifié sur les 17 Euro et les 4 Final Four de Ligue des nations le 26/11/2026).
+HOTES_EPOQUE: Dict[Tuple[str, int], Dict[str, str]] = {
+    ("euro", 1976): {"CRO": "YUG", "SRB": "YUG"},
+    ("euro", 1988): {"GER": "FRG"},
+}
+TOURS_FINAL_LDN = ("Demi-finales", "Match pour la 3e place", "Finale")     # tour final à 4 de la Ligue des nations
 
 # Source et identifiants par compétition (noms, familles : internationales.COMPETITIONS)
 SOURCES: Dict[str, Dict[str, Any]] = {
@@ -146,9 +200,18 @@ def _sans_accents(s: str) -> str:
 
 
 def drapeau(pays: str) -> str:
-    """Code flagcdn d'un pays ACTUEL ; vide pour un pays disparu ou inconnu (jamais le drapeau d'un successeur)."""
+    """Code flagcdn d'un pays ACTUEL ; « h-<code> » pour un pays disparu dont le drapeau d'époque est retenu (DRAPEAUX_HISTORIQUES) ;
+    vide sinon (jamais le drapeau d'un successeur)."""
     p = (pays or "").upper()
+    h = DRAPEAUX_HISTORIQUES.get(p)
+    if h:
+        return "h-" + p.lower() if h.get("fichier") else ""
     return FLAG_CODES.get(p) or FLAGS_COMPLEMENT.get(p) or ""
+
+
+def nom_equipe(nom: str) -> str:
+    """Nom d'équipe sans l'astérisque final de l'UEFA (« Russie* » : renvoi de note, pas une partie du nom)."""
+    return re.sub(r"\s*\*+$", "", nom or "").strip()
 
 
 def maintenant_iso() -> str:
@@ -191,7 +254,7 @@ def equipe_fifa(t: Optional[Dict[str, Any]], club: bool) -> Optional[Dict[str, A
     if not t or not t.get("IdTeam"):
         return None
     pays = (t.get("IdCountry") or "").upper()
-    nom = I._fr_liste(t.get("TeamName"))
+    nom = nom_equipe(I._fr_liste(t.get("TeamName")))
     code = f"fifa-{t['IdTeam']}" if club or not pays else pays
     return {"code": code, "nom": nom, "pays": pays, "drapeau": drapeau(pays), "fifa_id": str(t["IdTeam"]), "club": club}
 
@@ -244,7 +307,7 @@ def normaliser_uefa(comp: str, m: Dict[str, Any]) -> Dict[str, Any]:
             return None
         info = uefa.team_info(t)
         pays = info["country"].upper()
-        return {"code": pays, "nom": info["name"], "pays": pays, "drapeau": drapeau(pays), "club": False}
+        return {"code": pays, "nom": nom_equipe(info["name"]), "pays": pays, "drapeau": drapeau(pays), "club": False}
 
     statut = _statut_uefa(m)
     sc = m.get("score") or {}
@@ -256,12 +319,114 @@ def normaliser_uefa(comp: str, m: Dict[str, Any]) -> Dict[str, Any]:
         (_entier(reg["home"]), _entier(reg["away"])) != (sd, se) else None
     w = ((m.get("winner") or {}).get("match") or {}).get("team") or {}
     kick = m.get("kickOffTime") or {}
+    stade_pays = ((m.get("stadium") or {}).get("countryCode") or "").upper() or None
     jour = (kick.get("dateTime") or kick.get("date") or "")[:10]
     return {"id": f"uefa:{m.get('id')}", "date": jour, "phase": phase, "tour": tour, "groupe": groupe,
             "role": "F" if tt == "FINAL" else ("T" if tt == "THIRD_PLAY_OFF" else None),
-            "dom": eq(h), "ext": eq(a), "sd": sd if jouee else None, "se": se if jouee else None, "tab": tab, "statut": statut,
+            "stade_pays": stade_pays, "dom": eq(h), "ext": eq(a), "sd": sd if jouee else None, "se": se if jouee else None, "tab": tab, "statut": statut,
             "dp": dp, "rejoue": (m.get("type") == "REPLAY" or tt == "REPLAY"), "w_code": (w.get("countryCode") or "").upper() or None,
             "w_id": None}
+
+
+# ------------------------------------------------------------------------------
+# Hôtes (UEFA), corrections sourcées, lignées
+# ------------------------------------------------------------------------------
+def hotes_uefa(comp: str, edition: int, matchs: List[Dict[str, Any]]) -> Dict[str, Any]:
+    """Hôtes d'une édition UEFA = pays des stades des matchs de la PHASE FINALE (Euro : groupes + élimination directe ; Ligue des nations :
+    le tour final à 4), dans l'ordre des matchs, sans doublon, convertis en pays de l'époque par HOTES_EPOQUE. Aucun stade lisible : rien.
+    Retourne {"hotes": [code], "source": texte, "note": texte | absent}."""
+    pays: List[str] = []
+    for m in sorted(matchs, key=lambda x: (x["date"], x["id"])):
+        if m["statut"] in ("A", "X") or not m.get("stade_pays"):
+            continue
+        if comp == "ldn":
+            if m["tour"] not in TOURS_FINAL_LDN:
+                continue
+        elif m["phase"] not in ("g", "f"):
+            continue
+        if m["stade_pays"] not in pays:
+            pays.append(m["stade_pays"])
+    if not pays:
+        return {"hotes": []}
+    table = HOTES_EPOQUE.get((comp, edition)) or {}
+    hotes: List[str] = []
+    for p in pays:
+        c = table.get(p, p)
+        if c not in hotes:
+            hotes.append(c)
+    out: Dict[str, Any] = {"hotes": hotes, "source": "UEFA (pays des stades de la phase finale)" if comp == "euro"
+                           else "UEFA (pays des stades du tour final à 4)"}
+    if table:
+        out["note"] = "pays des stades " + ", ".join(pays) + " = " + ", ".join(hotes) + " à l'époque (table HOTES_EPOQUE, UEFA)"
+    return out
+
+
+def charger_json_racine(nom: str) -> Dict[str, Any]:
+    try:
+        with open(os.path.join(RACINE, nom), encoding="utf-8") as f:
+            d = json.load(f)
+        return d if isinstance(d, dict) else {}
+    except (OSError, json.JSONDecodeError):
+        return {}
+
+
+def corrections_edition(comp: str, edition: int, corrections: Optional[Dict[str, Any]]) -> Dict[str, Dict[str, Any]]:
+    """{id de match: entrée} des corrections de `corrections_internationales.json` pour cette édition."""
+    pref = f"{comp}/{edition}/"
+    return {k[len(pref):]: v for k, v in (corrections or {}).items() if not k.startswith("_") and k.startswith(pref) and isinstance(v, dict)}
+
+
+def _valeurs_match(m: Dict[str, Any]) -> Dict[str, Any]:
+    return {"score": [m["sd"], m["se"]], "tab": list(m["tab"]) if m.get("tab") else None, "dp": m.get("dp")}
+
+
+def appliquer_corrections(comp: str, edition: int, matchs: List[Dict[str, Any]], corrections: Optional[Dict[str, Any]],
+                          journal: Optional[List[str]] = None) -> Dict[str, Any]:
+    """Applique les corrections sourcées à la liste de matchs normalisés (modifiée sur place). Une correction ne s'applique QUE si le match de
+    la source a EXACTEMENT les valeurs d'origine notées dans `fifa` (et est terminé) : sinon la source a changé, la correction est ignorée et
+    un avertissement est journalisé. Retourne {"appliquees": {id: {source, verifie_le, fifa}}, "ignorees": [id]}."""
+    out: Dict[str, Any] = {"appliquees": {}, "ignorees": []}
+    par_id = {m["id"]: m for m in matchs}
+    for mid, c in corrections_edition(comp, edition, corrections).items():
+        m = par_id.get(mid)
+        origine = c.get("fifa") or {}
+        if m is None or m["statut"] != "T" or _valeurs_match(m) != {"score": origine.get("score"), "tab": origine.get("tab"), "dp": origine.get("dp")}:
+            out["ignorees"].append(mid)
+            if journal is not None:
+                journal.append(f"[WARN] correction {comp}/{edition}/{mid} ignorée : la source ne donne plus les valeurs d'origine notées "
+                               f"({_valeurs_match(m) if m else 'match absent'} au lieu de {origine})")
+            continue
+        m["sd"], m["se"] = c["score"]
+        m["tab"] = tuple(c["tab"]) if c.get("tab") else None
+        m["dp"] = c.get("dp")
+        m["w_code"] = m["w_id"] = None            # le vainqueur donné par la source appartient aux données corrigées
+        out["appliquees"][mid] = {"source": c.get("source"), "verifie_le": c.get("verifie_le"), "fifa": origine}
+    return out
+
+
+def calculer_lignee(code: str, codes: set, liens: List[Dict[str, Any]]) -> Dict[str, Any]:
+    """`lignee` d'une sélection : {predecesseurs, successeurs, issue_de, issues, note} d'après `lignees_selections.json` ; un lien n'est gardé que
+    si LES DEUX codes figurent dans les données ; {} s'il n'y en a aucun. Aucun bilan n'est fusionné."""
+    res: Dict[str, List[str]] = {"predecesseurs": [], "successeurs": [], "issue_de": [], "issues": []}
+    notes: List[str] = []
+    for l in liens:
+        a, b, t = l.get("de"), l.get("vers"), l.get("type")
+        if a not in codes or b not in codes or code not in (a, b):
+            continue
+        if t == "heritage":
+            cle, autre = ("successeurs", b) if code == a else ("predecesseurs", a)
+        elif t == "issue":
+            cle, autre = ("issues", b) if code == a else ("issue_de", a)
+        else:
+            continue
+        if autre not in res[cle]:
+            res[cle].append(autre)
+        if l.get("note") and l["note"] not in notes:
+            notes.append(l["note"])
+    out: Dict[str, Any] = {k: sorted(v) for k, v in res.items() if v}
+    if out and notes:
+        out["note"] = " ; ".join(notes)
+    return out
 
 
 # ------------------------------------------------------------------------------
@@ -371,8 +536,11 @@ def resoudre_edition(comp: str, edition: int, matchs: List[Dict[str, Any]], en_c
     return out
 
 
-def construire_edition(comp: str, edition: int, libelle: str, matchs_norm: List[Dict[str, Any]], hotes: List[str]) -> Dict[str, Any]:
-    """Édition COMPACTE (format du module) à partir des matchs normalisés."""
+def construire_edition(comp: str, edition: int, libelle: str, matchs_norm: List[Dict[str, Any]], hotes: Any,
+                       corrections: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    """Édition COMPACTE (format du module) à partir des matchs normalisés. `hotes` = liste de codes (FIFA) ou résultat de `hotes_uefa` ;
+    `corrections` = résultat de `appliquer_corrections` (déjà appliquées aux matchs)."""
+    hote_info = hotes if isinstance(hotes, dict) else {"hotes": list(hotes or [])}
     matchs_norm = sorted(matchs_norm, key=lambda x: (x["date"], x["phase"], x["id"]))
     equipes: Dict[str, List[str]] = {}
     tours: List[str] = []
@@ -392,9 +560,18 @@ def construire_edition(comp: str, edition: int, libelle: str, matchs_norm: List[
                        1 if m["rejoue"] else None])
     en_cours = any(m["statut"] in ("V", "C", "P") for m in matchs_norm)   # « X » / « F » : jamais « en cours »
     ed: Dict[str, Any] = {"edition": edition, "libelle": libelle}
-    h = [c for c in hotes if c in equipes]
+    h = list(hote_info["hotes"])            # un pays hôte peut ne pas participer (Euro 2020 : Azerbaïdjan, Roumanie) : gardé quand même
     if h:
         ed["hote"] = h
+        if hote_info.get("source"):
+            ed["hote_source"] = hote_info["source"]
+        if hote_info.get("note"):
+            ed["hote_note"] = hote_info["note"]
+    if corrections and corrections.get("appliquees"):
+        ed["corrections"] = sorted(corrections["appliquees"])
+        ed["corrections_source"] = {k: corrections["appliquees"][k] for k in ed["corrections"]}
+    if corrections and corrections.get("ignorees"):
+        ed["corrections_ignorees"] = sorted(corrections["ignorees"])
     ed.update(resoudre_edition(comp, edition, matchs_norm, en_cours))
     if en_cours:
         ed["en_cours"] = True
@@ -496,7 +673,8 @@ def collecter_uefa(comp: str, edition: int, cache: Optional[str]) -> Optional[Di
         brut = {"matchs": ms}
         if ms:
             _cache_ecrire(chemin, brut)
-    return {"matchs": [normaliser_uefa(comp, m) for m in brut["matchs"]], "hotes": []}
+    norm = [normaliser_uefa(comp, m) for m in brut["matchs"]]
+    return {"matchs": norm, "hotes": hotes_uefa(comp, edition, norm)}
 
 
 def annees_uefa(comp: str, aujourdhui: Optional[date] = None) -> List[int]:
@@ -518,6 +696,7 @@ def collecter_comp(comp: str, donnees: str, cache: Optional[str], budget_s: floa
     cfg = SOURCES[comp]
     doc = lire_comp(donnees, comp)
     existantes = {e["edition"]: e for e in doc.get("editions", [])}
+    corrections = charger_json_racine("corrections_internationales.json")
     restantes: List[int] = []
     traites = 0
     if cfg["source"] == "FIFA":
@@ -530,8 +709,10 @@ def collecter_comp(comp: str, donnees: str, cache: Optional[str], budget_s: floa
         a_voir = [(an, an) for an in annees_uefa(comp)]
     for edition, ref in a_voir:
         ancienne = existantes.get(edition)
-        if ancienne and not ancienne.get("en_cours") and not relire:
-            continue
+        attendues = set(corrections_edition(comp, edition, corrections))
+        deja = set(ancienne.get("corrections", [])) | set(ancienne.get("corrections_ignorees", [])) if ancienne else set()
+        if ancienne and not ancienne.get("en_cours") and not relire and attendues == deja:
+            continue                                     # édition finie, corrections à jour (une nouvelle correction rouvre l'édition)
         if time.time() - debut > budget_s:
             restantes.append(edition)
             continue
@@ -542,7 +723,8 @@ def collecter_comp(comp: str, donnees: str, cache: Optional[str], budget_s: floa
             continue
         if not res["matchs"]:
             continue                                     # édition pas encore publiée (Euro 2028…)
-        ed = construire_edition(comp, edition, I.libelle_edition(comp, edition), res["matchs"], res["hotes"])
+        appl = appliquer_corrections(comp, edition, res["matchs"], corrections, journal)
+        ed = construire_edition(comp, edition, I.libelle_edition(comp, edition), res["matchs"], res["hotes"], appl)
         if ancienne and len(ancienne["matchs"]) > len(ed["matchs"]):
             journal.append(f"[WARN] {comp} {edition} : liste réduite ({len(ed['matchs'])} < {len(ancienne['matchs'])} matchs), conservée")
             continue
@@ -688,10 +870,15 @@ def construire_derives(donnees: str, journal: Optional[List[str]] = None) -> Dic
         if comp in docs:
             bilans_comp(comp, docs[comp]["editions"], equipes)
     finaliser_equipes(equipes, maj)
+    liens = charger_json_racine("lignees_selections.json").get("liens") or []
+    for code, f in equipes.items():
+        lg = calculer_lignee(code, set(equipes), liens) if not f.get("club") else {}
+        if lg:
+            f["lignee"] = lg
     dossier_eq = os.path.join(donnees, DOSSIER, "equipes")
     ecrits = 0
     for code, f in equipes.items():
-        f = {k: v for k, v in f.items() if k in ("code", "nom", "drapeau", "club", "maj", "bilans", "palmares", "tours", "adv", "matchs")}
+        f = {k: v for k, v in f.items() if k in ("code", "nom", "drapeau", "club", "lignee", "maj", "bilans", "palmares", "tours", "adv", "matchs")}
         ecrits += 1 if ecrire_si_change(os.path.join(dossier_eq, f"{code}.json"), f) else 0
     if os.path.isdir(dossier_eq):
         for nom in os.listdir(dossier_eq):
@@ -710,9 +897,11 @@ def construire_derives(donnees: str, journal: Optional[List[str]] = None) -> Dic
         x = {"nom": f["nom"], "drapeau": f["drapeau"], "titres": t}
         if f.get("club"):
             x["club"] = True
+        if f.get("lignee"):
+            x["lignee"] = f["lignee"]
         idx["equipes"][code] = x
     ecrire_si_change(os.path.join(donnees, DOSSIER, "index.json"), idx)
-    return {"equipes": len(equipes), "equipes_ecrites": ecrits}
+    return {"equipes": len(equipes), "equipes_ecrites": ecrits, "lignees": sum(1 for f in equipes.values() if f.get("lignee"))}
 
 
 # ------------------------------------------------------------------------------
@@ -777,7 +966,8 @@ def _fixture(nom: str) -> Any:
         return json.load(f)
 
 
-def _edition_fixture(comp: str, nom: str, edition: int, hotes_ids: Optional[List[str]] = None) -> Dict[str, Any]:
+def _edition_fixture(comp: str, nom: str, edition: int, hotes_ids: Optional[List[str]] = None, corriger: bool = False,
+                     journal: Optional[List[str]] = None) -> Dict[str, Any]:
     brut = _fixture(nom)
     if SOURCES[comp]["source"] == "FIFA":
         norm = [normaliser_fifa(comp, m) for m in brut["matchs"]]
@@ -790,8 +980,16 @@ def _edition_fixture(comp: str, nom: str, edition: int, hotes_ids: Optional[List
                     codes[x["fifa_id"]] = x["code"]
         hotes = [codes[h] for h in (brut.get("hotes") or []) if h in codes]
     else:
-        norm, hotes = [normaliser_uefa(comp, m) for m in brut["matchs"]], []
-    return construire_edition(comp, edition, I.libelle_edition(comp, edition), norm, hotes)
+        norm = [normaliser_uefa(comp, m) for m in brut["matchs"]]
+        hotes = hotes_uefa(comp, edition, norm)
+    appl = appliquer_corrections(comp, edition, norm, charger_json_racine("corrections_internationales.json"), journal) if corriger else None
+    return construire_edition(comp, edition, I.libelle_edition(comp, edition), norm, hotes, appl)
+
+
+def _table_js(html: str) -> Dict[str, Dict[str, str]]:
+    """DRAPEAUX_HIST d'`index.html` -> {code: {nom, fichier}} (objet JSON lu tel quel)."""
+    m = re.search(r"const DRAPEAUX_HIST = (\{.*?\n\s*\});", html, re.S)
+    return json.loads(m.group(1)) if m else {}
 
 
 def _tests() -> None:
@@ -803,7 +1001,17 @@ def _tests() -> None:
         ok += 1
 
     # --- outils
-    verif(drapeau("FRA") == "fr" and drapeau("URS") == "" and drapeau("FRG") == "" and drapeau("KUW") == "kw", "drapeaux")
+    verif(drapeau("FRA") == "fr" and drapeau("KUW") == "kw" and drapeau("") == "", "drapeaux actuels")
+    verif(drapeau("URS") == "h-urs" and drapeau("FRG") == "h-frg" and drapeau("CIS") == "h-cis" and drapeau("TCH") == "h-tch"
+          and drapeau("INH") == "", "drapeaux d'époque : h-<code>, vide sans fichier sûr (INH)")
+    verif(drapeau("GER") == "de" and drapeau("RUS") == "ru", "l'Allemagne et la Russie gardent leur drapeau actuel")
+    verif(nom_equipe("Russie*") == "Russie" and nom_equipe("Russie") == "Russie" and nom_equipe("A * B*") == "A * B", "astérisque final retiré")
+    # parité Python / JS : la table de la page = la table Python (codes avec fichier)
+    with open(os.path.join(RACINE, "index.html"), encoding="utf-8") as f:
+        js = _table_js(f.read())
+    py = {c.lower(): {"nom": v["nom"], "fichier": v["fichier"]} for c, v in DRAPEAUX_HISTORIQUES.items() if v.get("fichier")}
+    verif(js == py and len(py) == 8, "DRAPEAUX_HIST (index.html) = DRAPEAUX_HISTORIQUES (Python)")
+    verif(all(not v.get("fichier") and v.get("a_verifier") for v in DRAPEAUX_HISTORIQUES.values() if not v.get("fichier")), "sans fichier = a_verifier")
     verif(groupe_libelle("Group  3 ") == "Groupe 3" and groupe_libelle("Group D3") == "Groupe D3" and groupe_libelle("Groupe\xa01") == "Groupe 1",
           "libellé de groupe")
     verif(tour_fifa("cdm", "Matches de groupes") == "Phase de groupes" and tour_fifa("cdm", "Bronze final") == "Match pour la 3e place"
@@ -828,7 +1036,7 @@ def _tests() -> None:
     # --- 1930 : pas de 3e place, pays disparus sans drapeau
     e30 = _edition_fixture("cdm", "cdm_1930.json", 1930)
     verif(e30["vainqueur"] == "URU" and e30["finaliste"] == "ARG" and "troisieme" not in e30 and e30["hote"] == ["URU"], "CdM 1930")
-    verif(e30["equipes"]["YUG"] == ["Yougoslavie", ""], "Yougoslavie sans drapeau")
+    verif(e30["equipes"]["YUG"] == ["Yougoslavie", "h-yug"], "Yougoslavie : drapeau d'époque")
     # --- 1950 : poule finale, Uruguay (5 points) devant le Brésil (4)
     e50 = _edition_fixture("cdm", "cdm_1950.json", 1950)
     verif(e50["regle"] == "poule_finale" and e50["vainqueur"] == "URU" and e50["finaliste"] == "BRA" and "troisieme" not in e50, "CdM 1950")
@@ -848,10 +1056,23 @@ def _tests() -> None:
     e68 = _edition_fixture("euro", "euro_1968.json", 1968)
     verif(e68["vainqueur"] == "ITA" and e68["finaliste"] == "YUG" and e68["troisieme"] == "ENG", "Euro 1968 : rejoué décisif")
     verif(sum(1 for m in e68["matchs"] if m[13] == 1) == 1, "un seul match rejoué")
-    verif("hote" not in e68, "hôte absent pour l'UEFA")
+    verif(e68["hote"] == ["ITA"] and e68["hote_source"].startswith("UEFA") and "hote_note" not in e68, "Euro 1968 : hôte = pays des stades (Italie)")
     # --- Euro 1976 : tirs au but, Tchécoslovaquie (code d'époque, sans drapeau)
     e76 = _edition_fixture("euro", "euro_1976.json", 1976)
-    verif(e76["vainqueur"] == "TCH" and e76["finaliste"] == "FRG" and e76["troisieme"] == "NED" and e76["equipes"]["TCH"][1] == "", "Euro 1976")
+    verif(e76["vainqueur"] == "TCH" and e76["finaliste"] == "FRG" and e76["troisieme"] == "NED" and e76["equipes"]["TCH"][1] == "h-tch", "Euro 1976")
+    verif(e76["hote"] == ["YUG"] and "CRO, SRB = YUG" in e76["hote_note"], "Euro 1976 : stades de Belgrade et Zagreb = Yougoslavie de l'époque")
+    e88 = _edition_fixture("euro", "euro_1988.json", 1988)
+    verif(e88["hote"] == ["FRG"] and e88["equipes"]["FRG"][1] == "h-frg" and e88["vainqueur"] == "NED" and e88["finaliste"] == "URS", "Euro 1988 : RFA")
+    e20 = _edition_fixture("euro", "euro_2020.json", 2020)
+    verif(sorted(e20["hote"]) == sorted(["ITA", "AZE", "DEN", "RUS", "ENG", "ROU", "NED", "SCO", "ESP", "HUN", "GER"]) and len(e20["hote"]) == 11,
+          "Euro 2020 : 11 pays hôtes")
+    verif(e20["equipes"]["RUS"][0] == "Russie", "Russie sans astérisque")
+    verif(hotes_uefa("euro", 2000, [{"date": "2000-06-10", "id": "a", "statut": "T", "phase": "g", "tour": "x", "stade_pays": "BEL"},
+                                    {"date": "2000-06-11", "id": "b", "statut": "T", "phase": "g", "tour": "x", "stade_pays": "NED"},
+                                    {"date": "2000-06-12", "id": "c", "statut": "T", "phase": "q", "tour": "x", "stade_pays": "FRA"},
+                                    {"date": "2000-06-12", "id": "d", "statut": "A", "phase": "g", "tour": "x", "stade_pays": "ESP"}])["hotes"] == ["BEL", "NED"],
+          "hôtes : éliminatoires et matchs annulés exclus, plusieurs pays = liste")
+    verif(hotes_uefa("euro", 2028, [])["hotes"] == [], "aucun match : aucun hôte")
     verif("ecarts" not in e76, "pas d'écart sur l'Euro 1976 (la source dit « nul » sans équipe)")
     # --- phases de l'Euro 1960 : quarts à deux manches = éliminatoires ; phase finale = 4 équipes
     e60 = _edition_fixture("euro", "euro_1960.json", 1960)
@@ -863,8 +1084,43 @@ def _tests() -> None:
     # --- Ligue des nations : final four 2025 (tirs au but) et 2021
     l25 = _edition_fixture("ldn", "ldn_2025.json", 2025)
     verif(l25["vainqueur"] == "POR" and l25["finaliste"] == "ESP" and l25["troisieme"] == "FRA" and l25["libelle"] == "2024-25", "LdN 2025")
+    verif(l25["hote"] == ["GER"] and "hote_source" in l25, "LdN 2025 : tour final à 4 en Allemagne (les quarts à deux manches ne comptent pas)")
     l21 = _edition_fixture("ldn", "ldn_2021.json", 2021)
     verif(l21["vainqueur"] == "FRA" and l21["finaliste"] == "ESP", "LdN 2021")
+    # --- Coupe du monde des clubs 2019 : source FIFA défaillante, corrections sourcées (ESPN)
+    brut19 = _fixture("cdmc_2019.json")
+    avant = _edition_fixture("cdmc", "cdmc_2019.json", 2019)
+    verif(avant["vainqueur"] == "?" and "avertissement" in avant and "corrections" not in avant, "CdMC 2019 sans correction : vainqueur « ? » + avertissement")
+    jr: List[str] = []
+    c19 = _edition_fixture("cdmc", "cdmc_2019.json", 2019, corriger=True, journal=jr)
+    verif(len(c19["corrections"]) == 6 and not jr and "corrections_ignorees" not in c19, "6 corrections appliquées, aucune ignorée")
+    verif(c19["vainqueur"] == "fifa-1896634" and c19["finaliste"] == "fifa-1914822" and c19["troisieme"] == "fifa-1932136"
+          and "avertissement" not in c19 and "ecarts" not in c19, "CdMC 2019 corrigée : Liverpool, finaliste Flamengo, 3e Monterrey")
+    fin19 = [m for m in c19["matchs"] if c19["tours"][m[2]] == "Finale"][0]
+    verif(fin19[6:10] == [1, 0, None, None] and fin19[12] == "ap" and fin19[11] == "fifa:400089362", "finale corrigée : Liverpool 1-0 Flamengo a.p.")
+    src19 = c19["corrections_source"]["fifa:400089362"]
+    verif(src19["source"].startswith("ESPN") and src19["verifie_le"] == "2026-11-26" and src19["fifa"]["score"] == [0, 0], "source et valeur d'origine notées")
+    verif({m[11]: m[6:8] for m in c19["matchs"]}["fifa:400089359"] == [2, 6], "match déjà concordant : non corrigé")
+    eqs: Dict[str, Dict[str, Any]] = {}
+    bilans_comp("cdmc", [c19], eqs)
+    finaliser_equipes(eqs, "2026-11-26T00:00:00Z")
+    liv = eqs["fifa-1896634"]["bilans"]["cdmc"]
+    verif(liv["finale"]["j"] == 2 and liv["finale"]["v"] == 2 and liv["titres"] == 1 and eqs["fifa-1932136"]["bilans"]["cdmc"]["finale"]["ntv"] == 1,
+          "bilans : Liverpool 2 victoires + titre ; Monterrey 3e aux tirs au but")
+    # source modifiée depuis la vérification : correction IGNORÉE + avertissement (jamais d'écrasement d'une valeur inattendue)
+    norm19 = [normaliser_fifa("cdmc", m) for m in brut19["matchs"]]
+    for m in norm19:
+        if m["id"] == "fifa:400089362":
+            m["sd"], m["se"] = 2, 0                     # la FIFA a changé son score depuis la vérification
+    jr = []
+    ap = appliquer_corrections("cdmc", 2019, norm19, charger_json_racine("corrections_internationales.json"), jr)
+    verif(ap["ignorees"] == ["fifa:400089362"] and len(ap["appliquees"]) == 5 and len(jr) == 1 and jr[0].startswith("[WARN] correction cdmc/2019/fifa:400089362"),
+          "correction ignorée quand la source a changé")
+    f_ign = {m["id"]: m for m in norm19}["fifa:400089362"]
+    verif((f_ign["sd"], f_ign["se"]) == (2, 0), "valeur de la source intacte")
+    ed_ign = construire_edition("cdmc", 2019, "2019", norm19, [], ap)
+    verif(ed_ign["corrections_ignorees"] == ["fifa:400089362"] and len(ed_ign["corrections"]) == 5, "édition : corrections_ignorees notées")
+    verif(appliquer_corrections("cdmc", 2018, norm19, charger_json_racine("corrections_internationales.json"))["appliquees"] == {}, "autre édition : rien")
     # --- clubs : Coupe du monde des clubs 2000 (tirs au but), Coupe intercontinentale 2025
     c00 = _edition_fixture("cdmc", "cdmc_2000.json", 2000)
     verif(c00["vainqueur"] == "fifa-44213" and c00["finaliste"] == "fifa-44129" and c00["troisieme"] == "fifa-1884381", "CdMC 2000")
@@ -905,6 +1161,21 @@ def _tests() -> None:
           "palmarès trié par édition")
     verif(equipes["ARG"]["bilans"]["cdm"]["finale"]["ntv"] == 1, "tirs au but gagnés (Argentine, finale 2022) comptés à part, en nul")
     verif(equipes["FRA"]["bilans"]["cdm"]["finale"]["ntd"] == 2, "tirs au but perdus : finales 2006 et 2022")
+    # --- lignées : équipes reliées, jamais fusionnées
+    lg = charger_json_racine("lignees_selections.json")["liens"]
+    codes = {"FRG", "GER", "GDR", "URS", "CIS", "RUS", "TCH", "CZE", "SVK", "YUG", "SCG", "SRB", "CRO", "ZAI", "FRA"}
+    verif(calculer_lignee("FRG", codes, lg)["successeurs"] == ["GER"] and calculer_lignee("GER", codes, lg)["predecesseurs"] == ["FRG"], "lignée FRG -> GER")
+    verif(calculer_lignee("GDR", codes, lg) == {} and calculer_lignee("FRA", codes, lg) == {}, "RDA et France : aucun lien")
+    verif(calculer_lignee("URS", codes, lg)["successeurs"] == ["CIS", "RUS"] and calculer_lignee("RUS", codes, lg)["predecesseurs"] == ["CIS", "URS"], "URSS -> CEI -> Russie")
+    verif(calculer_lignee("TCH", codes, lg)["successeurs"] == ["CZE"] and calculer_lignee("TCH", codes, lg)["issues"] == ["SVK"]
+          and calculer_lignee("SVK", codes, lg)["issue_de"] == ["TCH"] and "predecesseurs" not in calculer_lignee("SVK", codes, lg), "TCH -> CZE, SVK issue de")
+    verif(calculer_lignee("SRB", codes, lg)["predecesseurs"] == ["SCG", "YUG"] and calculer_lignee("CRO", codes, lg)["issue_de"] == ["YUG"], "Yougoslavie : héritière + issues de")
+    verif(calculer_lignee("FRG", {"FRG"}, lg) == {} and calculer_lignee("ZAI", codes, lg) == {}, "lien non écrit si l'autre code est absent des données")
+    verif(all(l["type"] in ("heritage", "issue") and l["preuve"] in ("id_uefa", "records_officiels", "statut") for l in lg), "table des lignées : types et preuves connus")
+    e_fr = {}
+    for comp, lst in {"euro": [("euro_1988.json", 1988), ("euro_1976.json", 1976)]}.items():
+        bilans_comp(comp, [_edition_fixture(comp, n, a) for n, a in lst], e_fr)
+    verif("FRG" in e_fr and "GER" not in e_fr and e_fr["FRG"]["bilans"]["euro"]["finale"]["j"] > 0, "aucun cumul fusionné : FRG garde ses bilans à part")
     print(f"[OK] histoire_internationale : {ok} contrôles")
 
 

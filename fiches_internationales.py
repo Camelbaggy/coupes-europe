@@ -25,7 +25,7 @@ Règles (règle cardinale du projet : zéro valeur inventée, absent = absent, j
   seulement si UNE des six (UEFA, AFC, CAF, CONCACAF, CONMEBOL, OFC) figure dans P463 de la fédération ; jamais de sélectionneur ;
 - club du monde -> fiche existante par IDENTIFIANT seulement : id ESPN identique à une fiche de championnat (`championnats/clubs/`),
   id UEFA identique à une fiche de coupe ; sinon fiche créée ici ; Wikidata d'un club créé : nom exact (libellé ou alias) ET club de
-  football (P31/P279* Q476028) ET pays (P17) concordant, UN SEUL candidat, sinon rien ;
+  football (P31 = Q476028, direct) ET pays (P17) concordant, UN SEUL candidat, sinon rien ;
 - joueur : un identifiant UEFA et un identifiant ESPN ne sont fusionnés que par PREUVE : même date de naissance, noms concordants
   (`encyclo_joueurs.nom_concorde`) et même sélection, candidat UNIQUE des deux côtés ; ou même élément Wikidata (P2276 / P3681 /
   date de naissance + nom) sans date de naissance contradictoire ; sinon deux fiches ;
@@ -781,7 +781,8 @@ def chercher_clubs_wikidata(noms: List[str], get=_get_wiki) -> Optional[Set[str]
 
 
 def q_clubs_verif(qids: List[str]) -> str:
-    return ("SELECT ?item ?pays WHERE { VALUES ?item { %s } ?item wdt:P31/wdt:P279* wd:%s . OPTIONAL { ?item wdt:P17 ?pays } }"
+    # P31 DIRECT = « club de football » (pas P31/P279* : l'élément d'une équipe de beach soccer « CA Boca Juniors » passait pour un club)
+    return ("SELECT ?item ?pays WHERE { VALUES ?item { %s } ?item wdt:P31 wd:%s . OPTIONAL { ?item wdt:P17 ?pays } }"
             % (" ".join("wd:" + q for q in qids), CLUB_FOOTBALL))
 
 
@@ -863,13 +864,17 @@ def indexer_fiches_championnat(donnees: str) -> Tuple[Dict[str, Dict[str, Any]],
 
 def lire_effectifs_uefa(coupes: Optional[str], cache: Dict[str, Any], aujourdhui: dt.date, get=fetch_json
                         ) -> Tuple[Dict[str, Dict[str, Any]], Dict[str, List[Dict[str, Any]]]]:
-    """(index des fiches de club UEFA {id: ligne}, {id joueur UEFA: [liens]}) : dossier local `coupes` (clubs/), sinon Pages ; le
-    second est gardé 7 jours dans `cache` (108 requêtes sinon)."""
+    """(index des fiches de club UEFA {id: ligne}, {id joueur UEFA: [liens]}) : dossier local `coupes` (clubs/), sinon Pages ; la
+    table {id joueur: [id de club]} est gardée 7 jours dans `cache` (108 requêtes sinon)."""
     def lecture(chemin: str) -> Optional[Any]:
         if coupes:
             return _lire(os.path.join(coupes, chemin))
         COMPTEURS["pages"] += 1
         return get(COUPES_PAGES + chemin)
+
+    def liens(table: Dict[str, List[str]], idx: Dict[str, Dict[str, Any]]) -> Dict[str, List[Dict[str, Any]]]:
+        return {pid: [{"depot": "coupes-europe", "fiche": idx[c]["fichier"], "club_id": c, "club": idx[c].get("nom"), "joueur_id": pid,
+                       "preuve": "même identifiant UEFA"} for c in cids if c in idx] for pid, cids in table.items()}
 
     idx_doc = lecture("clubs/index.json") or {}
     idx = {str(c["id"]): c for c in idx_doc.get("clubs") or []}
@@ -879,19 +884,18 @@ def lire_effectifs_uefa(coupes: Optional[str], cache: Dict[str, Any], aujourdhui
     except (KeyError, ValueError):
         frais = False
     if frais or not idx:
-        return idx, ancien or {}
-    joueurs: Dict[str, List[Dict[str, Any]]] = {}
+        return idx, liens(ancien or {}, idx)
+    table: Dict[str, List[str]] = {}
     for cid, c in sorted(idx.items()):
         f = lecture(c["fichier"])
         if f is None:
             print(f"[WARN] fiche UEFA {cid} illisible : effectifs UEFA précédents conservés")
-            return idx, ancien or {}
+            return idx, liens(ancien or {}, idx)
         for j in f.get("effectif") or []:
             if j.get("id"):
-                joueurs.setdefault(str(j["id"]), []).append({"depot": "coupes-europe", "fiche": c["fichier"], "club_id": cid, "club": c.get("nom"),
-                                                              "joueur_id": str(j["id"]), "preuve": "même identifiant UEFA"})
-    cache["joueurs"], cache["lu_le"] = joueurs, aujourdhui.isoformat()
-    return idx, joueurs
+                table.setdefault(str(j["id"]), []).append(cid)
+    cache["joueurs"], cache["lu_le"] = table, aujourdhui.isoformat()
+    return idx, liens(table, idx)
 
 
 # ------------------------------------------------------------------------------
@@ -1027,7 +1031,7 @@ def construire(donnees: str, coupes: Optional[str] = None, budget_joueurs_s: flo
         index_uefa, liens_uefa = lire_effectifs_uefa(coupes, cache_eff, auj)
     except Exception as e:   # jamais bloquant
         print(f"[WARN] fiches de club UEFA non lues : {e}")
-        index_uefa, liens_uefa = {}, cache_eff.get("joueurs") or {}
+        index_uefa, liens_uefa = {}, {}
 
     # --- dates de naissance et fusion
     try:

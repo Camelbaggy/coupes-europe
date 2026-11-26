@@ -1,0 +1,121 @@
+{
+ "_doc": "Lignées des SÉLECTIONS de l'historique international (histoire_internationale.py, décision du propriétaire du 26/11/2026). Table MANUELLE : une équipe disparue et son successeur restent des équipes DISTINCTES (aucun bilan, aucun titre fusionné) mais RELIÉES par le champ `lignee` des fiches. `type` : « heritage » = l'équipe `vers` est reconnue héritière sportive de l'équipe `de` par la FIFA ou l'UEFA (leurs records et statistiques officiels lui attribuent le passé de `de`) ; « issue » = l'équipe `vers` est une NOUVELLE équipe issue du pays `de`, sans héritage. `preuve` : « id_uefa » = l'identifiant d'équipe de l'API UEFA (`homeTeam.id`) est LE MÊME avant et après (vérifié dans les données le 26/11/2026) ; « records_officiels » = attribution des records par la FIFA / l'UEFA (non lisible dans nos données, à confirmer si contestée) ; « statut » = fait de droit (République née de l'éclatement). Un lien n'est écrit dans une fiche que si LES DEUX codes figurent dans les données. Dans le doute, pas de lien : la RDA (GDR) n'est reliée à rien (les records de l'Allemagne comptent la RFA, pas la RDA) ; la Sarre, la Bohême, les Antilles néerlandaises ne sont pas dans les données de phase finale.",
+ "_sources": {
+  "UEFA": "API UEFA (match.uefa.com/v5/matches) : mêmes `id` d'équipe 47 (West Germany -> Germany), 141 (USSR -> CIS) et 147 (Yugoslavia -> Serbia and Montenegro -> Serbia) sur les éditions de l'Euro 1960-2024, relevé du 26/11/2026 ; records de l'Euro de l'UEFA (Allemagne : titres 1972, 1980 de la RFA ; Russie : titre 1960 de l'URSS ; Tchéquie : titre 1976 de la Tchécoslovaquie ; Serbie : parcours de la Yougoslavie).",
+  "FIFA": "Records de la Coupe du monde de la FIFA : l'Allemagne compte les titres 1954, 1974 et 1990 de la RFA ; la Russie, la Tchéquie, la Serbie et la RD Congo comptent les participations de l'URSS, de la Tchécoslovaquie, de la Yougoslavie / Serbie-et-Monténégro et du Zaïre."
+ },
+ "liens": [
+  {
+   "de": "FRG",
+   "vers": "GER",
+   "type": "heritage",
+   "preuve": "id_uefa",
+   "note": "L'Allemagne est l'héritière sportive de la RFA (même identifiant d'équipe UEFA) ; la RDA n'est pas reliée."
+  },
+  {
+   "de": "URS",
+   "vers": "CIS",
+   "type": "heritage",
+   "preuve": "id_uefa",
+   "note": "La CEI (Euro 1992) prolonge l'URSS à l'UEFA (même identifiant d'équipe)."
+  },
+  {
+   "de": "CIS",
+   "vers": "RUS",
+   "type": "heritage",
+   "preuve": "records_officiels",
+   "note": "La Russie est l'héritière reconnue de la CEI."
+  },
+  {
+   "de": "URS",
+   "vers": "RUS",
+   "type": "heritage",
+   "preuve": "records_officiels",
+   "note": "La Russie est l'héritière reconnue de l'URSS."
+  },
+  {
+   "de": "TCH",
+   "vers": "CZE",
+   "type": "heritage",
+   "preuve": "records_officiels",
+   "note": "La Tchéquie est l'héritière sportive de la Tchécoslovaquie."
+  },
+  {
+   "de": "TCH",
+   "vers": "SVK",
+   "type": "issue",
+   "preuve": "statut",
+   "note": "La Slovaquie est une nouvelle équipe issue de la Tchécoslovaquie."
+  },
+  {
+   "de": "YUG",
+   "vers": "SCG",
+   "type": "heritage",
+   "preuve": "id_uefa",
+   "note": "La Serbie-et-Monténégro prolonge la Yougoslavie (même identifiant d'équipe UEFA)."
+  },
+  {
+   "de": "SCG",
+   "vers": "SRB",
+   "type": "heritage",
+   "preuve": "id_uefa",
+   "note": "La Serbie prolonge la Serbie-et-Monténégro (même identifiant d'équipe UEFA)."
+  },
+  {
+   "de": "YUG",
+   "vers": "SRB",
+   "type": "heritage",
+   "preuve": "id_uefa",
+   "note": "La Serbie est l'héritière sportive de la Yougoslavie."
+  },
+  {
+   "de": "YUG",
+   "vers": "CRO",
+   "type": "issue",
+   "preuve": "statut",
+   "note": "Nouvelle équipe issue de la Yougoslavie."
+  },
+  {
+   "de": "YUG",
+   "vers": "SVN",
+   "type": "issue",
+   "preuve": "statut",
+   "note": "Nouvelle équipe issue de la Yougoslavie."
+  },
+  {
+   "de": "YUG",
+   "vers": "BIH",
+   "type": "issue",
+   "preuve": "statut",
+   "note": "Nouvelle équipe issue de la Yougoslavie."
+  },
+  {
+   "de": "YUG",
+   "vers": "MKD",
+   "type": "issue",
+   "preuve": "statut",
+   "note": "Nouvelle équipe issue de la Yougoslavie."
+  },
+  {
+   "de": "SCG",
+   "vers": "MNE",
+   "type": "issue",
+   "preuve": "statut",
+   "note": "Le Monténégro est une nouvelle équipe issue de la Serbie-et-Monténégro."
+  },
+  {
+   "de": "ZAI",
+   "vers": "COD",
+   "type": "heritage",
+   "preuve": "records_officiels",
+   "note": "Le Zaïre est l'ancien nom de la RD Congo (même fédération)."
+  },
+  {
+   "de": "INH",
+   "vers": "IDN",
+   "type": "heritage",
+   "preuve": "records_officiels",
+   "note": "L'Indonésie est l'héritière sportive des Indes orientales néerlandaises."
+  }
+ ]
+}
