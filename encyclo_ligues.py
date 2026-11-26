@@ -66,12 +66,45 @@ def articles_serie_a(w: str) -> Dict[str, str]:
     return {k: v for k, v in out.items() if vus[k] == 1}
 
 
+# Pages locales dont le calendrier nomme les clubs par un MODÈLE (Wikipédia NO : {{fk|Brann}}) et non par un lien d'article : le
+# titre d'article est lu en développant le modèle (API MediaWiki `expandtemplates`, qui rend [[Sportsklubben Brann|Brann]]).
+MODELE_NOMS = {"no": "fk"}
+_LIEN_ART = re.compile(r"\[\[([^\]|]+)(?:\|[^\]]*)?\]\]")
+
+
+def developper_modele(lang: str, modele: str, noms: List[str], get=clubs.get_poli) -> Optional[Dict[str, str]]:
+    """{nom: titre d'article} : chaque {{modele|nom}} développé par Wikipédia ; un nom qui ne rend pas UN lien est omis. None = API illisible."""
+    out: Dict[str, str] = {}
+    for i in range(0, len(noms), 40):
+        lot = noms[i:i + 40]
+        texte = "\n".join("{{%s|%s}}" % (modele, n) for n in lot)
+        rep = get(f"https://{lang}.wikipedia.org/w/api.php?action=expandtemplates&prop=wikitext&format=json&text="
+                  + urllib.parse.quote(texte))
+        w = ((rep or {}).get("expandtemplates") or {}).get("wikitext")
+        if w is None:
+            return None
+        lignes = w.split("\n")
+        if len(lignes) != len(lot):
+            return None
+        for n, l in zip(lot, lignes):
+            liens = _LIEN_ART.findall(l)
+            if len(liens) == 1:
+                out[n] = liens[0].strip()
+    return out
+
+
 def articles(ligue: str, saison: int, journees: Dict[str, Any],
-             wikitexte: Callable[..., Any] = journees_wiki.wikitexte) -> Dict[str, Dict[str, str]]:
+             wikitexte: Callable[..., Any] = journees_wiki.wikitexte,
+             developper: Callable[..., Any] = developper_modele) -> Dict[str, Dict[str, str]]:
     """{id ESPN: {lang, titre, preuve}} pour les clubs de la ligue."""
     corr = journees.get("correspondances") or {}
     lang, modele = journees_wiki.PAGES[ligue]
-    page = modele.format(a=saison, b=saison + 1)
+    page = modele.format(a=saison, b=saison + 1, b2=str(saison + 1)[2:])
+    if lang in MODELE_NOMS:
+        titres = developper(lang, MODELE_NOMS[lang], sorted(corr)) or {}
+        return {cid: {"lang": lang, "titre": titres[nom], "preuve": f"calendrier de « {page} » (Wikipédia {lang}, clubs vérifiés par les scores) : "
+                      f"{{{{{MODELE_NOMS[lang]}|{nom}}}}} = [[{titres[nom]}]]"}
+                for nom, cid in corr.items() if nom in titres}
     if ligue != "sa":
         return {cid: {"lang": lang, "titre": t, "preuve": f"lien du tableau des résultats de « {page} » (Wikipédia {lang}, clubs vérifiés par les scores)"}
                 for t, cid in corr.items()}
@@ -402,6 +435,11 @@ def _test() -> None:
     j = {"correspondances": {"Atalanta": "105", "Inter": "110", "Pisa": "1"}}
     a = articles("sa", 2026, j, wikitexte=lambda lang, p: (w, 1, ""))
     assert set(a) == {"105", "110"} and a["110"]["titre"] == "Football Club Internazionale Milano" and a["105"]["lang"] == "it", a
+    a = articles("nor", 2026, {"correspondances": {"Brann": "620", "Ukjent": "9"}},
+                 developper=lambda lang, m, noms: {"Brann": "Sportsklubben Brann"} if (lang, m) == ("no", "fk") else None)
+    assert a == {"620": {"lang": "no", "titre": "Sportsklubben Brann", "preuve": a["620"]["preuve"]}} and "{{fk|Brann}}" in a["620"]["preuve"], a
+    assert developper_modele("no", "fk", ["Brann", "X"], get=lambda u: {"expandtemplates": {"wikitext": "[[Sportsklubben Brann|Brann]]\nX"}}) == {"Brann": "Sportsklubben Brann"}
+    assert "Süper Lig" in articles("tur", 2026, {"correspondances": {"Galatasaray (futbol takımı)": "432"}})["432"]["preuve"]
     a = articles("fl1", 2026, {"correspondances": {"Stade rennais football club": "169"}})
     assert a["169"]["titre"] == "Stade rennais football club" and a["169"]["lang"] == "fr"
     pp = {"query": {"redirects": [{"from": "Inter", "to": "Football Club Internazionale Milano"}],
