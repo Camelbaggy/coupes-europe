@@ -1348,7 +1348,7 @@
     // Championnats (clubs ESPN : logo sur a.espncdn.com) : le LOGO du club remplace le drapeau du pays, tous les clubs étant du même pays.
     // Image réduite par le service d'ESPN (40 px) ; les coupes gardent le drapeau, et les compétitions internationales aussi (décision du
     // 26/11/2026 : drapeaux partout, y compris pour les clubs de la CdM des clubs / Coupe intercontinentale, reconnus par `fifa_id`).
-    const logoEspn = (t) => t && !t.fifa_id && typeof t.logo === 'string' && /^https:\/\/a\.espncdn\.com\/i\/teamlogos\//.test(t.logo) && !(t.flag && /\/teamlogos\/countries\//.test(t.logo))
+    const logoEspn = (t) => t && !t.fifa_id && !t.intl && typeof t.logo === 'string' && /^https:\/\/a\.espncdn\.com\/i\/teamlogos\//.test(t.logo) && !(t.flag && /\/teamlogos\/countries\//.test(t.logo))
       ? `https://a.espncdn.com/combiner/i?img=${encodeURIComponent(t.logo.replace('https://a.espncdn.com', ''))}&w=40&h=40` : '';
     const flag = (t) => logoEspn(t)
       ? `<img class="flag logo-club" src="${esc(logoEspn(t))}" alt="" loading="lazy" width="18" height="18">`
@@ -2484,16 +2484,53 @@
     const DIRECT_APRES_FIN_MIN = 165;   // un match terminé reste dans le bloc jusqu'à 165 min après son coup d'envoi
     const directEtat = { live: {}, minuterie: null, jeton: 0, fiche: null, ficheMinuterie: null };
     const jourParisCompact = () => new Date().toLocaleDateString('en-CA', { timeZone: 'Europe/Paris' }).replace(/-/g, '');
-    const espnEquipe = (c) => {
+    const espnEquipe = (c, k) => {
       const t = (c && c.team) || {};
-      return { id: 'espn-' + t.id, espn_id: String(t.id || ''), name: String(t.shortDisplayName || t.displayName || t.name || '').trim(),
+      const e = { id: 'espn-' + t.id, espn_id: String(t.id || ''), name: String(t.shortDisplayName || t.displayName || t.name || '').trim(),
         short: t.abbreviation || '', logo: t.logo || ((t.logos || [])[0] || {}).href || '', score: Number(c && c.score) || 0 };
+      return estIntl(k) ? paysDirect(e, t, k) : e;
     };
+    // Compétition internationale, bloc « En direct » : drapeaux partout (décision du 26/11/2026), mais ESPN ne donne pas le pays d'un club.
+    // Pays lu (1) dans la fiche du club (index des fiches : identifiant ESPN des clubs des championnats suivis), sinon (2) dans les équipes
+    // FIFA déjà chargées de l'édition (programme, jours) : sélection = même code, club = un mot distinctif commun, UN SEUL candidat.
+    // Sans correspondance sûre : aucune image (jamais de logo, jamais de pays deviné).
+    const MOTS_VIDES_CLUB = new Set(['club', 'football', 'futbol', 'sport', 'sports', 'sporting', 'united', 'city', 'real', 'athletic', 'atletico',
+      'deportivo', 'saint', 'san', 'santa', 'union', 'racing', 'olympique', 'association']);
+    function equipesIntlConnues(k) {
+      const out = new Map();
+      Object.keys(intlEds).filter(c => c.startsWith(k + '|')).forEach(c => {
+        (intlEds[c].programme || []).forEach(m => [m.home_team, m.away_team].forEach(x => { if (x && x.flag && !x.a_determiner) out.set(x.fifa_id || x.name, x); }));
+      });
+      soireeCache.forEach((d, cle) => {
+        if (!String(cle).startsWith(k + '@')) return;
+        (((d.competitions || {})[k] || {}).matches || []).forEach(m => [m.home_team, m.away_team].forEach(x => { if (x && x.flag) out.set(x.fifa_id || x.name, x); }));
+      });
+      return [...out.values()];
+    }
+    function paysDirect(e, t, k) {
+      e.intl = true;
+      const f = clubIndex && clubIndex.get(e.id);
+      if (f && f.drapeau) return Object.assign(e, { flag: f.drapeau, country: f.code_pays || '', country_name: f.pays || '', is_french: !!f.francais });
+      const ab = String(t.abbreviation || '').toUpperCase();
+      const mots = (n) => [...motsNom(n)].filter(x => !MOTS_VIDES_CLUB.has(x));
+      const noms = [t.displayName, t.shortDisplayName, t.name, t.location].filter(Boolean);
+      const cand = equipesIntlConnues(k).filter(x => estSelection(k)
+        ? ab && String(x.short || x.country || '').toUpperCase() === ab
+        : noms.some(n => mots(n).some(w => mots(x.name).includes(w) || mots(x.official_name).includes(w))));
+      const pays = new Set(cand.map(x => x.flag));
+      if (cand.length && new Set(cand.map(x => x.fifa_id || x.name)).size === 1 && pays.size === 1) {
+        const x = cand[0];
+        Object.assign(e, { flag: x.flag, country: x.country || '', country_name: x.country_name || '', is_french: !!x.is_french });
+      } else if (estSelection(k) && /\/teamlogos\/countries\//.test(e.logo)) {
+        e.intl = false;   // sélection non retrouvée : l'image ESPN d'une sélection EST son drapeau, on la garde
+      }
+      return e;
+    }
     function directResume(k, ev) {
       const comp = (ev.competitions || [{}])[0], cs = comp.competitors || [];
       const st = ev.status || {}, ty = st.type || {};
       return { k, id: String(ev.id), date: ev.date, state: ty.state, mitemps: ty.name === 'STATUS_HALFTIME', minute: st.displayClock || '',
-        home: espnEquipe(cs.find(c => c.homeAway === 'home')), away: espnEquipe(cs.find(c => c.homeAway === 'away')) };
+        home: espnEquipe(cs.find(c => c.homeAway === 'home'), k), away: espnEquipe(cs.find(c => c.homeAway === 'away'), k) };
     }
     async function directTableau(k) {
       try {
@@ -2599,7 +2636,7 @@
       const ch = cs.find(c => c.homeAway === 'home') || {}, ca = cs.find(c => c.homeAway === 'away') || {};
       const cote = { [String((ch.team || {}).id)]: 'home', [String((ca.team || {}).id)]: 'away' };
       const st = h.status || {}, ty = st.type || {};
-      const home = espnEquipe(ch), away = espnEquipe(ca);
+      const home = espnEquipe(ch, k), away = espnEquipe(ca, k);
       const nom = (p) => ((p || {}).athlete || {}).displayName || '';
       const pid = (p) => ((p || {}).athlete || {}).id ? 'espn-' + p.athlete.id : '';
       const events = [];
