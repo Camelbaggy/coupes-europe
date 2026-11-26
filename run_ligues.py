@@ -84,7 +84,7 @@ def ecrire_etat(donnees: str, jour: str, bilan: Dict[str, Any], maintenant: date
     ligues_etat = dict(ancien.get("ligues") or {})
     for lg, b in bilan.items():
         ligues_etat[lg] = {"statut": b.get("statut"), "matchs": b.get("matchs", 0), "termines": b.get("termines", 0)}
-    etat[jour] = {"statut": statut_jour(ligues_etat), "ligues": ligues_etat,
+    etat[jour] = entree = {"statut": statut_jour(ligues_etat), "ligues": ligues_etat,
                   "maj": maintenant.strftime("%Y-%m-%dT%H:%M:%SZ"),
                   **({"alertes": ancien["alertes"]} if ancien.get("alertes") else {})}
     limite = (maintenant.date() - timedelta(days=GARDE_JOURS)).isoformat()
@@ -92,7 +92,8 @@ def ecrire_etat(donnees: str, jour: str, bilan: Dict[str, Any], maintenant: date
     os.makedirs(donnees, exist_ok=True)
     with open(chemin, "w", encoding="utf-8") as f:
         json.dump(etat, f, ensure_ascii=False, indent=1)
-    print(f"[ÉTAT] {jour} : {etat[jour]['statut']} " +
+    # un jour de plus de GARDE_JOURS (collecte d'une plage ancienne) vient d'être retiré de l'état : seul le journal en parle
+    print(f"[ÉTAT] {jour} : {entree['statut']}{'' if jour in etat else ' (hors des ' + str(GARDE_JOURS) + ' jours gardés)'} " +
           ", ".join(f"{lg} {v['termines']}/{v['matchs']}" for lg, v in ligues_etat.items() if v.get("matchs")))
     return etat
 
