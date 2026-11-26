@@ -468,7 +468,7 @@ programmé ; `statut` `en_lice` (match à venir, ou phase de ligue finie avec ra
 jamais d'élimination devinée), `elimine` (`winner.aggregate` d'une confrontation, `winner.match` d'un match sans aller / retour ; rang > 24 en fin
 de phase de ligue ; `sortie` = tour), `vainqueur` (finale gagnée). Validé sur 2025-26 : 3 vainqueurs (Paris, Aston Villa, Crystal Palace), tous
 les autres éliminés. Page : pastille `.eu-b` LDC / LE / LC (couleurs des coupes) après le nom dans le classement d'un championnat, barrée =
-éliminé, 🏆 = vainqueur, légende + info-bulle (`badgeEurope`, `legendeEurope`) ; club relié par `uefa_id` (correspondance prouvée) sinon
+éliminé, 🏆 = vainqueur, légende SEULEMENT dans l'info-bulle ⓘ du titre du classement (`badgeEurope`, `legendeEurope`) ; club relié par `uefa_id` (correspondance prouvée) sinon
 `uefa_wd` (index des fiches de championnat : P7361 Wikidata unique, `fiches_ligues.py`, jamais utilisé pour fusionner les fiches) ; seulement
 pour la saison européenne du classement (`saisonEuropeDe` : « 2026-27 » -> 2027, Norvège « 2026 » -> 2027). État ACTUEL, quelle que soit la journée.
 Menu des journées : les journées à venir sont dans l'ordre inverse (la prochaine juste au-dessus de la dernière jouée).

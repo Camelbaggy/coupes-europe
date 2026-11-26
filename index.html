@@ -576,9 +576,6 @@
       vertical-align: middle; color: #0b1220; background: var(--eu-c); border: 1px solid var(--eu-c); white-space: nowrap; }
     .eu-b.ucl { --eu-c: var(--accent-ucl); } .eu-b.uel { --eu-c: var(--accent-uel); } .eu-b.uecl { --eu-c: var(--accent-uecl); }
     .eu-b.out { background: transparent; color: var(--eu-c); opacity: 0.75; text-decoration: line-through; }
-    .legend-eu { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; font-size: 0.74rem; color: var(--text-muted); padding: 10px 12px; border-bottom: 1px solid var(--border); }
-    .legend-eu > span:not(.eu-b) { margin-right: 4px; }
-    .legend-eu .eu-b { margin-left: 0; }
     .fr-badge-inline {
       font-size: 0.65rem;
       background: rgba(56, 189, 248, 0.2);
@@ -972,6 +969,7 @@
     }
     #info-pop.open { display: block; }
     #info-pop p { margin: 0 0 6px; } #info-pop p:last-child { margin: 0; }
+    #info-pop hr { border: 0; border-top: 1px solid var(--border); margin: 10px 0; }
     .momentum-note, .subs-list {
       font-size: 0.72rem;
       color: var(--text-muted);
@@ -2083,10 +2081,11 @@
       if (!LEGENDE_COUPES) LEGENDE_COUPES = legend.innerHTML;
       legend.innerHTML = ligue ? legendeLigue(comp.standings || []) : LEGENDE_COUPES;
       if (ligue && !legend.innerHTML) legend.hidden = true;
+      const euLeg = ligue && hasStandings ? legendeEurope(compKey, comp.standings) : '';
       stTitle.innerHTML = ligue && source === 'calcule'
-        ? `Classement · calculé ${infoBtn(classementLigueInfo(compKey, comp.standings_at), 'Méthode du classement calculé')}`
+        ? `Classement · calculé ${infoBtn(classementLigueInfo(compKey, comp.standings_at) + euLeg, 'Méthode du classement calculé' + (euLeg ? ' et légende des pastilles' : ''))}`
         : ligue
-        ? `Classement ${infoBtn('<p>Classement officiel (ESPN) relevé à l\'issue de cette journée ; il n\'est conservé que s\'il a été relevé avant le match suivant du championnat. Zones : qualifications européennes et relégation telles que publiées.</p>', 'Source du classement')}`
+        ? `Classement ${infoBtn('<p>Classement officiel (ESPN) relevé à l\'issue de cette journée ; il n\'est conservé que s\'il a été relevé avant le match suivant du championnat. Zones : qualifications européennes et relégation telles que publiées.</p>' + euLeg, 'Source du classement' + (euLeg ? ' et légende des pastilles' : ''))}`
         : source === 'calcule'
         ? `Classement Phase de Ligue · calculé ${infoBtn(standingsInfoHtml(comp.standings_at), 'Méthode du classement calculé')}`
         : 'Classement Phase de Ligue (36 équipes)';
@@ -2105,7 +2104,7 @@
               <td style="font-weight:800">${r.points}</td>
             </tr>`;
         }).join('');
-        stContainer.innerHTML = (ligue ? legendeEurope(compKey, comp.standings) : '') + `
+        stContainer.innerHTML = `
           <table class="standings-table">
             <thead><tr><th>#</th><th class="col-team">Club</th><th>MJ</th><th>Diff</th><th>Pts</th></tr></thead>
             <tbody>${rowsHtml}</tbody>
@@ -2438,12 +2437,14 @@
       const txt = `${COMP_FULL[e.comp]} : ${etat}${avant ? ' · auparavant : ' + avant : ''}`;
       return `<span class="eu-b ${e.comp} ${e.statut === 'elimine' ? 'out' : ''}" title="${esc(txt)}" aria-label="${esc(txt)}">${e.statut === 'vainqueur' ? '🏆 ' : ''}${SIGLE_COUPE[e.comp]}</span>`;
     }
+    // Légende des pastilles : uniquement dans l'info-bulle du titre du classement (ajoutée au texte de ce bouton ⓘ)
     function legendeEurope(k, rows) {
       if (!rows.some(r => europeDe(k, r.team_id))) return '';
-      return `<div class="legend-eu"><span>Coupes d'Europe ${esc(String(europeSaison.saison - 1) + '-' + String(europeSaison.saison).slice(2))} :</span>
-        <span class="eu-b ucl">LDC</span><span class="eu-b uel">LE</span><span class="eu-b uecl">LC</span><span>en lice</span>
-        <span class="eu-b ucl out">LDC</span><span>éliminé</span>
-        ${infoBtn('<p>Coupe d\'Europe de la saison où le club joue (ou a joué en dernier), d\'après les matchs officiels de l\'UEFA, tours préliminaires compris : pastille pleine = encore en lice, barrée = éliminé (tour de sortie au survol), 🏆 = vainqueur.</p><p>Un club éliminé d\'une coupe et reversé dans une autre porte la pastille de la seconde. Après la phase de ligue, les clubs classés 1 à 24 restent en lice jusqu\'au tirage. État actuel, quelle que soit la journée affichée.</p>', 'Pastilles des coupes d\'Europe')}</div>`;
+      const saison = String(europeSaison.saison - 1) + '-' + String(europeSaison.saison).slice(2);
+      return `<hr><p><b>Pastilles · Coupes d'Europe ${esc(saison)}</b></p>
+        <p><span class="eu-b ucl">LDC</span> <span class="eu-b uel">LE</span> <span class="eu-b uecl">LC</span> : en lice<br>
+        <span class="eu-b ucl out">LDC</span> : éliminé (tour de sortie au survol de la pastille)<br><span class="eu-b ucl">🏆 LDC</span> : vainqueur</p>
+        <p>Coupe où le club joue (ou a joué en dernier) cette saison, d'après les matchs officiels de l'UEFA, tours préliminaires compris. Un club éliminé d'une coupe et reversé dans une autre porte la pastille de la seconde. Après la phase de ligue, les clubs classés 1 à 24 restent en lice jusqu'au tirage. État actuel, quelle que soit la journée affichée.</p>`;
     }
 
     function legendeLigue(rows) {
