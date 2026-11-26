@@ -21,6 +21,16 @@ mise à jour si besoin. L'accueil propose, pour chaque coupe, un menu des journ�
 (`rattrapage_ia.yml`) et leurs xG ajoutés (`completer_xg.yml`). Chaque club a une fiche (aperçu, matchs, stats, effectif,
 histoire européenne complète et palmarès), mise à jour chaque lundi (`clubs.yml`). Le détail technique est dans `CLAUDE.md`.
 
+**Championnats nationaux** (même application, données dans le dépôt `Camelbaggy/donnees-football`) : big 5 et Ligue 2
+(notifiés), Portugal, Pays-Bas, Belgique, Turquie, Autriche, Grèce, Norvège (affichés seulement), collectés chaque jour sur ESPN
+(`ligues.py`, `run_ligues.py`), journées lues sur Wikipédia ou déduites du calendrier (`journees_wiki.py`, `journees_ordre.py`),
+fiches de club et de joueur, saisons passées. Une seule notification par jour pour toutes les compétitions jouées
+(`notification_jour.py`).
+
+**En direct** : la page interroge elle-même ESPN pendant les matchs (scores, déroulé, compositions, statistiques provisoires) ;
+`direct_clubs.yml` envoie des alertes ntfy pour les matchs de Coupe d'Europe des clubs français (coup d'envoi, buts, fin).
+Le menu des journées montre aussi les journées à venir avec leur programme.
+
 ## Sources de données
 
 **UEFA (source principale, officielle, en français)** : l'API publique qui alimente uefa.com, accessible sans

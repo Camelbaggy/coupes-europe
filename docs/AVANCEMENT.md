@@ -1,86 +1,79 @@
-# Avancement du projet Coupes d'Europe (point de reprise)
+# Avancement du projet Coupes d'Europe + championnats (point de reprise)
 
-Dernière mise à jour : 25 novembre 2026 (midi). À lire avec `CLAUDE.md` (règles, architecture, méthodes), `docs/etude_fiches_clubs.md`
-(étude et décisions des étapes 1 à 5) et `docs/histoire_europeenne.md` (historique européen).
+Dernière mise à jour : 26 novembre 2026 (7 h 15 UTC). À lire avec `CLAUDE.md` (règles, architecture, méthodes, une section par fonction),
+`docs/etude_fiches_clubs.md` (étapes 1 à 5 des coupes), `docs/etude_championnats.md` (championnats), `docs/histoire_europeenne.md`,
+`docs/historique_classements.md`, `docs/cahier_des_charges_sources.md` (sources à trouver par le propriétaire).
 
 ## Où on en est
 
-Tout ce qui suit est fusionné sur `main` et en ligne (https://camelbaggy.github.io/coupes-europe/).
+Tout ce qui suit est fusionné sur `main` et en ligne (https://camelbaggy.github.io/coupes-europe/). Données des championnats : dépôt
+`Camelbaggy/donnees-football` (Pages), écrit par ses workflows avec le code de `main` d'ici.
 
-- **Mises à jour automatiques fiables** (PR #3 à #9) : état par soirée `etat_soirees.json`, une seule notification ntfy par soirée, envoyée
-  seulement après vérification de la page publique ; alerte ntfy distincte en cas d'échec (une par soirée et par cause) ; `battement.yml`
-  (toutes les 10 min les soirs de match) + `veille_secours.yml` (cron horaire) relancent la mise à jour si GitHub saute le cron. Premier
-  passage réel complet : soirée du 24/11 (LDC, 9 matchs), notifiée une fois.
-- **Fiche de match** : onglets Déroulé · Compos · Stats (momentum en tête des Stats), compos sans chevauchement, stats lisibles par rubriques,
-  glissement gauche / droite entre onglets, fermeture des fiches (match, joueur, club) par glissement vers le bas, feuilles pleine hauteur,
-  textes d'aide rangés dans des info-bulles ⓘ.
-- **Étape 1, historique des soirées** : `soirees/<date>.json` + `soirees/index.json` ; menu des journées / tours PAR COUPE (`?c=ucl&tour=j5`) ;
-  glissement entre coupes sur l'accueil.
-- **Étape 2, reconstitution** : 40 soirées de la saison 2026-27 reconstituées (tours préliminaires compris), classement recalculé depuis les
-  scores (égal au classement UEFA : 108 clubs, 0 écart). Rattrapage des résumés Gemini (phase de ligue seulement, décision du propriétaire) :
-  10 faits au 25/11 matin, 17 restants, continue seul (cron 6 h 17 et 15 h 17 UTC).
-- **Étape 3, fiches de club** (108 clubs) : aperçu (stade, Wikidata, Wikipédia), matchs de la saison, stats, effectif.
-- **Étape 4, couleurs des équipes** : maillot porté dans le match, sinon couleur du club, sinon bleu / rouge ; garde-fou de proximité et contraste.
-  Décision du 25/11 : PAS de couleurs dans la liste des résultats de l'accueil (PR #17).
-- **Étape 5, historique européen et palmarès** (PR #18) : onglet « Histoire » des fiches de club, 22 616 matchs depuis 1955, palmarès calculé
-  (0 écart avec les vainqueurs UEFA ; cas connus vérifiés : Real Madrid 15 C1, Liverpool, Marseille 1993, PSG C2 1996).
-- **xG** (PR #19, 25/11) : l'UEFA n'en publie pas ; xG / xGOT / xA du modèle Opta lus sur ESPN pour tous les matchs terminés, bloc
-  « Buts attendus (xG) » sous la possession. Couverture mesurée : phase de ligue 207/207, préliminaires 369/428. Rattrapage des soirées passées
-  lancé le 25/11 à 11 h 55 UTC (`completer_xg.yml`, run 45608925767, ~25 min, se relance seul s'il reste des matchs).
-- **Documentation** (25/11) : `CLAUDE.md` complété (vue d'ensemble des sources / workflows / secrets, collecte pas à pas, méthodes de calcul :
-  momentum, mi-temps, notes), README remis à jour.
+**Coupes d'Europe**
+- Mises à jour automatiques fiables (état par soirée, page vérifiée avant notification, alertes d'échec, battement + veille de secours).
+- Historique des soirées (41 soirées, menu des journées par coupe), reconstitution, classement recalculé, fiches de club (108), couleurs,
+  historique européen et palmarès, xG ESPN (Opta). Rattrapage IA : 21 résumés Gemini faits, 9 restants au 26/11 (2 passages / jour).
+- 26/11 : **journées à venir** dans le menu (groupe « À venir », la prochaine juste au-dessus de la dernière jouée) avec le **programme**
+  (date, heure de Paris, stade) : `clubs/programme.json` (UEFA).
+- 26/11 : **alertes ntfy en direct des clubs français** (`direct_clubs.py`, `direct_clubs.yml` lancé par la veille 20 min avant le coup
+  d'envoi) : coup d'envoi, chaque but (buteur, minute, passeur), but annulé, fin. Validé sur des matchs du 25/11 rejoués ; **premier soir réel
+  le 26/11** (Marseille, Monaco 17 h 45 UTC ; Lyon, Rennes 20 h UTC).
 
-- **Championnats nationaux (big 5)** : étude des sources faite le 25/11 (`docs/etude_championnats.md`) : ESPN (flux Opta complet
-  pour toute la saison 2026-27 des 5 championnats), journée via football-data.org / OpenLigaDB, contrôle croisé football-data.co.uk.
-  Décisions du propriétaire reçues le 25/11 (§ 10 de l'étude). **Étape 1 livrée sur la branche** (§ 11) : `ligues.py`, `journees_wiki.py`,
-  `run_ligues.py`, essai `[test-ligues]` ; dépôt de données `Camelbaggy/donnees-football` initialisé EN LOCAL seulement (workflow de collecte,
-  README, CLAUDE.md), poussé sur son `main` et GitHub Pages activé (25/11). **Étape 2 livrée sur la branche** (§ 12) : accueil à la racine,
-  interface des championnats ; aucune donnée publiée tant que la branche n'est pas fusionnée et la collecte lancée.
+**Championnats** (big 5 + Ligue 2 = principaux, notifiés ; Portugal, Pays-Bas, Belgique, Turquie, Autriche, Grèce, Norvège = secondaires)
+- Collecte quotidienne (battement de donnees-football), reconstitution de la saison faite (principaux et secondaires : 0 restant),
+  classement recalculé, fiches de club et de joueur (Wikidata, Wikipédia, historique européen), historique des classements (460/466 saisons),
+  vue « Saisons passées », notification commune du jour.
+- Journées : Wikipédia FR / IT / ES, pages locales NO et TR (306/306, 240/240) ; **journées DÉDUITES du calendrier** pour Portugal, Pays-Bas,
+  Belgique, Grèce (`journees_ordre.py`, idée du propriétaire ; 0 erreur sur 850 matchs joués de contrôle) : toute la saison jouée numérotée.
+- Programme des matchs à venir par journée (`programme.json` de chaque saison, ESPN).
+- **Pastilles européennes** dans les classements (LDC / LE / LC, en lice / barrée = éliminé / 🏆) : `clubs/europe.json` ; légende dans
+  l'info-bulle du classement.
+- Encyclopédie : clubs norvégiens et turcs reliés (modèle `{{fk}}` développé ; 13/16 clubs norvégiens avec id UEFA).
 
-- **Encyclopédie des clubs de championnat** (25/11, `encyclo_ligues.py`) : fondation, stade (capacité), site, extrait Wikipédia et historique
-  européen pour les clubs sans fiche UEFA, par la chaîne club ESPN -> article Wikipédia de la page de saison -> Wikidata (jamais par le nom).
-- **Joueurs de championnat et saisons passées** (25/11, `encyclo_joueurs.py`, `historique_classements.py`) : photo / taille / carrière / extrait des
-  joueurs (Wikidata, date de naissance au jour + nom, candidat unique) ; classements finaux de 460 saisons sur 466 (vue dédiée « Saisons passées » de chaque championnat et
-  parcours du club dans l'onglet Histoire).
-
-- **Ligue 2** (26/11) : collecte ESPN en flux réduit (pas de momentum, de stats par mi-temps, de notes ni d'xG : ESPN ne publie que les
-  actions clés), zones de montée / barrages, journées Wikipédia, historique de la D2, notification commune (« … Ligue 1 et Ligue 2 »).
-  En attente : adresses de l'API LFP (`ma-api.ligue1.fr`) relevées par le propriétaire (Eruda / F12) pour enrichir les matchs.
+**Suivi en direct (page)** : bloc « En direct » (accueil et compétition, ESPN depuis le navigateur), fiche de match provisoire, pastilles
+« En direct · N » sur les tuiles et point rouge sur les onglets. Pas encore vu sur un vrai match en cours (premier soir : 26/11).
 
 ## À vérifier à la reprise
 
-0000. Encyclopédie des championnats : après fusion, la prochaine collecte écrit `wikidata` / `wikipedia` dans `championnats/clubs/` et
-      l'historique européen de ~50 clubs (8 min par passage, plusieurs passages) ; passer `--budget-historique 2` dans
-      `reconstitution_championnats.yml` (job de 58 min).
+1. **Soir du 26/11** (tâches programmées dans cette session : 15 h 35, 17 h 47, 17 h 52, 20 h 02 UTC) : page en direct pendant Mjällby-Kairat,
+   puis alertes `direct_clubs.yml` (valeur réelle du statut UEFA « en direct », buts, anti-doublon) ; analyse de `tools/sonde_direct.py`, puis
+   SUPPRIMER cette sonde (temporaire) ; proposer l'étape 2 du direct (momentum en direct, port JS avec test de parité) au propriétaire.
+2. Week-end du 28-30/11 : notification commune avec les championnats ; journées déduites sur les nouveaux jours (por / ned / bel / gre).
+3. Lundi 30/11 : `clubs.yml` (fiches, historique, `programme.json`, `europe.json`).
+4. Deux matchs à venir mal placés par la déduction des journées seraient possibles (reports reprogrammés) : rien à faire, ils se recalent une
+   fois joués ; à surveiller sur le programme.
+5. Reconstitution et collecte partagent le groupe de concurrence `championnats` : une reconstitution qui se relance annule une collecte en
+   attente (vu le 26/11 sur des collectes manuelles ; la veille relance la collecte quotidienne). À revoir seulement si une nouvelle
+   reconstitution longue est lancée.
 
+## En attente du propriétaire
 
-000. Étape 4 (25/11) : suivre `reconstitution_championnats.yml` (donnees-football) jusqu'à « 0 restant » ; contrôler quelques journées
-     reconstituées (classement calculé, journée, xG) ; Liga : journées ajoutées par la page ES.
-
-00. Étape 3 (25/11) : notification commune du jour et collecte quotidienne des championnats. Vérifier la 1re notification commune
-    (soirée LDC du 25/11, puis week-end du 28-30/11 avec les 5 championnats), les battements des DEUX dépôts, et ajouter le secret
-    `NTFY_TOPIC` dans donnees-football (alertes d'échec des championnats).
-
-0. Championnats : essai Actions réussi (run 45622687373) ; journées L1 300/306, PL 380/380, Liga 371/379, SA 380/380, BL 306/306 ;
-   écart Málaga-Villarreal (Wikipédia 1-2 / ESPN 1-3) à recouper. Après fusion : lancer `collecte_championnats.yml` (donnees-football)
-   sur quelques jours pour remplir l'accueil, puis étape 3 (collecte quotidienne, notification commune).
-
-1. `completer_xg.yml` : run terminé en succès, soirées avec xG (ouvrir une fiche de match d'une soirée passée, onglet Stats).
-2. Soirée du 25/11 (LDC) puis du 26/11 (LE + LC) : notification unique reçue, xG présents dès le passage du soir.
-3. Rattrapage IA : nombre de cartes encore `deterministe` (`soirees/index.json`, `resumes.a_rattraper`).
-4. Lundi 30/11 : premier passage de `clubs.yml` avec l'historique (`--historique --saison-courante`).
+- API de la LFP (Ligue 2 en flux complet) : adresses `ma-api.ligue1.fr` relevées sur une page de match (Eruda / F12, onglet Réseau, filtre
+  « ma-api ») + confirmation de l'accord. Jamais de découverte par rétro-ingénierie ni de faux navigateur.
+- Secret `NTFY_TOPIC` dans donnees-football (alertes d'échec des championnats ; Claude ne peut pas vérifier les secrets de ce dépôt).
+- Renommage des dépôts (coupes-europe -> football, courses-cyclistes -> cyclisme) : prévenir Claude ensuite (liens, workflows,
+  `DASHBOARD_URL`, dépôts de redirection).
+- Réponses aux demandes d'accord SofaScore / FotMob ; décision sur les API payantes (clés gratuites API-Football / DataSportsAPI à tester,
+  puis éventuellement API-Football Pro 16 $/mois, pass Football Charts 49 €) ; football-data.org (gratuit) si besoin d'une 2e source de journées.
+- Accord écrit de l'ÖFBL (Autriche) seulement si on veut leurs journées (Wikipédia les donne déjà).
+- Décisions : historique de la D2 (36/87 saisons lisibles : chercher une autre source ?), historique des classements des secondaires,
+  formules à poules finales (Belgique, Autriche, Grèce) avant le printemps.
 
 ## Décisions du propriétaire à retenir
 
-- Une seule notification par soirée, seulement quand la page est vérifiée à jour ; alerte spéciale en cas d'échec.
-- Livraison ntfy instantanée NON activée sur le téléphone (batterie) : une notification peut n'apparaître qu'en rafraîchissant l'appli.
-- Résumés IA rattrapés pour la phase de ligue seulement cette saison (les tours préliminaires des saisons suivantes seront traités en direct).
-- Entraîneur non affiché dans les fiches de club ; 5 alias Wikidata validés (Como, Sunderland, Torreense, Mjällby, Sint-Truidense).
-- Couleurs des équipes partout où deux équipes sont opposées, SAUF la liste des résultats de l'accueil.
-- Menu des soirées par coupe (journées / tours), pas un menu global.
+- Une seule notification commune par jour (toutes compétitions jouées), après vérification de la page ; alerte distincte en cas d'échec.
+  Les alertes en direct des clubs français (26/11) sont une catégorie à part, demandée explicitement.
+- Livraison ntfy instantanée NON activée sur le téléphone (batterie).
+- Principaux (notifiés, alertes) = big 5 + Ligue 2 ; tout autre championnat est secondaire (collecté, affiché, jamais notifié).
+- Accueil : « Championnats majeurs » puis « Autres championnats » ; drapeau devant le nom de chaque ligue ; « Derniers résultats » sans les
+  secondaires ; « Saisons passées » = vue dédiée par championnat.
+- Toute légende / aide dans une info-bulle ⓘ, jamais en texte permanent.
+- Couleurs des équipes partout où deux équipes s'opposent, SAUF la liste des résultats de l'accueil.
+- Résumés IA rattrapés pour la phase de ligue seulement cette saison ; entraîneur non affiché ; 5 alias Wikidata validés.
+- Sources : aucun contournement anti-robot, aucun faux navigateur, aucune API non documentée sans accord ; clés jamais dans le chat (formulaire
+  sécurisé, secrets du dépôt).
 
 ## Pistes possibles (non demandées)
 
-- xG par joueur (ESPN les donne par joueur dans les rosters de l'API core : non exploité).
-- Phase finale (février-mai) : vérifier le menu des tours, le tableau, la finale du samedi (cron de mai-juin).
-- Les 59 matchs de tours préliminaires sans xG (ESPN ne les couvre pas ou sans statistiques) : rien à faire, valeur absente = absente.
+- xG par joueur (ESPN, API core : non exploité).
+- Phase finale (février-mai) : vérifier menu des tours, tableau, finale du samedi.
