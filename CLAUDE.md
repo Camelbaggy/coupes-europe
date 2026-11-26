@@ -56,6 +56,8 @@ python run_internationales.py --comp euro --edition 2024 --date 2024-06-17 --don
 python run_internationales.py --liste --donnees DIR      # jours restant à reconstituer par édition (EDITIONS)
 python run_internationales.py --date 2026-11-15 --donnees /tmp/donnees --etat   # UN jour, TOUTES les compétitions qui jouent ce jour-là (+ etat_internationales.json)
 python veille_ligues.py --test                           # veille des championnats ET des compétitions internationales (sans réseau)
+python histoire_internationale.py --test               # historique des compétitions internationales : finales / poule finale / hôte / bilans sur 19 fixtures réelles (sans réseau)
+python histoire_internationale.py --donnees DIR [--comps cdm,euro,ldn,cdmc,ci] [--budget-min 45] [--cache DIR] [--relire]   # résultats de TOUTES les éditions -> DIR/internationales/historique/ (reprenable, ~77 requêtes, ~1 min) ; --derives : equipes/ + index.json seuls (sans réseau)
 ```
 
 `AI_BUDGET_SECONDS=0` désactive tout appel Gemini (résumés de repli déterministes). Sans `GEMINI_API_KEY`, même
@@ -123,6 +125,7 @@ index.html  : page unique (CSS + JS inline), lit soirees/index.json + soirees/<d
 | `test_ligues.yml` | push sur `ccr-*` avec `[test-ligues]` | — | rien (championnats d'un jour) |
 | (donnees-football) `collecte_championnats.yml` / `battement.yml` / `veille_secours.yml` | dispatch de la veille des championnats / se relance / cron :37 | `championnats` / `battement` / `veille-secours` | championnats/, etat_championnats.json (dans donnees-football) ; alerte ntfy |
 | (donnees-football) `collecte_internationales.yml` / `reconstitution_internationales.yml` | dispatch de la veille (`date` obligatoire) / dispatch + auto-relance | `internationales` (les deux) | internationales/, etat_internationales.json (dans donnees-football) ; pas d'alerte ntfy |
+| (donnees-football) `historique_internationales.yml` | cron lundi 6 h 23 UTC + dispatch (`comps`, `relire`, `ref`), auto-relance | `internationales` | internationales/historique/ (dans donnees-football) ; ni état ni ntfy |
 
 Secrets / variables : `GEMINI_API_KEY` (facultatif : sans clé, résumés déterministes), `NTFY_TOPIC` (topic ntfy ; absent = simulation),
 `DASHBOARD_URL` (page publique, sert à vérifier la publication avant la notification), `AI_BUDGET_SECONDS` (budget Gemini, 900 s ; 0 = pas d'IA).
@@ -495,8 +498,27 @@ affichées AVEC les coupes d'Europe). Données dans donnees-football, `internati
   tirs au but ignorés ; `buts_uefa` aiguille sur le préfixe `espn-`). Lien `?c=<clé>` (`euro`, `ldn`, `cdm`, `cdmc`, `ci`). Fixtures réelles allégées :
   `tools/fixtures/espn_direct/`. Mesuré le 26/11/2026 : `ldn` 2026-11-15 (France 2-1 Turquie, buts avec buteur et passeur), finale CdMC 2025 (3 buts
   Chelsea, PSG reconnu français) ; ESPN n'a pas encore de match `ci` programmé le 16/12/2026 (la FIFA l'a : 16 h UTC).
-- À faire (étude § 5) : interface (étape 2), résumés (IA pour les nouveaux matchs de la France, déterministes pour les anciens), fiches de sélection et
-  historique (FIFA depuis 1930, UEFA depuis 1960), éliminatoires de l'Euro 2028 / Coupe du monde 2030 dès leur publication.
+- **Historique, étape 4** (`histoire_internationale.py`, décision du 26/11/2026 : RÉSULTATS SEULS, fiches de match complètes réservées aux éditions récentes de
+  `EDITIONS` ; règles et mesures : `docs/etude_internationales.md` § 10). Toutes les éditions : Coupe du monde 1930-2026 (FIFA 17, phase finale), Euro 1960-2024
+  éliminatoires compris (UEFA 3, `seasonYear` = édition nominale : Euro 2020 -> 2020), Ligue des nations 2019-2027 (UEFA 2014), Coupe du monde des clubs 2000-2025
+  (FIFA 107 + 10005), Coupe intercontinentale 2024-2026 (FIFA 107). Dans donnees-football, `internationales/historique/` : `<comp>.json` (éditions, tableaux de matchs
+  COMPACTS `[date, phase q|g|f, tour, groupe, dom, ext, sd, se, tabd, tabe, statut, id, dp, rj]`, équipes de l'édition en table), `equipes/<code>.json` (bilans,
+  palmarès, matchs de phase finale), `index.json`, `etat.json` (mesuré : 1,4 Mo bruts / 0,5 Mo gzip pour 69 éditions et 5 388 matchs). Code d'équipe : code pays FIFA / UEFA
+  d'ÉPOQUE pour les sélections (URS, FRG, GDR, TCH, YUG, SCG, ZAI, INH, CIS : drapeau VIDE, jamais celui d'un successeur ; FRG et GER sont deux équipes), `fifa-<IdTeam>`
+  pour les clubs. **Vainqueur calculé, jamais deviné** : finale à match unique = score puis tirs au but, match rejoué = le rejoué décide (Euro 1968), égalité sans tirs
+  au but = `?` ; le vainqueur de la source (`Winner` FIFA, `winner.match.team` UEFA) CONTRÔLE : désaccord = `ecarts` + `?` (0 sur les 69 éditions). Édition sans finale
+  (Coupe du monde 1950) : premier de la poule finale (2 points la victoire avant 1994, aucun départage) seulement s'il est seul en tête (`regle: "poule_finale"`).
+  `ResultType` FIFA : 1 réglementaire, 2 tirs au but, 3 prolongation, 8 but en or ; `MatchStatus` 9 = forfait (vu une fois). Euro : les huitièmes / quarts à deux manches de
+  1960-1976 sont classés « TOURNAMENT » par l'UEFA mais sont des ÉLIMINATOIRES (phase `q`) ; la phase finale n'a que 4 équipes. Défaut de source connu : Coupe du monde
+  des clubs 2019 (FIFA : 6 matchs sur 8 à 0-0 sans vainqueur ni tirs au but, finale Liverpool - Flamengo comprise) -> vainqueur `?` + `avertissement`, scores affichés tels quels.
+  Hôte = `HostTeams` FIFA ; absent pour l'UEFA (les pays des stades actuels ne sont pas ceux de l'époque : Yougoslavie 1976). Bilans par équipe et compétition
+  (`finale` = groupes + élimination directe, `elim` = éliminatoires / barrages) : ed, j, v, n, d, bp, bc, nuls aux tirs au but gagnés / perdus (`ntv` / `ntd`), titres, finales,
+  meilleur parcours (`NIVEAUX`, ordre indicatif). Reprenable : une édition finie et écrite n'est plus relue (`--relire`), éditions en cours relues à chaque passage, liste illisible
+  ou réduite = rien n'est remplacé, `GITHUB_OUTPUT` `traites` / `restants`. Workflow `historique_internationales.yml` (donnees-football, cron lundi 6 h 23 UTC, auto-relance).
+  Fixtures : `python tools/fixtures_histoire_internationale.py <cache brut>`. Mesuré le 26/11/2026 : 77 requêtes, 58 s ; vainqueurs de la Coupe du monde 1930-2022 et de
+  l'Euro 1960-2024 conformes à l'histoire (voir l'étude).
+- À faire (étude § 5) : résumés (IA pour les nouveaux matchs de la France, déterministes pour les anciens), interface de l'historique (fiches de sélection,
+  onglet Histoire des équipes nationales : lecture de `internationales/historique/`), éliminatoires de l'Euro 2028 / Coupe du monde 2030 dès leur publication.
 
 ## Suivi en direct (`index.html`, bloc `EN DIRECT`, 26/11/2026)
 
