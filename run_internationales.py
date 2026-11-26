@@ -35,11 +35,11 @@ from run_ligues import GARDE_JOURS, _lire, _sans_horodatage, ecrire_si_change
 
 # Éditions détaillées (décision du propriétaire du 26/11/2026 : fiches complètes pour les éditions récentes seulement), de la plus
 # récente à la plus ancienne. Une édition future (éliminatoires de l'Euro 2028…) s'ajoute ici quand l'UEFA la publie.
-FORMAT = 2   # 2 : `tour_court` / `journee` des matchs, `par_tour` de l'index ; un fichier d'un format plus ancien est refait
+FORMAT = 3   # 3 : libellés de tour FIFA = ceux de l'UEFA (jours FIFA refaits seulement) ; 2 : `tour_court` / `journee` des matchs, `par_tour` de l'index ; un fichier d'un format plus ancien est refait
 
 EDITIONS: List[Tuple[str, int]] = [("ci", 2026), ("ldn", 2027), ("cdm", 2026), ("cdmc", 2025), ("ldn", 2025), ("euro", 2024)]
 ETAT = "etat_internationales.json"   # racine du dépôt de données ; lu par la veille et par notification_jour.py (dépôt de code)
-EXCLUS_COMPTE = ("Reporté", "Annulé")  # statuts des matchs jamais comptés (comme ligne_index)
+EXCLUS_COMPTE = ("Reporté", "Annulé", "Arrêté", "Abandonné")  # statuts des matchs jamais comptés (comme ligne_index)
 ANNEES_SUIVANTES = {"cdm": 4, "euro": 4}   # éliminatoires joués jusqu'à 4 ans avant le tournoi (édition = année du tournoi)
 
 
@@ -53,7 +53,7 @@ def _horo(d: datetime) -> str:
 
 def ligne_index(jour: str, bloc: Dict[str, Any], maintenant: datetime, reconstituee: bool) -> Dict[str, Any]:
     ms = bloc["matches"]
-    comptes = [m for m in ms if m.get("status") not in ("Reporté", "Annulé")]
+    comptes = [m for m in ms if m.get("status") not in EXCLUS_COMPTE]
     termines = sum(1 for m in comptes if m.get("finished") and not m.get("en_attente") and not m.get("detail_manquant"))
     tours = []
     for m in ms:
@@ -77,12 +77,14 @@ def ligne_index(jour: str, bloc: Dict[str, Any], maintenant: datetime, reconstit
 
 def complet(chemin: str, comp: str) -> bool:
     d = _lire(chemin) or {}
-    if (d.get("format") or 1) < FORMAT:
+    # format 3 : libellés de tour FIFA ramenés à ceux de l'UEFA ; seuls les jours aux matchs rapprochés de la FIFA sont refaits
+    fifa = any(m.get("fifa_id") for m in (((d.get("competitions") or {}).get(comp) or {}).get("matches") or []))
+    if (d.get("format") or 1) < (FORMAT if fifa else 2):
         return False
     b = (d.get("competitions") or {}).get(comp) or {}
     ms = b.get("matches") or []
     return bool(ms) and not b.get("incomplet") and all(
-        (m.get("finished") or m.get("status") in ("Reporté", "Annulé")) and not m.get("detail_manquant")
+        (m.get("finished") or m.get("status") in EXCLUS_COMPTE) and not m.get("detail_manquant")
         and not m.get("en_attente") for m in ms)
 
 
@@ -94,7 +96,7 @@ def collecter(comp: str, edition: int, jour: str, donnees: str, liste: Optional[
     chemin = os.path.join(dossier, f"{jour}.json")
     precedent = _lire(chemin) or {}
     deja = {m["match_id"]: m for m in (((precedent.get("competitions") or {}).get(comp) or {}).get("matches") or [])
-            if (precedent.get("format") or 1) >= FORMAT and m.get("finished") and not m.get("detail_manquant") and not m.get("en_attente")
+            if (precedent.get("format") or 1) >= 2 and m.get("finished") and not m.get("detail_manquant") and not m.get("en_attente")
             and (m.get("players") or m.get("flux"))}
     bloc = I.collecter_jour(comp, edition, jour, liste, deja=deja, maintenant=maintenant)
     if not bloc["matches"]:

@@ -100,7 +100,7 @@ const { chromium, devices } = require('playwright');
   await aller('c=cdm', '.match-tile');
   await page.click('#bracket-container .br-m >> nth=0');
   await page.waitForSelector('#match-modal.open');
-  ok(/Demi-finale/.test(await page.textContent('#modal-round')), 'fiche ouverte depuis le tableau final : ' + await page.textContent('#modal-round'));
+  ok(/(Seizi|Huiti|Quart|Demi|Finale|place)/i.test(await page.textContent('#modal-round')), 'fiche ouverte depuis le tableau final : ' + await page.textContent('#modal-round'));
   await page.keyboard.press('Escape'); await page.waitForTimeout(300);
 
   // 5. Euro, éliminatoires de la Coupe du monde

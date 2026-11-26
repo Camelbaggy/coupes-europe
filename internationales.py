@@ -140,10 +140,18 @@ def equipe_fifa(t: Optional[Dict[str, Any]], club: bool) -> Optional[Dict[str, A
             "_noms": [x for x in {nom, t.get("ShortClubName") or "", t.get("Abbreviation") or ""} if x]}
 
 
+# Libellés FIFA ramenés à ceux de l'UEFA (même tour = même libellé dans le menu et le tableau final ; « Bronze final » est le libellé FIFA,
+# en anglais, du match pour la 3e place, mesuré le 26/11/2026 sur la Coupe du monde 2026)
+TOURS_FIFA_FR = {"Bronze final": "Match pour la 3e place", "Match pour la troisième place": "Match pour la 3e place",
+                 "Huitième de finale": "Huitièmes de finale", "Quart de finale": "Quarts de finale", "Demi-finale": "Demi-finales",
+                 "Seizième de finale": "Seizièmes de finale"}
+
+
 def entree_fifa(comp: str, m: Dict[str, Any]) -> Dict[str, Any]:
     club = COMPETITIONS[comp]["famille"] == "clubs"
     # « Finale de la Coupe intercontinentale de la FIFA 2026 » -> « Finale de la Coupe intercontinentale »
     stage = re.sub(r"\s+de la FIFA(\s+\d{4})?$", "", _fr_liste(m.get("StageName")))
+    stage = TOURS_FIFA_FR.get(stage, stage)
     groupe = _fr_liste(m.get("GroupName"))
     ko = not groupe
     statut = m.get("MatchStatus")
@@ -420,7 +428,12 @@ def collecter_jour(comp: str, edition: int, jour: str, liste: Optional[List[Dict
                     continue
                 vus.add(m["espn_id"])
                 if m["match_id"] in deja:
-                    matchs.append(deja[m["match_id"]])
+                    dm = deja[m["match_id"]]
+                    fm = next((e for e in liste if dm.get("fifa_id") and e.get("fifa_id") == dm["fifa_id"]), None)
+                    if fm:   # match déjà complet : seuls le tour et son libellé sont relus (libellés FIFA ramenés à ceux de l'UEFA)
+                        dm["round"] = {**(dm.get("round") or {}), "name": fm["tour"]}
+                        dm["tour_court"] = fm.get("tour_court") or fm["tour"]
+                    matchs.append(dm)
                     continue
                 if m["finished"] and _trop_tot(m.get("date_utc", ""), maintenant):
                     m["en_attente"] = True
@@ -571,7 +584,7 @@ def programme(comp: str, liste: List[Dict[str, Any]], maintenant: datetime) -> L
     seuil = (maintenant - timedelta(hours=3)).strftime("%Y-%m-%dT%H:%M")
     out = []
     for e in liste:
-        if e["fini"] or e["statut"] in ("Annulé", "Abandonné"):
+        if e["fini"] or e["statut"] in ("Annulé", "Abandonné", "Arrêté"):
             continue
         if e["statut"] != "Reporté" and (e["debut"] or "") < seuil:
             continue
@@ -628,6 +641,8 @@ def _test() -> None:
                                     "TeamName": [{"Locale": "fr-FR", "Description": "Paris Saint-Germain"}]},
                            "Away": None, "PlaceHolderA": "", "PlaceHolderB": "W4", "Stadium": {}})
     assert e["phase"] == "finale" and e["away_team"] is None and not e["fini"] and e["tour"] == "Finale"
+    assert entree_fifa("cdm", {"StageName": [{"Locale": "fr-FR", "Description": "Bronze final"}]})["tour"] == "Match pour la 3e place"
+    assert entree_fifa("cdm", {"StageName": [{"Locale": "fr-FR", "Description": "Quart de finale"}]})["tour"] == "Quarts de finale"
     assert entree_fifa("ci", {"StageName": [{"Locale": "fr-FR", "Description": "Derby des Amériques de la FIFA 2026™"}]})["tour"] \
         == "Derby des Amériques"
     p = programme("ci", [e], datetime(2026, 11, 26, tzinfo=timezone.utc))
