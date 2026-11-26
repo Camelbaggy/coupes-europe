@@ -1,0 +1,112 @@
+{
+ "_doc": "Corrections SOURCÉES des données FIFA / UEFA de l'historique international (histoire_internationale.py ; décision du propriétaire du 26/11/2026). Clé : « <compétition>/<édition>/<id du match de la source, préfixe fifa: ou uefa:> ». Champs : `score` [dom, ext] après prolongation, `tab` [dom, ext] ou null, `dp` « ap » / « bo » / null, `source` (où la valeur a été vérifiée), `verifie_le`, `fifa` = valeurs d'ORIGINE de la source {score, tab, dp}. La correction ne s'applique QUE si la source donne encore exactement ces valeurs d'origine (sinon la source a changé : correction ignorée + avertissement journalisé) ; l'édition porte alors `corrections` et `corrections_source`. Jamais de correction sans source citée ; aucun score deviné. Domicile / extérieur : ceux de la FIFA (vérifiés identiques à ESPN, mêmes heures de coup d'envoi).",
+ "_cdmc_2019": "Coupe du monde des clubs 2019 : la FIFA donne 0-0 sans prolongation ni tirs au but pour 6 matchs sur 8 (dont la finale). Résultats relevés le 26/11/2026 sur ESPN (site.api.espn.com/apis/site/v2/sports/soccer/fifa.cwc/scoreboard?dates=201912JJ). Deux matchs concordent déjà avec ESPN et n'ont donc pas de correction : Al Sadd - Espérance de Tunis 2-6 (5e place, 17/12) et Monterrey - Al-Hilal 2-2, tirs au but 4-3 (3e place, 21/12). Vainqueur après correction : Liverpool (finaliste Flamengo, 3e Monterrey).",
+ "cdmc/2019/fifa:400089363": {
+  "score": [
+   3,
+   1
+  ],
+  "tab": null,
+  "dp": "ap",
+  "source": "ESPN (scoreboard fifa.cwc du 11/12/2019, événement 557731)",
+  "verifie_le": "2026-11-26",
+  "fifa": {
+   "score": [
+    0,
+    0
+   ],
+   "tab": null,
+   "dp": null
+  }
+ },
+ "cdmc/2019/fifa:400089358": {
+  "score": [
+   1,
+   0
+  ],
+  "tab": null,
+  "dp": null,
+  "source": "ESPN (scoreboard fifa.cwc du 14/12/2019, événement 557729)",
+  "verifie_le": "2026-11-26",
+  "fifa": {
+   "score": [
+    0,
+    0
+   ],
+   "tab": null,
+   "dp": null
+  }
+ },
+ "cdmc/2019/fifa:400089357": {
+  "score": [
+   3,
+   2
+  ],
+  "tab": null,
+  "dp": null,
+  "source": "ESPN (scoreboard fifa.cwc du 14/12/2019, événement 557730)",
+  "verifie_le": "2026-11-26",
+  "fifa": {
+   "score": [
+    0,
+    0
+   ],
+   "tab": null,
+   "dp": null
+  }
+ },
+ "cdmc/2019/fifa:400089360": {
+  "score": [
+   3,
+   1
+  ],
+  "tab": null,
+  "dp": null,
+  "source": "ESPN (scoreboard fifa.cwc du 17/12/2019, événement 557728)",
+  "verifie_le": "2026-11-26",
+  "fifa": {
+   "score": [
+    0,
+    0
+   ],
+   "tab": null,
+   "dp": null
+  }
+ },
+ "cdmc/2019/fifa:400089364": {
+  "score": [
+   1,
+   2
+  ],
+  "tab": null,
+  "dp": null,
+  "source": "ESPN (scoreboard fifa.cwc du 18/12/2019, événement 557726)",
+  "verifie_le": "2026-11-26",
+  "fifa": {
+   "score": [
+    0,
+    0
+   ],
+   "tab": null,
+   "dp": null
+  }
+ },
+ "cdmc/2019/fifa:400089362": {
+  "score": [
+   1,
+   0
+  ],
+  "tab": null,
+  "dp": "ap",
+  "source": "ESPN (scoreboard fifa.cwc du 21/12/2019, événement 557725)",
+  "verifie_le": "2026-11-26",
+  "fifa": {
+   "score": [
+    0,
+    0
+   ],
+   "tab": null,
+   "dp": null
+  }
+ }
+}

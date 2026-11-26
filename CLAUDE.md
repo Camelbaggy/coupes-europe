@@ -56,6 +56,8 @@ python run_internationales.py --comp euro --edition 2024 --date 2024-06-17 --don
 python run_internationales.py --liste --donnees DIR      # jours restant à reconstituer par édition (EDITIONS)
 python run_internationales.py --date 2026-11-15 --donnees /tmp/donnees --etat   # UN jour, TOUTES les compétitions qui jouent ce jour-là (+ etat_internationales.json)
 python veille_ligues.py --test                           # veille des championnats ET des compétitions internationales (sans réseau)
+python fiches_internationales.py --test                 # fiches de nations / clubs du monde / joueurs internationaux (sans réseau ; fixtures réelles : tools/fixtures/fiches_internationales/)
+python fiches_internationales.py --donnees DIR [--coupes DIR] [--budget-joueurs 6] [--sans-wiki]   # internationales/fiches/ d'après les fichiers de jour de DIR (reprenable)
 python histoire_internationale.py --test               # historique des compétitions internationales : finales / poule finale / hôte / bilans sur 19 fixtures réelles (sans réseau)
 python histoire_internationale.py --donnees DIR [--comps cdm,euro,ldn,cdmc,ci] [--budget-min 45] [--cache DIR] [--relire]   # résultats de TOUTES les éditions -> DIR/internationales/historique/ (reprenable, ~77 requêtes, ~1 min) ; --derives : equipes/ + index.json seuls (sans réseau)
 ```
@@ -124,7 +126,7 @@ index.html  : page unique (CSS + JS inline), lit soirees/index.json + soirees/<d
 | `direct_clubs.yml` | dispatch (veille du battement / secours, 20 min avant un match d'un club français) | `direct-clubs` | rien (ntfy : coup d'envoi, buts, fin) |
 | `test_ligues.yml` | push sur `ccr-*` avec `[test-ligues]` | — | rien (championnats d'un jour) |
 | (donnees-football) `collecte_championnats.yml` / `battement.yml` / `veille_secours.yml` | dispatch de la veille des championnats / se relance / cron :37 | `championnats` / `battement` / `veille-secours` | championnats/, etat_championnats.json (dans donnees-football) ; alerte ntfy |
-| (donnees-football) `collecte_internationales.yml` / `reconstitution_internationales.yml` | dispatch de la veille (`date` obligatoire) / dispatch + auto-relance | `internationales` (les deux) | internationales/, etat_internationales.json (dans donnees-football) ; pas d'alerte ntfy |
+| (donnees-football) `collecte_internationales.yml` / `reconstitution_internationales.yml` | dispatch de la veille (`date` obligatoire) / dispatch + auto-relance | `internationales` (les deux) | internationales/ (+ internationales/fiches/), etat_internationales.json (dans donnees-football) ; pas d'alerte ntfy |
 | (donnees-football) `historique_internationales.yml` | cron lundi 6 h 23 UTC + dispatch (`comps`, `relire`, `ref`), auto-relance | `internationales` | internationales/historique/ (dans donnees-football) ; ni état ni ntfy |
 
 Secrets / variables : `GEMINI_API_KEY` (facultatif : sans clé, résumés déterministes), `NTFY_TOPIC` (topic ntfy ; absent = simulation),
@@ -504,20 +506,34 @@ affichées AVEC les coupes d'Europe). Données dans donnees-football, `internati
   (FIFA 107 + 10005), Coupe intercontinentale 2024-2026 (FIFA 107). Dans donnees-football, `internationales/historique/` : `<comp>.json` (éditions, tableaux de matchs
   COMPACTS `[date, phase q|g|f, tour, groupe, dom, ext, sd, se, tabd, tabe, statut, id, dp, rj]`, équipes de l'édition en table), `equipes/<code>.json` (bilans,
   palmarès, matchs de phase finale), `index.json`, `etat.json` (mesuré : 1,4 Mo bruts / 0,5 Mo gzip pour 69 éditions et 5 388 matchs). Code d'équipe : code pays FIFA / UEFA
-  d'ÉPOQUE pour les sélections (URS, FRG, GDR, TCH, YUG, SCG, ZAI, INH, CIS : drapeau VIDE, jamais celui d'un successeur ; FRG et GER sont deux équipes), `fifa-<IdTeam>`
+  d'ÉPOQUE pour les sélections (URS, FRG, GDR, TCH, YUG, SCG, ZAI, INH, CIS : drapeau d'époque `h-<code>` ou vide, jamais celui d'un successeur ; FRG et GER sont deux équipes reliées par `lignee`), `fifa-<IdTeam>`
   pour les clubs. **Vainqueur calculé, jamais deviné** : finale à match unique = score puis tirs au but, match rejoué = le rejoué décide (Euro 1968), égalité sans tirs
   au but = `?` ; le vainqueur de la source (`Winner` FIFA, `winner.match.team` UEFA) CONTRÔLE : désaccord = `ecarts` + `?` (0 sur les 69 éditions). Édition sans finale
   (Coupe du monde 1950) : premier de la poule finale (2 points la victoire avant 1994, aucun départage) seulement s'il est seul en tête (`regle: "poule_finale"`).
   `ResultType` FIFA : 1 réglementaire, 2 tirs au but, 3 prolongation, 8 but en or ; `MatchStatus` 9 = forfait (vu une fois). Euro : les huitièmes / quarts à deux manches de
   1960-1976 sont classés « TOURNAMENT » par l'UEFA mais sont des ÉLIMINATOIRES (phase `q`) ; la phase finale n'a que 4 équipes. Défaut de source connu : Coupe du monde
-  des clubs 2019 (FIFA : 6 matchs sur 8 à 0-0 sans vainqueur ni tirs au but, finale Liverpool - Flamengo comprise) -> vainqueur `?` + `avertissement`, scores affichés tels quels.
-  Hôte = `HostTeams` FIFA ; absent pour l'UEFA (les pays des stades actuels ne sont pas ceux de l'époque : Yougoslavie 1976). Bilans par équipe et compétition
+  des clubs 2019 (FIFA : 6 matchs sur 8 à 0-0 sans vainqueur ni tirs au but) : corrigé par `corrections_internationales.json` (ci-dessous).
+  Hôte = `HostTeams` FIFA ; UEFA : pays des stades (ci-dessous). Bilans par équipe et compétition
   (`finale` = groupes + élimination directe, `elim` = éliminatoires / barrages) : ed, j, v, n, d, bp, bc, nuls aux tirs au but gagnés / perdus (`ntv` / `ntd`), titres, finales,
   meilleur parcours (`NIVEAUX`, ordre indicatif). Reprenable : une édition finie et écrite n'est plus relue (`--relire`), éditions en cours relues à chaque passage, liste illisible
   ou réduite = rien n'est remplacé, `GITHUB_OUTPUT` `traites` / `restants`. Workflow `historique_internationales.yml` (donnees-football, cron lundi 6 h 23 UTC, auto-relance).
   Fixtures : `python tools/fixtures_histoire_internationale.py <cache brut>`. Mesuré le 26/11/2026 : 77 requêtes, 58 s ; vainqueurs de la Coupe du monde 1930-2022 et de
   l'Euro 1960-2024 conformes à l'histoire (voir l'étude).
-- À faire (étude § 5) : résumés (IA pour les nouveaux matchs de la France, déterministes pour les anciens), interface de l'historique (fiches de sélection,
+  **Décisions du 26/11/2026 (REGLE 2)** : (1) **lignées** `lignees_selections.json` (racine, MANUEL, avec `_sources` et `preuve` par lien) : FRG -> GER, URS -> CIS -> RUS, TCH -> CZE (SVK « issue de »), YUG -> SCG -> SRB (CRO, SVN, BIH, MKD « issues de » ; MNE issue de SCG), ZAI -> COD, INH -> IDN ; RDA sans lien ; équipes restent DISTINCTES (aucun cumul fusionné), champ `lignee` {predecesseurs, successeurs, issue_de, issues, note} dans `equipes/<code>.json` et `index.json`, lien écrit seulement si les deux codes sont dans les données (preuve `id_uefa` = même `homeTeam.id` UEFA avant / après, vérifié : 47, 141, 147). (2) **Corrections sourcées** `corrections_internationales.json` (racine, MANUEL) `{"<comp>/<édition>/<id match>": {score, tab, dp, source, verifie_le, fifa: valeurs d'origine}}` : appliquée SEULEMENT si la source donne exactement les valeurs `fifa` (sinon ignorée + `[WARN]`, `corrections_ignorees`) ; l'édition porte `corrections` + `corrections_source` ; une nouvelle correction rouvre l'édition finie. Coupe du monde des clubs 2019 : 6 matchs corrigés d'après ESPN (scoreboard `fifa.cwc`), 2 déjà concordants ; vainqueur Liverpool, finaliste Flamengo, 3e Monterrey, plus d'`avertissement`. (3) **Hôtes UEFA** = pays des stades de la phase finale (Ligue des nations : tour final à 4), `HOTES_EPOQUE` minimale (Euro 1976 CRO / SRB -> YUG, Euro 1988 GER -> FRG), `hote_source` / `hote_note` ; un hôte peut ne pas participer (Euro 2020 : AZE, ROU). (4) **Drapeaux d'époque** : `drapeau` = `h-<code>` (URS, FRG, GDR, TCH, YUG, SCG, CIS, ZAI ; fichiers Commons du domaine public, licence revérifiée par l'API le 26/11/2026) via `DRAPEAUX_HISTORIQUES` ; INH sans fichier sûr (`a_verifier`) = vide ; `index.html` : `DRAPEAUX_HIST` + `flag()` (`Special:FilePath`, nom d'époque en info-bulle, échec = `img.flag.noimg` masquée) ; parité Python / JS contrôlée par `--test`. (5) Nom UEFA « Russie* » : astérisque retiré (`nom_equipe`).
+- **Fiches de nations, de clubs du monde et de joueurs** (`fiches_internationales.py`, 26/11/2026) : étape « Fiches (jamais bloquant) » de `collecte_internationales.yml`
+  et `reconstitution_internationales.yml` (12 min au plus, `--budget-joueurs` 3 / 4), sur les fichiers de jour publiés -> `internationales/fiches/` :
+  `selections/<code>.json` + `index.json` (matchs, V/N/D et tirs au but calculés, stats d'équipe cumulées par compétition / édition — une stat n'est cumulée que sur
+  les matchs qui la portent : `couverture` —, effectif calculé, couleurs, prochain match, Wikidata / Wikipédia), `clubs/<id>.json` + `index.json` + `correspondances.json`
+  (clubs de la CdM des clubs / Coupe intercontinentale SANS fiche existante ; sinon correspondance par IDENTIFIANT seulement), `joueurs/<NN>.json` (64 fichiers, crc32 de
+  l'id) + `index.json` léger + `alias` (id fusionné -> id de fiche), `cache/` (naissances, effectifs UEFA). Règles : sélection -> Wikidata par code FIFA P3441 (KOS -> KVX),
+  classe d'équipe nationale masculine (P2094 football masculin, P1532), UN seul candidat sinon `ambigu` / `absent` ; fédération seulement si une seule porte le code ;
+  confédération parmi 6 QID fixes ; jamais de sélectionneur. Club créé : Wikidata par nom exact + P31 club de football DIRECT + pays, un seul candidat (`REGLE_CLUBS` 2 :
+  Boca Juniors rapproché à tort d'une équipe de beach soccer avant). Joueur : naissances lues sur les inscrits UEFA (`comp.uefa.com/v2/players`, 3 / 2014 / 17) et les
+  effectifs ESPN ; fusion UEFA <-> ESPN SEULEMENT par date de naissance + `nom_concorde` + sélection commune + candidat unique, ou même élément Wikidata (P2276 / P3681,
+  `encyclo_joueurs.relier`) ; liens vers les fiches de club / de championnat par id identique seulement. Budget : 60 % joueurs, 40 % sélections et clubs ; 429 Wikimedia =
+  `Retry-After` puis suite au passage suivant. Mesuré le 26/11/2026 (6 éditions, 1 007 matchs) : 86 nations (86 rapprochées, 0 ambiguë), 22 clubs créés + 12
+  correspondances, 4 040 fiches de joueur, 425 fusions prouvées, 0 ambiguë ; 19 Mo bruts (joueurs 15,6 Mo / 2,1 Mo gzip).
+- À faire (étude § 5) : résumés (IA pour les nouveaux matchs de la France, déterministes pour les anciens), interface de l'historique et des fiches (fiches de sélection,
   onglet Histoire des équipes nationales : lecture de `internationales/historique/`), éliminatoires de l'Euro 2028 / Coupe du monde 2030 dès leur publication.
 
 ## Suivi en direct (`index.html`, bloc `EN DIRECT`, 26/11/2026)

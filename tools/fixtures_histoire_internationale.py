@@ -25,12 +25,15 @@ SPECS = [
     ("euro_2016.json", "uefa_euro_2016", {"finale"}),
     ("euro_2000.json", "uefa_euro_2000", {"finale"}),
     ("euro_1984.json", "uefa_euro_1984", {"finale"}),
+    ("euro_1988.json", "uefa_euro_1988", {"tournoi"}),                  # hôte : stades en Allemagne de l'Ouest (HOTES_EPOQUE)
+    ("euro_2020.json", "uefa_euro_2020", {"tournoi"}),                  # 11 pays hôtes, « Russie* »
     ("euro_1976.json", "uefa_euro_1976", {"finale", "3e"}),
     ("euro_1968.json", "uefa_euro_1968", {"finale", "3e"}),
     ("euro_1960.json", "uefa_euro_1960", {"phase_finale", "finale", "3e", "deux_manches", "annule"}),
     ("ldn_2025.json", "uefa_ldn_2025", {"finale", "3e", "quart"}),
     ("ldn_2021.json", "uefa_ldn_2021", {"finale", "3e"}),
     ("cdmc_2000.json", "fifa_cdmc_2000", {"finale", "3e"}),
+    ("cdmc_2019.json", "fifa_cdmc_2019", None),                         # 8 matchs : corrections sourcées (ESPN)
     ("cdmc_2020.json", "fifa_cdmc_2020", {"forfait"}),
     ("ci_2025.json", "fifa_ci_2025", None),
     ("ci_2026.json", "fifa_ci_2026", None),
@@ -57,7 +60,8 @@ def garde_uefa(m):
     r = {k: r.get(k) for k in ("metaData", "mode", "modeDetail", "phase", "translations") if k in r}
     r["translations"] = {"name": r.get("translations", {}).get("name")}
     out = {"id": m["id"], "status": m["status"], "type": m.get("type"), "round": r, "homeTeam": eq(m["homeTeam"]), "awayTeam": eq(m["awayTeam"]),
-           "kickOffTime": m["kickOffTime"], "score": m.get("score"), "group": m.get("group") and {"metaData": m["group"].get("metaData")}}
+           "kickOffTime": m["kickOffTime"], "score": m.get("score"),
+           "stadium": {"countryCode": (m.get("stadium") or {}).get("countryCode")}, "group": m.get("group") and {"metaData": m["group"].get("metaData")}}
     w = (m.get("winner") or {}).get("match")
     if w:
         out["winner"] = {"match": {"reason": w.get("reason"), "team": w.get("team") and {"countryCode": w["team"].get("countryCode"),
@@ -94,7 +98,8 @@ def choisir_uefa(ms, tags):
     out = []
     for m in ms:
         t = m["round"]["metaData"].get("type")
-        ok = (("finale" in tags and t == "FINAL") or ("3e" in tags and t == "THIRD_PLAY_OFF") or
+        ok = (("tournoi" in tags and m["round"].get("phase") == "TOURNAMENT" and m["round"].get("modeDetail") != "KNOCK_OUT_TWO_LEGS") or
+              ("finale" in tags and t == "FINAL") or ("3e" in tags and t == "THIRD_PLAY_OFF") or
               ("phase_finale" in tags and t in ("SEMIFINAL",)) or
               ("quart" in tags and t == "QUARTER_FINALS" and len(out) < 3 and m["homeTeam"]["teamCode"] in ("POR", "ESP", "DEN", "GER", "FRA", "ITA", "CRO", "NED")
                and m["kickOffTime"]["date"] < "2025-03-25") or
