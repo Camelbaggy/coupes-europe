@@ -47,6 +47,7 @@ python run_ligues.py --date 2026-11-22 --donnees /tmp/donnees [--ligues fl1,pl] 
 python ligues.py --date 2026-11-22 --ligues fl1 --max-matchs 1 --sortie /tmp/l1.json   # collecteur ESPN seul (sans écriture dans le dépôt de données)
 python journees_wiki.py --test && python tools/inspect_ligues.py /tmp/donnees    # journées Wikipédia (sans réseau) ; résumé des données de championnats
 python notification_jour.py --test && python veille_ligues.py --test && python classement_ligue.py --test && python fiches_ligues.py --test && python encyclo_ligues.py --test && python encyclo_joueurs.py --test && python historique_classements.py --test   # notification commune du jour ; veille de la collecte quotidienne des championnats
+python direct_clubs.py --test                           # alertes en direct des clubs français (sans réseau) ; --veille : code 0 si un suivi doit tourner
 python notification_jour.py --veille                    # jours prêts à notifier d'après les fichiers PUBLIÉS (lecture seule)
 python run_ligues.py --date J --donnees DIR --etat      # + etat_championnats.json (collecte quotidienne) ; --alerte J --cause X : alerte d'échec
 ```
@@ -112,6 +113,7 @@ index.html  : page unique (CSS + JS inline), lit soirees/index.json + soirees/<d
 | `clubs.yml` | cron lundi 5 h 17 UTC + dispatch | `clubs` | clubs/ (fiches, couleurs, historique) |
 | `test_pipeline.yml` | push sur `ccr-*` avec `[test]` / `[sans-ia]` | — | rien (pipeline de la semaine du 3 au 5/11/2026) |
 | `notification_jour.yml` | dispatch (veille du battement / secours) | `notification-jour` | etat_notifications.json ; ntfy (notification commune du jour) |
+| `direct_clubs.yml` | dispatch (veille du battement / secours, 20 min avant un match d'un club français) | `direct-clubs` | rien (ntfy : coup d'envoi, buts, fin) |
 | `test_ligues.yml` | push sur `ccr-*` avec `[test-ligues]` | — | rien (championnats d'un jour) |
 | (donnees-football) `collecte_championnats.yml` / `battement.yml` / `veille_secours.yml` | dispatch de la veille des championnats / se relance / cron :37 | `championnats` / `battement` / `veille-secours` | championnats/, etat_championnats.json (dans donnees-football) ; alerte ntfy |
 
@@ -439,6 +441,19 @@ l'ouvre dans `openMatchModal` ; rafraîchie toutes les 30 s tant qu'elle est ouv
 gardé). `m.direct` : bandeau « En direct (ESPN) · provisoire », pas de momentum ni de note ni de résumé (calculés après le match par la collecte
 habituelle, qui remplace tout). Rien n'est enregistré. Étape suivante prévue : momentum en direct (actions Opta d'ESPN, port JS de
 `uefa.compute_momentum` avec test de parité Python / JS).
+
+## Alertes en direct des clubs français (`direct_clubs.py`, 26/11/2026)
+
+Demande du propriétaire : être prévenu sans sélectionner les matchs. Tout match de LDC / LE / LC du jour (UTC) dont une équipe a
+`countryCode == "FRA"` est suivi par `direct_clubs.yml` (lancé par `.github/scripts/veille_direct.sh`, appelé par le battement et
+`veille_secours.yml`, 20 min avant le premier coup d'envoi ; arrêt quand tous les matchs français sont finaux ou commencés depuis 200 min).
+Relevé de la liste UEFA du jour toutes les 30 s (statut + `score.total`) ; à chaque changement de score, événements `GOAL`
+(`uefa.build_events` : buteur, minute, penalty / csc, passeur sauf csc) ; événement pas encore publié : attente de 75 s puis but envoyé
+« buteur pas encore publié » (seul le dernier score est alors sûr). Notifications ntfy (même `NTFY_TOPIC`, distinctes de la notification
+commune du jour) : « 🟢 Coup d'envoi », « ⚽ But de <club> : score » (priorité 4 si le club français marque), « ❌ But annulé » (le score
+baisse), « 🏁 Fin du match » (tirs au but), « ⚠️ Match arrêté » ; lien `?c=<coupe>`. Anti-doublon : titres uniques (score dedans), relus sur
+le topic depuis 12 h au démarrage (`?poll=1&since=12h`). Un match déjà fini au premier relevé n'est pas annoncé. Statut « en direct » de
+l'UEFA : toute valeur hors UPCOMING / FINISHED / POSTPONED / CANCELLED / ABANDONED (valeur exacte vérifiée au premier soir réel).
 
 ## API UEFA : pièges vérifiés sur les données réelles
 
