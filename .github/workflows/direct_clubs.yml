@@ -1,0 +1,32 @@
+name: Direct des clubs français (alertes ntfy)
+
+# Suivi EN DIRECT des matchs de Coupes d'Europe des clubs français (direct_clubs.py) : notification ntfy au coup d'envoi,
+# à chaque but (et but annulé), à la fin du match. Relevé UEFA toutes les 30 s. Lancé par la veille du battement
+# (.github/scripts/veille_direct.sh) 20 min avant le premier coup d'envoi d'un club français ; s'arrête quand tous les
+# matchs français du jour sont terminés. Une relance ne renvoie rien (titres déjà envoyés relus sur le topic).
+# N'écrit rien dans le dépôt.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: direct-clubs
+  cancel-in-progress: false
+
+jobs:
+  direct:
+    runs-on: ubuntu-latest
+    timeout-minutes: 345
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Suivi en direct
+        env:
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+          DASHBOARD_URL: ${{ secrets.DASHBOARD_URL }}
+          PYTHONUNBUFFERED: '1'
+        run: python direct_clubs.py --boucle --duree-min 330 --pas 30

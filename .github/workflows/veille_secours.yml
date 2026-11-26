@@ -29,6 +29,10 @@ jobs:
           sparse-checkout: |
             .github/scripts
             notification_jour.py
+            direct_clubs.py
+            uefa.py
+            netutil.py
+            notify.py
           sparse-checkout-cone-mode: false
       - name: Relance d'update_dashboard.yml si une soirée n'est pas terminée
         env:
@@ -41,6 +45,12 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
         run: bash .github/scripts/veille_notification.sh
+      - name: Direct des clubs français (match d'un club français imminent ou en cours)
+        if: ${{ !cancelled() }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+        run: bash .github/scripts/veille_direct.sh
       - name: Relance du battement s'il ne tourne pas
         if: ${{ !cancelled() }}
         env:
