@@ -29,11 +29,7 @@ jobs:
         with:
           sparse-checkout: |
             .github/scripts
-            notification_jour.py
-            direct_clubs.py
-            uefa.py
-            netutil.py
-            notify.py
+            *.py
           sparse-checkout-cone-mode: false
       - name: Battement
         env:

@@ -8,7 +8,13 @@ RACINE=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 . "$RACINE/commun.sh"
 : "${REPO:?REPO manquant}"
 wf=direct_clubs.yml
-if ! (cd "$RACINE/../.." && python3 direct_clubs.py --veille); then exit 0; fi
+(cd "$RACINE/../.." && python3 direct_clubs.py --veille); code=$?
+if [ "$code" = "10" ]; then exit 0; fi   # rien à suivre
+if [ "$code" != "0" ]; then
+  # plantage (ex. module absent du checkout partiel, constaté le 26/11/2026) : jamais confondu avec « rien à suivre »
+  echo "::error::[DIRECT] direct_clubs.py --veille a échoué (code $code) : suivi en direct NON vérifié"
+  exit 1
+fi
 en_cours=$(nb_en_cours "$wf")
 if [ "$en_cours" != "0" ]; then echo "[DIRECT] $wf : un passage est en file ou en cours (ou liste illisible : $en_cours), rien à faire"; exit 0; fi
 echo "[DIRECT] relance de $wf"
