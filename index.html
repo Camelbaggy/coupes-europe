@@ -462,6 +462,13 @@
       font-size: 0.95rem;
     }
 
+    .match-tile.prog { cursor: default; }
+    .match-tile.prog:hover { background: var(--bg-card); }
+    .prog-stade { font-size: 0.7rem; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .prog-h { font-size: 0.95rem; font-weight: 700; color: var(--text-main); }
+    .prog-st.alerte { color: #f87171; font-weight: 700; }
+    .tour-avenir { display: inline-block; margin-left: 6px; padding: 1px 7px; border-radius: 999px; font-size: 0.66rem; font-weight: 700; vertical-align: 2px;
+      color: var(--tour-accent, var(--accent-ucl)); border: 1px solid currentColor; text-transform: none; letter-spacing: 0; }
     .tile-meta {
       border-left: 1px solid var(--border);
       padding-left: 12px;
@@ -1180,8 +1187,17 @@
       <div id="french-focus-container" class="fr-cards-list"></div>
     </section>
 
+    <!-- PROGRAMME : matchs à venir du tour choisi (clubs/programme.json ; championnats : <ligue>/<saison>/programme.json) -->
+    <section id="prog-section" hidden>
+      <div class="section-header">
+        <h2 class="section-title" id="prog-title">Programme</h2>
+        <span class="section-sub" id="prog-sub"></span>
+      </div>
+      <div id="prog-container" class="matches-grid"></div>
+    </section>
+
     <!-- 2. TOUS LES RÉSULTATS DE LA SOIRÉE -->
-    <section>
+    <section id="results-section">
       <div class="section-header">
         <h2 class="section-title">Résultats</h2>
         <span class="section-sub" id="grid-hint"></span>
@@ -1383,6 +1399,8 @@
     const saisonDe = {};
     const ligueBase = (k) => `${DONNEES}championnats/${k}/${saisonDe[k] || SAISON_LIGUES}/`;
     const ligueIndex = {};          // clé -> lignes d'index (date décroissante) ; [] = pas encore de données
+    let programmeCoupes = null;    // clubs/programme.json : {competitions: {ucl: [matchs à venir]}}
+    const programmeLigue = {};     // clé de championnat -> matchs à venir (programme.json de la saison)
     let soireeIndex = null;        // lignes de l'index (plus récente d'abord) ; null = pas d'index : pas de menu
     const soireeCache = new Map();
 
@@ -1396,8 +1414,8 @@
     // ---------- Menu des journées / tours : un par coupe, construit depuis soirees/index.json ----------
     // Un tour (journée de phase de ligue, barrages, tour préliminaire…) peut s'étaler sur plusieurs soirées : il charge
     // et fusionne les soirees/<date>.json concernées (index : competitions.<clé>.{stage, tour}).
-    const GROUPES = [   // ordre du menu : du plus récent au plus ancien
-      { k: 'finale', t: 'Phase finale' }, { k: 'ligue', t: 'Phase de ligue' }, { k: 'barrages', t: 'Barrages' }, { k: 'prelim', t: 'Tours préliminaires' },
+    const GROUPES = [   // ordre du menu : à venir (le plus proche d'abord), puis du plus récent au plus ancien
+      { k: 'avenir', t: 'À venir' }, { k: 'finale', t: 'Phase finale' }, { k: 'ligue', t: 'Phase de ligue' }, { k: 'barrages', t: 'Barrages' }, { k: 'prelim', t: 'Tours préliminaires' },
       { k: 'journees', t: 'Journées' }, { k: 'autres', t: 'Matchs sans journée' }];
     let toursByComp = {};          // clé de coupe -> tours (groupe, puis date décroissante)
     const tourChoice = {};         // clé de coupe -> id du tour choisi (conservé quand on change de coupe)
@@ -1426,7 +1444,7 @@
       if (dates.length === 1 || dates[0] === dates[dates.length - 1]) return `${a.j} ${a.m}`;
       return a.m === b.m ? `${a.j}-${b.j} ${a.m}` : `${a.j} ${a.m}-${b.j} ${b.m}`;
     }
-    const tourSousTitre = (t) => datesCourtes(t.dates) + (t.matchs ? ` · ${t.matchs} match${t.matchs > 1 ? 's' : ''}` : '');
+    const tourSousTitre = (t) => (t.dates.length ? datesCourtes(t.dates) : '') + (t.matchs ? ` · ${t.matchs} match${t.matchs > 1 ? 's' : ''}` : '');
 
     function buildTours() {
       toursByComp = {};
@@ -1453,7 +1471,51 @@
         const rang = (t) => GROUPES.findIndex(g => g.k === t.groupe);
         list.sort((a, b) => rang(a) - rang(b) || b.fin.localeCompare(a.fin));
         toursByComp[k] = list;
+        ajouterAvenir(k, ((programmeCoupes || {}).competitions || {})[k] || []);
       });
+    }
+
+    // Matchs à venir (programme) : rattachés au tour déjà commencé qui porte le même sigle (journée en partie jouée), sinon tour
+    // « à venir » (groupe À venir, le plus proche d'abord). Un match commencé depuis plus de 150 min n'est plus montré (la collecte
+    // l'a, ou l'aura bientôt, dans les résultats). Championnat : la journée vient de Wikipédia ; sans journée : par semaine.
+    const PROG_APRES_MIN = 150;
+    function progVisibles(ms) {
+      const lim = Date.now() - PROG_APRES_MIN * 60000;
+      return (ms || []).filter(x => x.statut === 'Reporté' || !x.debut || new Date(x.debut).getTime() > lim);
+    }
+    function lundi(iso) {
+      const d = new Date(iso + 'T12:00:00Z'), j = (d.getUTCDay() + 6) % 7;
+      return new Date(d.getTime() - j * 86400000).toISOString().slice(0, 10);
+    }
+    function ajouterAvenir(k, ms) {
+      const list = toursByComp[k] || (toursByComp[k] = []), ligue = estLigue(k), futurs = new Map();
+      const deja = new Set();
+      list.forEach(t => (t.avenir = []));
+      progVisibles(ms).forEach(x => {
+        let t = ligue
+          ? list.find(t => x.journee && t.groupe === 'journees' && t.n === x.journee)
+          : list.find(t => !t.futur && t.stage === x.stage && t.tour === x.tour);
+        if (!t) {
+          const cle = ligue ? (x.journee ? 'j' + x.journee : 'sem-' + lundi(x.date)) : (x.stage + '|' + x.tour);
+          t = futurs.get(cle);
+          if (!t) {
+            t = ligue
+              ? (x.journee ? { comp: k, stage: 'league', tour: 'J' + x.journee, n: x.journee, titre: 'Journée ' + x.journee, id: 'j' + x.journee }
+                           : { comp: k, stage: 'league', tour: '', n: 0, titre: 'Semaine du ' + datesCourtes([lundi(x.date)]), id: cle })
+              : { comp: k, stage: x.stage, tour: x.tour, id: slug(x.tour || x.stage || 'tour') };
+            if (!ligue) t.titre = tourTitre(t);
+            Object.assign(t, { dates: [], matchs: 0, jouee: false, futur: true, groupe: 'avenir', avenir: [] });
+            futurs.set(cle, t);
+          }
+        }
+        if (deja.has(x.id)) return;
+        deja.add(x.id); t.avenir.push(x);
+        if (t.futur) { t.matchs++; if (x.date && !t.dates.includes(x.date)) t.dates.push(x.date); }
+      });
+      const nv = [...futurs.values()];
+      nv.forEach(t => { t.dates.sort(); t.fin = t.dates[t.dates.length - 1] || ''; if (list.some(u => u.id === t.id)) t.id += '-a-venir'; });
+      nv.sort((a, b) => (a.dates[0] || '').localeCompare(b.dates[0] || ''));
+      toursByComp[k] = [...nv, ...list];
     }
     // Par défaut : le tour le plus récent qui a des matchs terminés
     function defaultTour(k) {
@@ -1486,11 +1548,13 @@
       list.forEach(t => { t.dates.sort(); t.fin = t.dates[t.dates.length - 1]; });
       list.sort((a, b) => (a.groupe === 'autres') - (b.groupe === 'autres') || b.n - a.n);
       toursByComp[k] = list;
+      ajouterAvenir(k, programmeLigue[k] || []);
     }
     async function loadLigueIndex(k) {
       if (ligueIndex[k]) return ligueIndex[k];
       if (!saisonDe[k]) saisonDe[k] = (await chargerSaisons())[k] || SAISON_LIGUES;
-      const idx = await fetchJson(ligueBase(k) + 'index.json');
+      const [idx, prog] = await Promise.all([fetchJson(ligueBase(k) + 'index.json'), fetchJson(ligueBase(k) + 'programme.json')]);
+      programmeLigue[k] = prog && Array.isArray(prog.matchs) ? prog.matchs : [];
       ligueIndex[k] = Array.isArray(idx) ? idx.filter(l => l && /^\d{4}-\d{2}-\d{2}$/.test(l.date)).sort((a, b) => b.date.localeCompare(a.date)) : [];
       buildToursLigue(k);
       return ligueIndex[k];
@@ -1523,6 +1587,18 @@
     async function loadTour(t) {
       const key = t.comp + '|' + t.id;
       if (tourCache.has(key)) return tourCache.get(key);
+      if (t.futur) {
+        const j = (toursByComp[t.comp] || []).filter(u => u.jouee && !u.futur).sort((a, b) => b.fin.localeCompare(a.fin))[0];
+        const prec = j ? await loadTour(j) : null;
+        const b = prec ? prec.comp : {};
+        const hit = {
+          comp: { name: b.name || COMP_FULL[t.comp], type: b.type, standings: b.standings || [], standings_source: b.standings_source || 'absent',
+                  standings_at: b.standings_at, matches: [], french_clubs_focus: [], matchday_label: '', _multi: false },
+          meta: prec ? prec.meta : {},
+        };
+        tourCache.set(key, hit);
+        return hit;
+      }
       const ligue = estLigue(t.comp);
       const datas = await Promise.all(t.dates.map(d => ligue ? loadJourLigue(t.comp, d) : loadSoiree(d)));
       if (datas.some(d => !d)) return null;
@@ -1569,8 +1645,8 @@
       bar.hidden = !t;
       if (!t) { bar.innerHTML = ''; return; }
       bar.style.setProperty('--tour-accent', `var(--accent-${t.comp})`);
-      bar.innerHTML = `<button type="button" class="tour-btn" id="tour-btn" aria-haspopup="dialog" aria-expanded="false" aria-label="${esc(t.titre + ', ' + tourSousTitre(t) + '. Changer de journée ou de tour')}" onclick="openTourMenu()">
-          <span class="tour-txt"><span class="tour-t">${esc(t.titre)}</span><span class="tour-d">${esc(tourSousTitre(t))}</span></span>
+      bar.innerHTML = `<button type="button" class="tour-btn" id="tour-btn" aria-haspopup="dialog" aria-expanded="false" aria-label="${esc(t.titre + (t.futur ? ' (à venir)' : '') + ', ' + tourSousTitre(t) + '. Changer de journée ou de tour')}" onclick="openTourMenu()">
+          <span class="tour-txt"><span class="tour-t">${esc(t.titre)}${t.futur ? '<span class="tour-avenir">à venir</span>' : ''}</span><span class="tour-d">${esc(tourSousTitre(t))}</span></span>
           <svg class="tour-chev" viewBox="0 0 12 8" aria-hidden="true"><path d="M1 1l5 5 5-5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </button>${t.reconstituee ? infoBtn(estLigue(t.comp) ? RECONSTITUEE_LIGUE_INFO : RECONSTITUEE_INFO, 'Journée reconstituée') : ''}`;
     }
@@ -1589,7 +1665,7 @@
         if (!ts.length) return '';
         return `<div role="group" aria-labelledby="tg-${g.k}"><div class="tour-grp" id="tg-${g.k}">${esc(g.t)}</div>${ts.map(t =>
           `<button type="button" role="option" class="tour-opt" data-id="${esc(t.id)}" aria-selected="${t.id === cur}" tabindex="${t.id === cur ? 0 : -1}" onclick="chooseTour('${esc(t.id)}')">
-            <span class="tour-txt"><span class="tour-t">${esc(t.titre)}</span><span class="tour-d">${esc(datesCourtes(t.dates))}</span></span>
+            <span class="tour-txt"><span class="tour-t">${esc(t.titre)}${t.futur ? '<span class="tour-avenir">à venir</span>' : ''}</span><span class="tour-d">${esc(t.dates.length ? datesCourtes(t.dates) : '')}</span></span>
             <span class="tour-n">${t.matchs} match${t.matchs > 1 ? 's' : ''}</span></button>`).join('')}</div>`;
       }).join('');
       const modal = document.getElementById('tour-modal');
@@ -1677,14 +1753,15 @@
         main.insertAdjacentHTML('afterbegin', `<div class="empty-state" id="soiree-err">Impossible de charger ${esc(t.titre)}.</div>`);
         return;
       }
-      appData.competitions[compKey] = hit.comp;
+      appData.competitions[compKey] = Object.assign(hit.comp, { _futur: !!t.futur, _avenir: t.avenir || [] });
       updateBadge(hit.meta);
       renderCompetition(compKey);
       if (slide) slideIn(main, slide);
     }
 
     async function initDashboard() {
-      const [idx] = await Promise.all([fetchJson('soirees/index.json'), loadClubIndex()]);
+      const [idx, prog] = await Promise.all([fetchJson('soirees/index.json'), fetchJson('clubs/programme.json'), loadClubIndex()]);
+      programmeCoupes = prog && prog.competitions ? prog : null;
       const lignes = Array.isArray(idx) ? idx.filter(l => l && /^\d{4}-\d{2}-\d{2}$/.test(l.date)).sort((a, b) => b.date.localeCompare(a.date)) : [];
       soireeIndex = lignes.length ? lignes : null;
       appData = { competitions: {} };
@@ -1874,13 +1951,48 @@
       return `${r} • Zone élim.`;
     }
 
+    // Programme du tour : matchs à venir groupés par jour (heure de Paris), stade ; aucun score ni lien de fiche (rien n'est joué)
+    function renderProgramme(k, comp) {
+      const sec = document.getElementById('prog-section'), ms = progVisibles(comp._avenir);
+      sec.hidden = !ms.length;
+      if (!ms.length) { document.getElementById('prog-container').innerHTML = ''; return; }
+      const ligue = estLigue(k), maintenant = Date.now();
+      document.getElementById('prog-title').textContent = comp._futur ? 'Programme' : 'À venir dans cette journée';
+      document.getElementById('prog-sub').innerHTML = infoBtn(`<p>${ligue ? 'Calendrier ESPN' : 'Calendrier officiel de l\'UEFA'}, relevé une fois par jour${ligue ? '' : ' (et après chaque soirée)'} : dates et heures (heure de Paris) peuvent encore changer.</p>${ligue ? '<p>Le numéro de journée vient de Wikipédia ; un match sans journée connue est rangé par semaine.</p>' : '<p>Les affiches des phases à élimination directe n\'apparaissent qu\'après le tirage.</p>'}`, 'Source du programme');
+      const nomEq = (t) => t.a_determiner ? `<i>${esc(t.name || 'À déterminer')}</i>` : clubLink(t.id, esc(t.name));
+      const estFr = (t) => !ligue && t.is_french;
+      let dernier = null;
+      document.getElementById('prog-container').innerHTML = [...ms].sort((a, b) => (a.debut || '').localeCompare(b.debut || '')).map(x => {
+        const jour = x.date || (x.debut || '').slice(0, 10);
+        const sep = jour !== dernier ? `<div class="date-sep">${esc(jourLong(jour))}</div>` : '';
+        dernier = jour;
+        const parti = x.debut && new Date(x.debut).getTime() <= maintenant && x.statut !== 'Reporté';
+        const statut = parti ? 'Commencé' : x.statut === 'À venir' ? '' : x.statut;
+        const lieu = [x.stade, x.ville].filter(Boolean).join(', ');
+        return sep + `
+          <div class="match-tile prog">
+            <div class="tile-teams">
+              <div class="tile-team-row"><span class="tile-team-name ${estFr(x.home_team) ? 'is-fr' : ''}">${flag(x.home_team)} ${nomEq(x.home_team)}</span></div>
+              <div class="tile-team-row"><span class="tile-team-name ${estFr(x.away_team) ? 'is-fr' : ''}">${flag(x.away_team)} ${nomEq(x.away_team)}</span></div>
+              ${lieu ? `<div class="prog-stade" title="${esc(lieu)}">🏟 ${esc(lieu)}</div>` : ''}
+            </div>
+            <div class="tile-meta">
+              <div class="prog-h">${x.debut && x.statut !== 'Reporté' ? esc(heureParis(x.debut)) : '—'}</div>
+              ${statut ? `<div class="prog-st ${parti || x.statut === 'Reporté' ? 'alerte' : ''}">${esc(statut)}</div>` : ''}
+            </div>
+          </div>`;
+      }).join('');
+    }
+
     function renderCompetition(compKey) {
       const comp = (appData && appData.competitions && appData.competitions[compKey]) ||
         { name: '', french_clubs_focus: [], matches: [], standings: [] };
 
       document.getElementById('matchday-indicator').textContent = dateEnToutesLettres(comp.matchday_label || '');
       const ligue = estLigue(compKey);
-      document.getElementById('focus-section').hidden = ligue;   // championnats : pas de focus clubs français
+      document.getElementById('focus-section').hidden = ligue || !!comp._futur;   // championnats : pas de focus clubs français
+      document.getElementById('results-section').hidden = !!comp._futur;           // journée entièrement à venir : programme seul
+      renderProgramme(compKey, comp);
       document.getElementById('comp-view').classList.toggle('ligue', ligue);
       const estFr = (t) => !ligue && t.is_french;   // en championnat, tous les clubs sont du même pays : pas de surlignage
 

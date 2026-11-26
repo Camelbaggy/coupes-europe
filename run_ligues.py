@@ -165,6 +165,12 @@ def journees_saison(lg: str, annee: int, dossier: str, avec_wiki: bool) -> Dict[
             print(f"[WARN] {lg} : calendrier ESPN de la saison illisible ; journées inchangées")
             return cache
         res = journees_wiki.calculer(lg, annee, ms, clubs, cache)
+        jr = cache.get("journees") or {} if res.get("erreur") else res.get("journees") or {}
+        prog = ligues.programme(lg, ms, jr, datetime.now(timezone.utc))
+        prog["maj"] = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+        ecrire_si_change(os.path.join(dossier, "programme.json"), prog)
+        print(f"[PROGRAMME] {lg} : {len(prog['matchs'])} match(s) à venir, "
+              f"{sum(1 for x in prog['matchs'] if x.get('journee'))} avec journée")
         if res.get("erreur"):
             print(f"[WARN] {lg} : journées Wikipédia non mises à jour : {res.get('anomalies', [])[:3]}")
             return cache
