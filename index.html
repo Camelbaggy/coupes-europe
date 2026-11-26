@@ -2825,8 +2825,60 @@
         return ((await r.json()).events || []).map(ev => directResume(k, ev));
       } catch (e) { return null; }
     }
+    function directDates(x) {
+      if (!x || !x.date) return [];
+      const d1 = String(x.date).slice(0, 10);
+      const dt = new Date(x.date);
+      const d2 = isNaN(dt.getTime()) ? '' : dt.toLocaleDateString('en-CA', { timeZone: 'Europe/Paris' });
+      return [...new Set([d1, d2].filter(d => /^\d{4}-\d{2}-\d{2}$/.test(d)))];
+    }
+    const directMatchFini = (m) => Boolean(m && (m.finished || m.status === 'Terminé' || m.status === 'FINISHED') && !m.en_attente && !m.detail_manquant && !m.en_cours);
+    function directMemeMatch(m, x) {
+      if (m.espn_id && String(m.espn_id) === String(x.id)) return true;
+      if (m.xg_espn_id && String(m.xg_espn_id) === String(x.id)) return true;
+      if (m.match_id && String(m.match_id) === 'espn-' + String(x.id)) return true;
+      const nomsEq = (t) => [t && t.name, t && t.official_name].map(normNom).filter(Boolean);
+      const mh = nomsEq(m.home_team), ma = nomsEq(m.away_team);
+      const xh = normNom(x.home && x.home.name), xa = normNom(x.away && x.away.name);
+      return Boolean(xh && xa && mh.includes(xh) && ma.includes(xa));
+    }
+    function directDejaCollecte(x) {
+      const k = x && x.k;
+      const dates = directDates(x);
+      if (!k || !dates.length) return false;
+      // (a) Match déjà présent et terminé dans les journées/soirées en cache (`soireeCache`)
+      const cles = estLigue(k)
+        ? dates.map(d => k + '@' + d)
+        : estIntl(k)
+        ? dates.flatMap(d => intlEditions(k).map(e => `${k}@${e.edition}@${d}`))
+        : dates;
+      for (const cle of cles) {
+        const d = soireeCache.get(cle);
+        const ms = (((d || {}).competitions || {})[k] || {}).matches || [];
+        if (ms.some(m => directMatchFini(m) && directMemeMatch(m, x))) return true;
+      }
+      // (b) Journée entière déjà collectée et complète dans l'index de la compétition
+      if (estLigue(k)) {
+        if ((ligueIndex[k] || []).some(l => dates.includes(l.date) && !l.incomplet && (l.matchs || 0) > 0 && (l.termines || 0) >= (l.matchs || 0))) {
+          return true;
+        }
+      } else if (estIntl(k)) {
+        for (const e of intlEditions(k)) {
+          const E = intlEd(k, e.edition);
+          if (E && (E.lignes || []).some(l => dates.includes(l.date) && !l.incomplet && (l.matchs || 0) > 0 && (l.termines || 0) >= (l.matchs || 0))) {
+            return true;
+          }
+        }
+      } else if (COMP_KEYS.includes(k)) {
+        const l = (soireeIndex || []).find(row => dates.includes(row.date) && row.competitions && row.competitions[k]);
+        if (l && l.statut === 'complet' && (l.matchs || 0) > 0 && (l.termines || 0) >= (l.matchs || 0)) {
+          return true;
+        }
+      }
+      return false;
+    }
     const directVisible = (x, maintenant) => x.state === 'in' ||
-      (x.state === 'post' && maintenant - new Date(x.date).getTime() < DIRECT_APRES_FIN_MIN * 60000);
+      (x.state === 'post' && maintenant - new Date(x.date).getTime() < DIRECT_APRES_FIN_MIN * 60000 && !directDejaCollecte(x));
     function directLigne(x, tagComp) {
       const etat = x.state === 'in' ? (x.mitemps ? 'Mi-temps' : x.minute) : 'Terminé · provisoire';
       const intl = !estLigue(x.k);

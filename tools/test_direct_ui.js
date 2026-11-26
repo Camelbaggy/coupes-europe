@@ -221,6 +221,176 @@ const { chromium, devices } = require(process.env.PLAYWRIGHT_PATH || 'playwright
   const euroTour = await page.textContent('#tour-btn .tour-t');
   ok(euroTour === 'Finale', 'defaultTourIntl(euro) sans match aujourd\'hui : reste sur la dernière phase jouée (' + euroTour + ')');
 
+  // 5. Filtrage des matchs `post` ("Terminé · provisoire") déjà collectés vs non collectés
+  const postRecentIso = new Date(Date.now() - 125 * 60000).toISOString();
+  const postDateUtc = postRecentIso.slice(0, 10);
+  const postDateParis = await page.evaluate((iso) => new Date(iso).toLocaleDateString('en-CA', { timeZone: 'Europe/Paris' }), postRecentIso);
+  const mkPostEvent = (id, home, away, dateIso = postRecentIso) => ({
+    id: String(id),
+    date: dateIso,
+    status: { displayClock: 'FT', type: { state: 'post', name: 'STATUS_FULL_TIME', completed: true } },
+    competitions: [{
+      competitors: [
+        { ...home, homeAway: 'home', score: '2' },
+        { ...away, homeAway: 'away', score: '1' },
+      ],
+    }],
+  });
+
+  // 5a. Match `post` NON encore collecté -> doit rester affiché (« Terminé · provisoire »)
+  const postNonCollecteSlug = {
+    'uefa.champions': [
+      mkPostEvent('9101', team('160', 'Paris Saint-Germain', 'PSG', 'https://a.espncdn.com/i/teamlogos/soccer/500/160.png'), team('364', 'Liverpool', 'LIV', 'https://a.espncdn.com/i/teamlogos/soccer/500/364.png')),
+    ],
+  };
+  await page.unroute('https://site.web.api.espn.com/**');
+  await page.route('https://site.web.api.espn.com/**', async route => {
+    const m = /\/soccer\/([^/]+)\/scoreboard/.exec(route.request().url());
+    const slug = m && m[1];
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ events: postNonCollecteSlug[slug] || [] }) });
+  });
+
+  await page.goto(`${base}/?c=ucl&${q}`);
+  await page.waitForSelector('#direct-section:not([hidden]) .direct-bloc', { timeout: 20000 });
+  const postVisTxt = await page.textContent('#direct-section');
+  ok(/Terminé · provisoire/.test(postVisTxt) && /Paris Saint-Germain/.test(postVisTxt),
+    'post non collecté : reste affiché avec « Terminé · provisoire »');
+
+  // 5b. Match `post` déjà collecté dans soirees/index.json (journée complète) -> masqué (#direct-section et #direct-accueil vides)
+  let mockIndexMode = 'complet';
+  await page.route('**/soirees/index.json*', async route => {
+    const resp = await route.fetch();
+    const json = await resp.json();
+    if (mockIndexMode === 'complet') {
+      json.unshift({
+        date: postDateParis,
+        statut: 'complet',
+        matchs: 1,
+        termines: 1,
+        competitions: { ucl: { matchs: 1, stage: 'league', tour: 'J6' } },
+        francais: [],
+        resumes: { gemini: 0, deterministe: 0, a_rattraper: 0 },
+        reconstituee: false,
+        maj: new Date().toISOString(),
+        fichier: `soirees/${postDateParis}.json`,
+      });
+    } else if (mockIndexMode === 'soireeCache') {
+      json.unshift({
+        date: '2026-11-25',
+        statut: 'complet',
+        matchs: 9,
+        termines: 9,
+        competitions: { ucl: { matchs: 9, stage: 'league', tour: 'J5' } },
+        francais: [],
+        resumes: { gemini: 2, deterministe: 0, a_rattraper: 0 },
+        reconstituee: false,
+        maj: new Date().toISOString(),
+        fichier: 'soirees/2026-11-25.json',
+      });
+    }
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(json) });
+  });
+  await page.route(`**/soirees/${postDateParis}.json*`, async route => {
+    await route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({
+        last_updated: new Date().toISOString(),
+        target_dates: [postDateParis],
+        competitions: {
+          ucl: {
+            name: 'Ligue des Champions',
+            standings: [],
+            standings_source: 'absent',
+            french_clubs_focus: [],
+            matches: [{
+              match_id: '2099101',
+              date: postDateParis,
+              kickoff: '21:00',
+              status: 'Terminé',
+              finished: true,
+              home_team: { id: '52747', name: 'Paris Saint-Germain', official_name: 'Paris Saint-Germain', short: 'PSG', flag: 'fr', country: 'FRA', is_french: true, score: 2 },
+              away_team: { id: '7889', name: 'Liverpool', official_name: 'Liverpool FC', short: 'LIV', flag: 'gb-eng', country: 'ENG', is_french: false, score: 1 },
+            }],
+          },
+        },
+      }),
+    });
+  });
+
+  await page.goto(`${base}/?c=ucl&${q}`);
+  await page.waitForSelector('#comp-view:not([hidden]) .match-tile', { timeout: 20000 });
+  await page.waitForTimeout(400);
+  const directSecHidden = await page.evaluate(() => {
+    const el = document.getElementById('direct-section');
+    return el.hidden && el.innerHTML === '';
+  });
+  ok(directSecHidden, 'post déjà collecté (soirees/index.json complet) : #direct-section masqué et vide');
+
+  await page.goto(`${base}/?${q}`);
+  await page.waitForSelector('#accueil .acc-bloc', { timeout: 20000 });
+  await page.waitForTimeout(400);
+  const directAccVide = await page.evaluate(() => {
+    const el = document.getElementById('direct-accueil');
+    return !!el && el.innerHTML === '';
+  });
+  ok(directAccVide, 'post déjà collecté (soirees/index.json complet) : #direct-accueil vide');
+
+  // 5c. Match `in` JAMAIS masqué même si la date est marquée complète dans soireeIndex
+  const inAvecIndexComplet = {
+    'uefa.champions': [
+      mkEvent('9102', team('160', 'Paris Saint-Germain', 'PSG', 'https://a.espncdn.com/i/teamlogos/soccer/500/160.png'), team('364', 'Liverpool', 'LIV', 'https://a.espncdn.com/i/teamlogos/soccer/500/364.png'), "72'"),
+      mkPostEvent('9101', team('86', 'Real Madrid', 'RMA', 'https://a.espncdn.com/i/teamlogos/soccer/500/86.png'), team('132', 'Bayern Munich', 'BAY', 'https://a.espncdn.com/i/teamlogos/soccer/500/132.png')),
+    ],
+  };
+  // Force `in` event date to today Paris / postDateParis so it matches index entry date
+  inAvecIndexComplet['uefa.champions'][0].date = postRecentIso;
+  await page.unroute('https://site.web.api.espn.com/**');
+  await page.route('https://site.web.api.espn.com/**', async route => {
+    const m = /\/soccer\/([^/]+)\/scoreboard/.exec(route.request().url());
+    const slug = m && m[1];
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ events: inAvecIndexComplet[slug] || [] }) });
+  });
+
+  await page.goto(`${base}/?c=ucl&${q}`);
+  await page.waitForSelector('#direct-section:not([hidden]) .direct-bloc', { timeout: 20000 });
+  const mixedTxt = await page.textContent('#direct-section');
+  ok(/Paris Saint-Germain/.test(mixedTxt) && !/Real Madrid/.test(mixedTxt),
+    'match in jamais masqué même si la date est dans soireeIndex, tandis que post collecté reste masqué');
+
+  // 5d. Match `post` déjà collecté uniquement via soireeCache (sans ligne complète pour la date dans soireeIndex) -> masqué
+  mockIndexMode = 'soireeCache';
+  const cacheMatchPost = {
+    'uefa.champions': [
+      mkPostEvent('9201', team('52747', 'Paris', 'PSG', 'https://a.espncdn.com/i/teamlogos/soccer/500/160.png'), team('50050', 'AS Roma', 'ROM', 'https://a.espncdn.com/i/teamlogos/soccer/500/104.png'), '2026-11-25T20:00:00Z'),
+    ],
+  };
+  await page.unroute('https://site.web.api.espn.com/**');
+  await page.route('https://site.web.api.espn.com/**', async route => {
+    const m = /\/soccer\/([^/]+)\/scoreboard/.exec(route.request().url());
+    const slug = m && m[1];
+    await route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify({ events: cacheMatchPost[slug] || [] }) });
+  });
+  await page.goto(`${base}/?c=ucl&${q}`);
+  await page.waitForSelector('#comp-view:not([hidden]) .match-tile', { timeout: 20000 });
+  await page.waitForTimeout(400);
+  const directCacheHidden = await page.evaluate(() => {
+    const x = {
+      k: 'ucl',
+      id: '401915374',
+      date: '2026-11-25T20:00:00Z',
+      state: 'post',
+      home: { name: 'Paris Saint-Germain' },
+      away: { name: 'AS Roma' },
+    };
+    const resId = directDejaCollecte(x);
+    const resNoms = directDejaCollecte({ ...x, id: 'autre-id' });
+    const el = document.getElementById('direct-section');
+    return { resId, resNoms, hidden: el.hidden && el.innerHTML === '' };
+  });
+  ok(directCacheHidden.resId && directCacheHidden.resNoms && directCacheHidden.hidden,
+    'post présent dans soireeCache (par espn_id/xg_espn_id et par noms) : directDejaCollecte=true et #direct-section masqué (' + postDateUtc + ')');
+
   ok(erreurs.length === 0, 'console : ' + (erreurs.length ? erreurs.slice(0, 5).join(' | ') : '0 erreur'));
   await browser.close();
   console.log(echecs ? `[BILAN] ${echecs} échec(s)` : '[BILAN] tout est bon');
