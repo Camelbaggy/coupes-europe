@@ -32,6 +32,8 @@ from run_ligues import _lire, ecrire_si_change
 
 # Éditions détaillées (décision du propriétaire du 26/11/2026 : fiches complètes pour les éditions récentes seulement), de la plus
 # récente à la plus ancienne. Une édition future (éliminatoires de l'Euro 2028…) s'ajoute ici quand l'UEFA la publie.
+FORMAT = 2   # 2 : `tour_court` / `journee` des matchs, `par_tour` de l'index ; un fichier d'un format plus ancien est refait
+
 EDITIONS: List[Tuple[str, int]] = [("ci", 2026), ("ldn", 2027), ("cdm", 2026), ("cdmc", 2025), ("ldn", 2025), ("euro", 2024)]
 
 
@@ -55,7 +57,13 @@ def ligne_index(jour: str, bloc: Dict[str, Any], maintenant: datetime, reconstit
     francais = [{"match_id": m["match_id"], "home": m["home_team"]["name"], "away": m["away_team"]["name"],
                  "score": f"{m['home_team']['score']}-{m['away_team']['score']}" if m.get("finished") else None}
                 for m in ms if m.get("is_french_match")]
+    par_tour: Dict[str, int] = {}
+    for m in comptes:
+        t = m.get("tour_court") or (m.get("round") or {}).get("name") or ""
+        if t:
+            par_tour[t] = par_tour.get(t, 0) + 1
     return {"date": jour, "matchs": len(comptes), "termines": termines, "incomplet": bool(bloc.get("incomplet")),
+            "par_tour": par_tour,
             "phases": sorted({m.get("phase") for m in ms if m.get("phase")}), "tours": tours,
             "groupes": sorted({m["groupe"] for m in ms if m.get("groupe")}), "francais": francais,
             "maj": _horo(maintenant), "fichier": f"{jour}.json", **({"reconstituee": True} if reconstituee else {})}
@@ -63,6 +71,8 @@ def ligne_index(jour: str, bloc: Dict[str, Any], maintenant: datetime, reconstit
 
 def complet(chemin: str, comp: str) -> bool:
     d = _lire(chemin) or {}
+    if (d.get("format") or 1) < FORMAT:
+        return False
     b = (d.get("competitions") or {}).get(comp) or {}
     ms = b.get("matches") or []
     return bool(ms) and not b.get("incomplet") and all(
@@ -78,7 +88,7 @@ def collecter(comp: str, edition: int, jour: str, donnees: str, liste: Optional[
     chemin = os.path.join(dossier, f"{jour}.json")
     precedent = _lire(chemin) or {}
     deja = {m["match_id"]: m for m in (((precedent.get("competitions") or {}).get(comp) or {}).get("matches") or [])
-            if m.get("finished") and not m.get("detail_manquant") and not m.get("en_attente")
+            if (precedent.get("format") or 1) >= FORMAT and m.get("finished") and not m.get("detail_manquant") and not m.get("en_attente")
             and (m.get("players") or m.get("flux"))}
     bloc = I.collecter_jour(comp, edition, jour, liste, deja=deja, maintenant=maintenant)
     if not bloc["matches"]:
@@ -86,7 +96,7 @@ def collecter(comp: str, edition: int, jour: str, donnees: str, liste: Optional[
         print(f"[OK] {I.COMPETITIONS[comp]['nom']} {jour} : {statut} (aucun fichier)")
         return {"statut": statut, "matchs": 0, "termines": 0, "ecrit": False}
     reconstituee = reconstituee or bool(precedent.get("reconstituee"))
-    sortie = {"last_updated": _horo(maintenant), "target_dates": [jour], "edition": edition,
+    sortie = {"format": FORMAT, "last_updated": _horo(maintenant), "target_dates": [jour], "edition": edition,
               "edition_libelle": I.libelle_edition(comp, edition),
               "source": "UEFA" if I.COMPETITIONS[comp].get("uefa") and not I.COMPETITIONS[comp].get("fifa")
               else "FIFA (liste) + ESPN (Opta)" if not I.COMPETITIONS[comp].get("uefa") else "UEFA ; phase finale : FIFA + ESPN (Opta)",
@@ -167,7 +177,7 @@ def reconstituer(editions: List[Tuple[str, int]], donnees: str, budget_min: floa
 def _test() -> None:
     import tempfile
     bloc = {"incomplet": False, "matches": [
-        {"match_id": "1", "finished": True, "status": "Terminé", "phase": "groupes", "groupe": "Groupe D",
+        {"match_id": "1", "finished": True, "tour_court": "Phase de groupes · J1", "status": "Terminé", "phase": "groupes", "groupe": "Groupe D",
          "round": {"name": "Phase de groupes"}, "is_french_match": True, "players": {"a": {}},
          "home_team": {"name": "France", "score": 3}, "away_team": {"name": "Sénégal", "score": 1}},
         {"match_id": "2", "finished": True, "status": "Terminé", "phase": "groupes", "groupe": "Groupe D",
@@ -176,12 +186,15 @@ def _test() -> None:
     l = ligne_index("2026-06-16", bloc, datetime(2026, 6, 17, tzinfo=timezone.utc), True)
     assert l["matchs"] == 2 and l["termines"] == 2 and l["francais"][0]["score"] == "3-1" and l["groupes"] == ["Groupe D"]
     assert l["reconstituee"] and l["tours"] == ["Phase de groupes"]
+    assert l["par_tour"] == {"Phase de groupes · J1": 1, "Phase de groupes": 1}
     with tempfile.TemporaryDirectory() as d:
         ch = os.path.join(d, "j.json")
         ecrire_si_change(ch, {"competitions": {"cdm": bloc}})
+        assert not complet(ch, "cdm")   # format ancien : refait
+        ecrire_si_change(ch, {"format": FORMAT, "competitions": {"cdm": bloc}})
         assert complet(ch, "cdm")
         bloc["matches"][1]["detail_manquant"] = True
-        ecrire_si_change(ch, {"competitions": {"cdm": bloc}})
+        ecrire_si_change(ch, {"format": FORMAT, "competitions": {"cdm": bloc}})
         assert not complet(ch, "cdm")
         liste = [{"jour": "2026-06-16", "fini": True}, {"jour": "2026-06-17", "fini": True}, {"jour": "2026-12-16", "fini": False}]
         os.makedirs(dossier_edition(d, "cdm", 2026))
