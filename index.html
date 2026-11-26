@@ -1484,6 +1484,7 @@
     // « à venir » (groupe À venir, le plus proche d'abord). Un match commencé depuis plus de 150 min n'est plus montré (la collecte
     // l'a, ou l'aura bientôt, dans les résultats). Championnat : la journée vient de Wikipédia ; sans journée : par semaine.
     const PROG_APRES_MIN = 150;
+    const JOURNEES_DEDUITES = new Set(['por', 'ned', 'bel', 'gre']);   // = run_ligues.JOURNEES_DEDUITES (journées déduites du calendrier)
     function progVisibles(ms) {
       const lim = Date.now() - PROG_APRES_MIN * 60000;
       return (ms || []).filter(x => x.statut === 'Reporté' || !x.debut || new Date(x.debut).getTime() > lim);
@@ -1963,7 +1964,7 @@
       if (!ms.length) { document.getElementById('prog-container').innerHTML = ''; return; }
       const ligue = estLigue(k), maintenant = Date.now();
       document.getElementById('prog-title').textContent = comp._futur ? 'Programme' : 'À venir dans cette journée';
-      document.getElementById('prog-sub').innerHTML = infoBtn(`<p>${ligue ? 'Calendrier ESPN' : 'Calendrier officiel de l\'UEFA'}, relevé une fois par jour${ligue ? '' : ' (et après chaque soirée)'} : dates et heures (heure de Paris) peuvent encore changer.</p>${ligue ? '<p>Le numéro de journée vient de Wikipédia ; un match sans journée connue est rangé par semaine.</p>' : '<p>Les affiches des phases à élimination directe n\'apparaissent qu\'après le tirage.</p>'}`, 'Source du programme');
+      document.getElementById('prog-sub').innerHTML = infoBtn(`<p>${ligue ? 'Calendrier ESPN' : 'Calendrier officiel de l\'UEFA'}, relevé une fois par jour${ligue ? '' : ' (et après chaque soirée)'} : dates et heures (heure de Paris) peuvent encore changer.</p>${ligue ? (JOURNEES_DEDUITES.has(k) ? '<p>Le numéro de journée est déduit du calendrier : chaque club joue une fois par journée, la journée d\'un match est celle dont il partage la date avec tous les autres matchs de ses deux clubs (contrôlé : 0 erreur sur 850 matchs joués des championnats où Wikipédia donne les journées ; un match reporté peut rester sans journée ou, rarement, être mal placé tant qu\'il n\'est pas joué). Sans journée déduite : rangé par semaine.</p>' : '<p>Le numéro de journée vient de Wikipédia ; un match sans journée connue est rangé par semaine.</p>') : '<p>Les affiches des phases à élimination directe n\'apparaissent qu\'après le tirage.</p>'}`, 'Source du programme');
       const nomEq = (t) => t.a_determiner ? `<i>${esc(t.name || 'À déterminer')}</i>` : clubLink(t.id, esc(t.name));
       const estFr = (t) => !ligue && t.is_french;
       let dernier = null;
