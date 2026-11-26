@@ -1,0 +1,61 @@
+{
+ "events": [
+  {
+   "id": "703940",
+   "date": "2024-07-05T19:00Z",
+   "name": "France at Portugal",
+   "season": {
+    "slug": "quarterfinals"
+   },
+   "status": {
+    "clock": 7200.0,
+    "displayClock": "120'",
+    "period": 5,
+    "type": {
+     "id": "47",
+     "name": "STATUS_FINAL_PEN",
+     "state": "post",
+     "completed": true,
+     "description": "Final Score - After Penalties",
+     "detail": "FT-Pens",
+     "shortDetail": "FT-Pens"
+    }
+   },
+   "competitions": [
+    {
+     "venue": {
+      "fullName": "Volksparkstadion"
+     },
+     "competitors": [
+      {
+       "homeAway": "home",
+       "score": "0",
+       "team": {
+        "id": "482",
+        "abbreviation": "POR",
+        "displayName": "Portugal",
+        "shortDisplayName": "Portugal",
+        "name": "Portugal",
+        "location": "Portugal"
+       },
+       "shootoutScore": 3
+      },
+      {
+       "homeAway": "away",
+       "score": "0",
+       "team": {
+        "id": "478",
+        "abbreviation": "FRA",
+        "displayName": "France",
+        "shortDisplayName": "France",
+        "name": "France",
+        "location": "France"
+       },
+       "shootoutScore": 5
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

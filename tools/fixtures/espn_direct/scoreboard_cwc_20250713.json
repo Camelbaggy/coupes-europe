@@ -1,0 +1,59 @@
+{
+ "events": [
+  {
+   "id": "735958",
+   "date": "2025-07-13T19:00Z",
+   "name": "Paris Saint-Germain at Chelsea",
+   "season": {
+    "slug": "final"
+   },
+   "status": {
+    "clock": 5400.0,
+    "displayClock": "90'+6'",
+    "period": 2,
+    "type": {
+     "id": "28",
+     "name": "STATUS_FULL_TIME",
+     "state": "post",
+     "completed": true,
+     "description": "Full Time",
+     "detail": "FT",
+     "shortDetail": "FT"
+    }
+   },
+   "competitions": [
+    {
+     "venue": {
+      "fullName": "MetLife Stadium"
+     },
+     "competitors": [
+      {
+       "homeAway": "home",
+       "score": "3",
+       "team": {
+        "id": "363",
+        "abbreviation": "CHE",
+        "displayName": "Chelsea",
+        "shortDisplayName": "Chelsea",
+        "name": "Chelsea",
+        "location": "Chelsea"
+       }
+      },
+      {
+       "homeAway": "away",
+       "score": "0",
+       "team": {
+        "id": "160",
+        "abbreviation": "PSG",
+        "displayName": "Paris Saint-Germain",
+        "shortDisplayName": "PSG",
+        "name": "Paris Saint-Germain",
+        "location": "Paris Saint-Germain"
+       }
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

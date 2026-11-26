@@ -11,7 +11,15 @@ Sources de l'état d'un jour J :
   coupes ont joué ;
 - championnats : `etat_championnats.json` du dépôt Camelbaggy/donnees-football (écrit par run_ligues.py --etat), puis
   vérification de la publication : l'`index.json` publié (GitHub Pages) de chaque championnat doit compter autant de matchs
-  terminés que l'état.
+  terminés que l'état ;
+- compétitions internationales (décision du 26/11/2026) : `etat_internationales.json` (donnees-football, run_internationales.py
+  --etat). Nommées SEULEMENT : la Coupe du monde des clubs (`cdmc`) et la Coupe intercontinentale (`ci`), rangées avec les coupes
+  d'Europe, dès qu'elles sont jouées ; les sélections (Coupe du monde, Euro, Ligue des nations) les jours où la France joue
+  (`france`) ou pour les phases finales de l'Euro / de la Coupe du monde (`phase_finale`). Une autre compétition internationale
+  (Ligue des nations sans la France, éliminatoires sans la France) ne bloque ni ne déclenche rien. Vérification de la publication :
+  `internationales/<comp>/<édition>/index.json` publié, champ `termines` du jour. Un jour SANS état international n'est PAS attendu
+  (la plupart des jours n'ont aucun match international) : limite connue, la veille de donnees-football écrit l'état dès le premier relevé
+  d'un jour de match (>= 9 h UTC), bien avant la fin des matchs ; un état illisible (réseau) est traité comme absent.
 
 Règle (`decider`, fonction pure) : une compétition JOUÉE le jour J est prête si elle est complète (tous ses matchs terminés,
 reportés exclus) et publiée, ou, restée partielle, à partir de 12 h UTC le lendemain (comme les soirées, soirees.limite_partiel).
@@ -44,8 +52,12 @@ COUPES = ["ucl", "uel", "uecl"]
 # Championnats notifiés (= ligues.PRINCIPAUX, ordre du message ; module non importé : la veille du battement ne lit que ce
 # fichier) : big 5 + Ligue 2 (décision du 26/11/2026). Un championnat ajouté ensuite est secondaire : jamais dans le message.
 LIGUES = ["fl1", "fl2", "pl", "liga", "sa", "bl"]
+# Compétitions internationales (ordre du message : coupes d'Europe, clubs du monde, sélections, championnats)
+CLUBS_MONDE = ["cdmc", "ci"]               # rangées avec les coupes d'Europe : toujours nommées quand elles sont jouées
+SELECTIONS = ["cdm", "euro", "ldn"]        # nommées seulement si la France joue ou en phase finale (Euro, Coupe du monde)
 COURT = {"ucl": "LDC", "uel": "Ligue Europa", "uecl": "Ligue Conférence", "fl1": "Ligue 1", "fl2": "Ligue 2", "pl": "Premier League",
-         "liga": "Liga", "sa": "Serie A", "bl": "Bundesliga"}
+         "liga": "Liga", "sa": "Serie A", "bl": "Bundesliga", "cdm": "Coupe du monde", "euro": "Euro", "ldn": "Ligue des nations",
+         "cdmc": "Coupe du monde des clubs", "ci": "Coupe intercontinentale"}
 
 
 def _limite(jour: str, heure: int) -> dt.datetime:
@@ -59,8 +71,22 @@ def jour_de_coupe(jour: str) -> bool:
     return 1 <= d.weekday() <= 3 or (d.weekday() == 5 and d.month in (5, 6))
 
 
+def comps_internationales(e: Optional[Dict[str, Any]]) -> List[Tuple[str, Dict[str, Any]]]:
+    """[(compétition, entrée d'état)] des compétitions internationales NOMMÉES ce jour-là, dans l'ordre du message : clubs du monde
+    jouées ; sélections si la France joue ou en phase finale d'une compétition majeure. Les autres sont ignorées."""
+    c = (e or {}).get("comps") or {}
+    out = []
+    for k in CLUBS_MONDE + SELECTIONS:
+        l = c.get(k) or {}
+        if (l.get("matchs") or 0) <= 0:
+            continue
+        if k in CLUBS_MONDE or l.get("france") or l.get("phase_finale"):
+            out.append((k, l))
+    return out
+
+
 def titre_message(comps: List[str]) -> str:
-    noms = [COURT[c] for c in COUPES + LIGUES if c in comps]
+    noms = [COURT[c] for c in COUPES + CLUBS_MONDE + SELECTIONS + LIGUES if c in comps]
     if not noms:
         return "Nouveaux résultats disponibles"
     liste = noms[0] if len(noms) == 1 else ", ".join(noms[:-1]) + " et " + noms[-1]
@@ -72,10 +98,11 @@ def titre_message(comps: List[str]) -> str:
 # ------------------------------------------------------------------------------
 def decider(jour: str, maintenant: dt.datetime, etat_soirees: Dict[str, Any], index_soirees: List[Dict[str, Any]],
             etat_ch: Dict[str, Any], publies: Optional[Dict[str, int]] = None,
-            deja: Optional[Dict[str, Any]] = None) -> Tuple[str, List[str], str]:
+            deja: Optional[Dict[str, Any]] = None, etat_int: Optional[Dict[str, Any]] = None) -> Tuple[str, List[str], str]:
     """(action, compétitions jouées, raison) ; action = « notifier » | « attendre » | « rien ».
-    `publies` : {ligue: matchs terminés comptés dans l'index PUBLIÉ du jour} (None = vérification non faite : ignorée).
-    `deja` : état des notifications ({jour: {notifie: …}})."""
+    `publies` : {ligue ou compétition internationale: matchs terminés comptés dans l'index PUBLIÉ du jour} (None = vérification
+    non faite : ignorée). `deja` : état des notifications ({jour: {notifie: …}}). `etat_int` : etat_internationales.json ;
+    jour absent = aucune compétition internationale (jamais attendue)."""
     if (deja or {}).get(jour, {}).get("notifie"):
         return "rien", [], f"{jour} : déjà notifié"
     partiel_ok = maintenant >= _limite(jour, HEURE_LIMITE_PARTIEL)
@@ -111,6 +138,15 @@ def decider(jour: str, maintenant: dt.datetime, etat_soirees: Dict[str, Any], in
                     attente.append(f"{COURT[lg]} : page publique pas encore à jour")
             elif not partiel_ok:
                 attente.append(f"{COURT[lg]} : {l.get('termines', 0)}/{l.get('matchs')} terminé(s)")
+
+    # Compétitions internationales : seulement celles qui sont nommées (France, phases finales, clubs du monde)
+    for k, l in comps_internationales((etat_int or {}).get(jour)):
+        comps.append(k)
+        if l.get("statut") == "complet":
+            if publies is not None and (publies.get(k) or 0) < (l.get("termines") or 0):
+                attente.append(f"{COURT[k]} : page publique pas encore à jour")
+        elif not partiel_ok:
+            attente.append(f"{COURT[k]} : {l.get('termines', 0)}/{l.get('matchs')} terminé(s)")
 
     if not comps:
         return ("attendre" if attente else "rien"), [], f"{jour} : " + ("; ".join(attente) if attente else "aucun match")
@@ -167,6 +203,17 @@ def publies_ligues(jour: str, etat_ch: Dict[str, Any], fetch: Callable[[str], An
     return out
 
 
+def publies_internationales(jour: str, etat_int: Dict[str, Any], fetch: Callable[[str], Any] = fetch_json) -> Dict[str, int]:
+    """Matchs terminés du jour dans l'index PUBLIÉ (GitHub Pages) de chaque compétition internationale nommée ce jour-là."""
+    out: Dict[str, int] = {}
+    for k, l in comps_internationales((etat_int or {}).get(jour)):
+        if not l.get("edition"):
+            continue
+        idx = fetch(f"{DEPOT_DONNEES}internationales/{k}/{l['edition']}/index.json") or []
+        out[k] = next((int(x.get("termines") or 0) for x in idx if x.get("date") == jour), 0)
+    return out
+
+
 def enregistrer(etat: Dict[str, Any], jour: str, comps: List[str], maintenant: dt.datetime, chemin: str = FICHIER) -> None:
     etat[jour] = {"notifie": True, "competitions": comps, "maj": maintenant.strftime("%Y-%m-%dT%H:%M:%SZ")}
     limite = (maintenant.date() - dt.timedelta(days=GARDE_JOURS)).isoformat()
@@ -209,7 +256,12 @@ def notifier(jour: str, maintenant: Optional[dt.datetime] = None, fetch: Callabl
     if ech is None:
         ech = {}
         print("[WARN] etat_championnats.json illisible : championnats réputés sans état")
-    action, comps, raison = decider(jour, maintenant, es, idx, ech, publies_ligues(jour, ech, fetch), deja)
+    ei = fetch(RAW_DONNEES + "etat_internationales.json")
+    if ei is None:   # fichier absent (avant le premier jour de match) ou panne : jamais attendu, jamais bloquant
+        ei = {}
+        print("[WARN] etat_internationales.json illisible : compétitions internationales réputées sans état")
+    publies = {**publies_ligues(jour, ech, fetch), **publies_internationales(jour, ei, fetch)}
+    action, comps, raison = decider(jour, maintenant, es, idx, ech, publies, deja, ei)
     print(f"[NOTIFICATION] {raison}")
     if action != "notifier":
         return 0
@@ -233,9 +285,10 @@ def veille(maintenant: Optional[dt.datetime] = None, fetch: Callable[[str], Any]
     if es is None or ech is None:
         print("[VEILLE-NOTIF] état illisible : rien à faire", file=sys.stderr)
         return []
+    ei = fetch(RAW_DONNEES + "etat_internationales.json") or {}
     out = []
     for j in jours_candidats(maintenant):
-        action, comps, raison = decider(j, maintenant, es, idx, ech, None, deja)
+        action, comps, raison = decider(j, maintenant, es, idx, ech, None, deja, ei)
         print(f"[VEILLE-NOTIF] {raison}", file=sys.stderr)   # stdout = les seules dates à notifier
         if action == "notifier":
             out.append(j)
@@ -290,6 +343,55 @@ def _test() -> None:
     # soirée sans match + championnat : seulement le championnat
     a, c, _ = decider(J, soir, {J: {"statut": "aucun_match", "matchs": 0}}, [], ch_l1, {"fl1": 1})
     assert a == "notifier" and c == ["fl1"]
+
+    # --- compétitions internationales (décision du 26/11/2026) ---
+    def ei(**comps):
+        return {J: {"statut": "complet", "comps": comps}}
+
+    def ic(statut="complet", matchs=1, termines=1, france=False, phase_finale=False, edition=2027):
+        return {"edition": edition, "statut": statut, "matchs": matchs, "termines": termines, "france": france,
+                "phase_finale": phase_finale}
+    ch_none: Dict[str, Any] = {J: {"ligues": {}}}
+    coupes_none = {J: {"statut": "aucun_match", "matchs": 0}}
+    # Ligue des nations avec la France : nommée, avec la Ligue 1 ; l'ordre : sélections avant championnats
+    a, c, _ = decider(J, soir, coupes_none, [], ch_l1, {"fl1": 1, "ldn": 8}, None, ei(ldn=ic(matchs=8, termines=8, france=True)))
+    assert a == "notifier" and sorted(c) == ["fl1", "ldn"], (a, c)
+    assert titre_message(c) == "Nouveaux résultats disponibles en Ligue des nations et Ligue 1"
+    # Ligue des nations sans la France : ignorée (ne bloque pas, ne déclenche pas)
+    assert decider(J, soir, coupes_none, [], ch_none, {}, None, ei(ldn=ic(statut="partiel", matchs=8, termines=2)))[0] == "rien"
+    a, c, _ = decider(J, soir, coupe_ok, idx, ch_none, {}, None, ei(ldn=ic(statut="partiel", matchs=8, termines=2)))
+    assert a == "notifier" and c == ["ucl"], (a, c)
+    # Phase de groupes de la Coupe du monde sans la France : nommée ; éliminatoires sans la France : ignorés
+    a, c, _ = decider(J, soir, coupes_none, [], ch_none, {"cdm": 3}, None, ei(cdm=ic(matchs=3, termines=3, phase_finale=True, edition=2026)))
+    assert a == "notifier" and c == ["cdm"] and titre_message(c) == "Nouveaux résultats disponibles en Coupe du monde"
+    assert decider(J, soir, coupes_none, [], ch_none, {}, None, ei(cdm=ic(matchs=6, termines=6, edition=2030)))[0] == "rien"
+    # Euro : phase finale nommée ; Coupe intercontinentale et Coupe du monde des clubs : toujours, rangées avec les coupes d'Europe
+    assert decider(J, soir, coupes_none, [], ch_none, {"euro": 2}, None, ei(euro=ic(matchs=2, termines=2, phase_finale=True)))[2].endswith("(Euro)")
+    a, c, _ = decider(J, soir, coupe_ok, idx, ch_l1, {"fl1": 1, "ci": 1}, None, ei(ci=ic(matchs=1, termines=1, edition=2026)))
+    assert a == "notifier" and sorted(c) == ["ci", "fl1", "ucl"], (a, c)
+    assert titre_message(c) == "Nouveaux résultats disponibles en LDC, Coupe intercontinentale et Ligue 1"
+    assert titre_message(["fl1", "cdmc", "ldn", "uel", "ci", "cdm"]) == ("Nouveaux résultats disponibles en Ligue Europa, "
+        "Coupe du monde des clubs, Coupe intercontinentale, Coupe du monde, Ligue des nations et Ligue 1")
+    a, c, _ = decider(J, soir, coupes_none, [], ch_none, {"cdmc": 1}, None, ei(cdmc=ic(matchs=1, termines=1, edition=2025)))
+    assert a == "notifier" and c == ["cdmc"]
+    # État partiel : attendre le soir, accepté à partir de 12 h UTC le lendemain ; état complet pas encore publié : attendre
+    part = ei(ldn=ic(statut="partiel", matchs=3, termines=2, france=True))
+    assert decider(J, soir, coupes_none, [], ch_none, {}, None, part)[0] == "attendre"
+    assert decider(J, lendemain, coupes_none, [], ch_none, {}, None, part)[0] == "notifier"
+    assert decider(J, soir, coupes_none, [], ch_none, {"ldn": 2}, None, ei(ldn=ic(matchs=3, termines=3, france=True)))[0] == "attendre"
+    assert decider(J, soir, coupes_none, [], ch_none, None, None, ei(ldn=ic(matchs=3, termines=3, france=True)))[0] == "notifier"
+    # Jour sans état international : jamais attendu ; jour déjà notifié : rien
+    assert decider(J, soir, coupe_ok, idx, ch_none, {}, None, {})[0] == "notifier"
+    assert decider(J, soir, coupes_none, [], ch_none, {"ldn": 3}, {J: {"notifie": True}},
+                   ei(ldn=ic(matchs=3, termines=3, france=True)))[0] == "rien"
+
+    # publication vérifiée sur l'index publié de l'édition : internationales/<comp>/<édition>/index.json, champ `termines` du jour
+    vus: List[str] = []
+    def f_idx(url: str) -> Any:
+        vus.append(url)
+        return [{"date": J, "termines": 8}, {"date": "2026-11-12", "termines": 3}]
+    assert publies_internationales(J, ei(ldn=ic(matchs=8, termines=8, france=True), cdm=ic(matchs=2, termines=2)), f_idx) == {"ldn": 8}
+    assert vus == [DEPOT_DONNEES + "internationales/ldn/2027/index.json"]
 
     # notifier() : push unique, enregistré ; échec du push = code 1, rien d'enregistré
     import tempfile

@@ -1,0 +1,637 @@
+{
+ "header": {
+  "competitions": [
+   {
+    "competitors": [
+     {
+      "homeAway": "home",
+      "team": {
+       "id": "164",
+       "displayName": "Spain",
+       "abbreviation": "ESP"
+      }
+     },
+     {
+      "homeAway": "away",
+      "team": {
+       "id": "162",
+       "displayName": "Italy",
+       "abbreviation": "ITA"
+      }
+     }
+    ]
+   }
+  ]
+ },
+ "keyEvents": [
+  {
+   "id": "43327056",
+   "type": {
+    "id": "80",
+    "text": "Kickoff",
+    "type": "kickoff"
+   },
+   "text": "First Half begins.",
+   "period": {
+    "number": 1
+   },
+   "clock": {
+    "value": 0.0,
+    "displayValue": ""
+   },
+   "scoringPlay": false,
+   "shootout": false
+  },
+  {
+   "id": "43327116",
+   "type": {
+    "id": "94",
+    "text": "Yellow Card",
+    "type": "yellow-card"
+   },
+   "text": "Gianluigi Donnarumma (Italy) is shown the yellow card.",
+   "period": {
+    "number": 1
+   },
+   "clock": {
+    "value": 861.0,
+    "displayValue": "15'"
+   },
+   "scoringPlay": false,
+   "shootout": false,
+   "team": {
+    "id": "162",
+    "displayName": "Italy"
+   },
+   "participants": [
+    {
+     "athlete": {
+      "id": "217092",
+      "displayName": "Gianluigi Donnarumma"
+     }
+    }
+   ]
+  },
+  {
+   "id": "43327229",
+   "type": {
+    "id": "94",
+    "text": "Yellow Card",
+    "type": "yellow-card"
+   },
+   "text": "Rodri (Spain) is shown the yellow card.",
+   "period": {
+    "number": 1
+   },
+   "clock": {
+    "value": 2700.0,
+    "displayValue": "45'+1'"
+   },
+   "scoringPlay": false,
+   "shootout": false,
+   "team": {
+    "id": "164",
+    "displayName": "Spain"
+   },
+   "participants": [
+    {
+     "athlete": {
+      "id": "231828",
+      "displayName": "Rodri"
+     }
+    }
+   ]
+  },
+  {
+   "id": "43327231",
+   "type": {
+    "id": "81",
+    "text": "Halftime",
+    "type": "halftime"
+   },
+   "period": {
+    "number": 1
+   },
+   "clock": {
+    "value": 2700.0,
+    "displayValue": "45'+2'"
+   },
+   "scoringPlay": false,
+   "shootout": false
+  },
+  {
+   "id": "43327237",
+   "type": {
+    "id": "82",
+    "text": "Start 2nd Half",
+    "type": "start-2nd-half"
+   },
+   "period": {
+    "number": 2
+   },
+   "clock": {
+    "value": 2700.0,
+    "displayValue": "45'"
+   },
+   "scoringPlay": false,
+   "shootout": false
+  },
+  {
+   "id": "43327233",
+   "type": {
+    "id": "76",
+    "text": "Substitution",
+    "type": "substitution"
+   },
+   "text": "Substitution, Italy. Bryan Cristante replaces Jorginho.",
+   "period": {
+    "number": 2
+   },
+   "clock": {
+    "value": 2700.0,
+    "displayValue": "45'"
+   },
+   "scoringPlay": false,
+   "shootout": false,
+   "team": {
+    "id": "162",
+    "displayName": "Italy"
+   },
+   "participants": [
+    {
+     "athlete": {
+      "id": "169213",
+      "displayName": "Bryan Cristante"
+     }
+    },
+    {
+     "athlete": {
+      "id": "165778",
+      "displayName": "Jorginho"
+     }
+    }
+   ]
+  },
+  {
+   "id": "43327234",
+   "type": {
+    "id": "76",
+    "text": "Substitution",
+    "type": "substitution"
+   },
+   "text": "Substitution, Italy. Andrea Cambiaso replaces Davide Frattesi.",
+   "period": {
+    "number": 2
+   },
+   "clock": {
+    "value": 2700.0,
+    "displayValue": "45'"
+   },
+   "scoringPlay": false,
+   "shootout": false,
+   "team": {
+    "id": "162",
+    "displayName": "Italy"
+   },
+   "participants": [
+    {
+     "athlete": {
+      "id": "308029",
+      "displayName": "Andrea Cambiaso"
+     }
+    },
+    {
+     "athlete": {
+      "id": "250850",
+      "displayName": "Davide Frattesi"
+     }
+    }
+   ]
+  },
+  {
+   "id": "43327239",
+   "type": {
+    "id": "94",
+    "text": "Yellow Card",
+    "type": "yellow-card"
+   },
+   "text": "Bryan Cristante (Italy) is shown the yellow card for a bad foul.",
+   "period": {
+    "number": 2
+   },
+   "clock": {
+    "value": 2719.0,
+    "displayValue": "46'"
+   },
+   "scoringPlay": false,
+   "shootout": false,
+   "team": {
+    "id": "162",
+    "displayName": "Italy"
+   },
+   "participants": [
+    {
+     "athlete": {
+      "id": "169213",
+      "displayName": "Bryan Cristante"
+     }
+    }
+   ]
+  },
+  {
+   "id": "43327266",
+   "type": {
+    "id": "97",
+    "text": "Own Goal",
+    "type": "own-goal"
+   },
+   "text": "Own Goal by Riccardo Calafiori, Italy.  Spain 1, Italy 0.",
+   "period": {
+    "number": 2
+   },
+   "clock": {
+    "value": 3244.0,
+    "displayValue": "55'"
+   },
+   "scoringPlay": true,
+   "shootout": false,
+   "team": {
+    "id": "164",
+    "displayName": "Spain"
+   },
+   "participants": [
+    {
+     "athlete": {
+      "id": "298329",
+      "displayName": "Riccardo Calafiori"
+     }
+    }
+   ]
+  },
+  {
+   "id": "43327292",
+   "type": {
+    "id": "76",
+    "text": "Substitution",
+    "type": "substitution"
+   },
+   "text": "Substitution, Italy. Mattia Zaccagni replaces Federico Chiesa.",
+   "period": {
+    "number": 2
+   },
+   "clock": {
+    "value": 3794.0,
+    "displayValue": "64'"
+   },
+   "scoringPlay": false,
+   "shootout": false,
+   "team": {
+    "id": "162",
+    "displayName": "Italy"
+   },
+   "participants": [
+    {
+     "athlete": {
+      "id": "204669",
+      "displayName": "Mattia Zaccagni"
+     }
+    },
+    {
+     "athlete": {
+      "id": "234306",
+      "displayName": "Federico Chiesa"
+     }
+    }
+   ]
+  },
+  {
+   "id": "43327293",
+   "type": {
+    "id": "76",
+    "text": "Substitution",
+    "type": "substitution"
+   },
+   "text": "Substitution, Italy. Mateo Retegui replaces Gianluca Scamacca.",
+   "period": {
+    "number": 2
+   },
+   "clock": {
+    "value": 3802.0,
+    "displayValue": "64'"
+   },
+   "scoringPlay": false,
+   "shootout": false,
+   "team": {
+    "id": "162",
+    "displayName": "Italy"
+   },
+   "participants": [
+    {
+     "athlete": {
+      "id": "268703",
+      "displayName": "Mateo Retegui"
+     }
+    },
+    {
+     "athlete": {
+      "id": "233140",
+      "displayName": "Gianluca Scamacca"
+     }
+    }
+   ]
+  },
+  {
+   "id": "43327304",
+   "type": {
+    "id": "94",
+    "text": "Yellow Card",
+    "type": "yellow-card"
+   },
+   "text": "Robin Le Normand (Spain) is shown the yellow card for a bad foul.",
+   "period": {
+    "number": 2
+   },
+   "clock": {
+    "value": 4087.0,
+    "displayValue": "69'"
+   },
+   "scoringPlay": false,
+   "shootout": false,
+   "team": {
+    "id": "164",
+    "displayName": "Spain"
+   },
+   "participants": [
+    {
+     "athlete": {
+      "id": "214888",
+      "displayName": "Robin Le Normand"
+     }
+    }
+   ]
+  },
+  {
+   "id": "43327314",
+   "type": {
+    "id": "76",
+    "text": "Substitution",
+    "type": "substitution"
+   },
+   "text": "Substitution, Spain. Álex Baena replaces Pedri.",
+   "period": {
+    "number": 2
+   },
+   "clock": {
+    "value": 4246.0,
+    "displayValue": "71'"
+   },
+   "scoringPlay": false,
+   "shootout": false,
+   "team": {
+    "id": "164",
+    "displayName": "Spain"
+   },
+   "participants": [
+    {
+     "athlete": {
+      "id": "297373",
+      "displayName": "Álex Baena"
+     }
+    },
+    {
+     "athlete": {
+      "id": "250465",
+      "displayName": "Pedri"
+     }
+    }
+   ]
+  },
+  {
+   "id": "43327315",
+   "type": {
+    "id": "76",
+    "text": "Substitution",
+    "type": "substitution"
+   },
+   "text": "Substitution, Spain. Ferran Torres replaces Lamine Yamal.",
+   "period": {
+    "number": 2
+   },
+   "clock": {
+    "value": 4255.0,
+    "displayValue": "71'"
+   },
+   "scoringPlay": false,
+   "shootout": false,
+   "team": {
+    "id": "164",
+    "displayName": "Spain"
+   },
+   "participants": [
+    {
+     "athlete": {
+      "id": "265869",
+      "displayName": "Ferran Torres"
+     }
+    },
+    {
+     "athlete": {
+      "id": "362150",
+      "displayName": "Lamine Yamal"
+     }
+    }
+   ]
+  },
+  {
+   "id": "43327343",
+   "type": {
+    "id": "76",
+    "text": "Substitution",
+    "type": "substitution"
+   },
+   "text": "Substitution, Spain. Ayoze Pérez replaces Nico Williams.",
+   "period": {
+    "number": 2
+   },
+   "clock": {
+    "value": 4647.0,
+    "displayValue": "78'"
+   },
+   "scoringPlay": false,
+   "shootout": false,
+   "team": {
+    "id": "164",
+    "displayName": "Spain"
+   },
+   "participants": [
+    {
+     "athlete": {
+      "id": "192133",
+      "displayName": "Ayoze Pérez"
+     }
+    },
+    {
+     "athlete": {
+      "id": "312146",
+      "displayName": "Nico Williams"
+     }
+    }
+   ]
+  },
+  {
+   "id": "43327344",
+   "type": {
+    "id": "76",
+    "text": "Substitution",
+    "type": "substitution"
+   },
+   "text": "Substitution, Spain. Mikel Oyarzabal replaces Álvaro Morata.",
+   "period": {
+    "number": 2
+   },
+   "clock": {
+    "value": 4662.0,
+    "displayValue": "78'"
+   },
+   "scoringPlay": false,
+   "shootout": false,
+   "team": {
+    "id": "164",
+    "displayName": "Spain"
+   },
+   "participants": [
+    {
+     "athlete": {
+      "id": "229018",
+      "displayName": "Mikel Oyarzabal"
+     }
+    },
+    {
+     "athlete": {
+      "id": "154446",
+      "displayName": "Álvaro Morata"
+     }
+    }
+   ]
+  },
+  {
+   "id": "43327363",
+   "type": {
+    "id": "76",
+    "text": "Substitution",
+    "type": "substitution"
+   },
+   "text": "Substitution, Italy. Giacomo Raspadori replaces Lorenzo Pellegrini.",
+   "period": {
+    "number": 2
+   },
+   "clock": {
+    "value": 4863.0,
+    "displayValue": "82'"
+   },
+   "scoringPlay": false,
+   "shootout": false,
+   "team": {
+    "id": "162",
+    "displayName": "Italy"
+   },
+   "participants": [
+    {
+     "athlete": {
+      "id": "271679",
+      "displayName": "Giacomo Raspadori"
+     }
+    },
+    {
+     "athlete": {
+      "id": "204320",
+      "displayName": "Lorenzo Pellegrini"
+     }
+    }
+   ]
+  },
+  {
+   "id": "43327427",
+   "type": {
+    "id": "76",
+    "text": "Substitution",
+    "type": "substitution"
+   },
+   "text": "Substitution, Spain. Mikel Merino replaces Fabián Ruiz.",
+   "period": {
+    "number": 2
+   },
+   "clock": {
+    "value": 5400.0,
+    "displayValue": "90'+4'"
+   },
+   "scoringPlay": false,
+   "shootout": false,
+   "team": {
+    "id": "164",
+    "displayName": "Spain"
+   },
+   "participants": [
+    {
+     "athlete": {
+      "id": "209581",
+      "displayName": "Mikel Merino"
+     }
+    },
+    {
+     "athlete": {
+      "id": "214596",
+      "displayName": "Fabián Ruiz"
+     }
+    }
+   ]
+  },
+  {
+   "id": "43327431",
+   "type": {
+    "id": "94",
+    "text": "Yellow Card",
+    "type": "yellow-card"
+   },
+   "text": "Dani Carvajal (Spain) is shown the yellow card for a bad foul.",
+   "period": {
+    "number": 2
+   },
+   "clock": {
+    "value": 5400.0,
+    "displayValue": "90'+6'"
+   },
+   "scoringPlay": false,
+   "shootout": false,
+   "team": {
+    "id": "164",
+    "displayName": "Spain"
+   },
+   "participants": [
+    {
+     "athlete": {
+      "id": "168531",
+      "displayName": "Dani Carvajal"
+     }
+    }
+   ]
+  },
+  {
+   "id": "43327433",
+   "type": {
+    "id": "83",
+    "text": "End Regular Time",
+    "type": "end-regular-time"
+   },
+   "period": {
+    "number": 2
+   },
+   "clock": {
+    "value": 5400.0,
+    "displayValue": "90'+7'"
+   },
+   "scoringPlay": false,
+   "shootout": false
+  }
+ ]
+}

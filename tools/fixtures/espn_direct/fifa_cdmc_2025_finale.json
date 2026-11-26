@@ -1,0 +1,56 @@
+{
+ "IdMatch": "400019210",
+ "StageName": [
+  {
+   "Locale": "fr-FR",
+   "Description": "Finale"
+  }
+ ],
+ "GroupName": [],
+ "Date": "2025-07-13T19:00:00Z",
+ "MatchStatus": 0,
+ "HomeTeamScore": 3,
+ "AwayTeamScore": 0,
+ "HomeTeamPenaltyScore": null,
+ "AwayTeamPenaltyScore": null,
+ "PlaceHolderA": "W61",
+ "PlaceHolderB": "W62",
+ "Home": {
+  "IdTeam": "1935290",
+  "IdCountry": "ENG",
+  "TeamName": [
+   {
+    "Locale": "fr-FR",
+    "Description": "Chelsea FC"
+   }
+  ],
+  "Abbreviation": "CHE",
+  "ShortClubName": "Chelsea FC"
+ },
+ "Away": {
+  "IdTeam": "1956449",
+  "IdCountry": "FRA",
+  "TeamName": [
+   {
+    "Locale": "fr-FR",
+    "Description": "Paris Saint-Germain"
+   }
+  ],
+  "Abbreviation": "PSG",
+  "ShortClubName": "Paris Saint-Germain"
+ },
+ "Stadium": {
+  "Name": [
+   {
+    "Locale": "fr-FR",
+    "Description": "Stade de New York/New Jersey"
+   }
+  ],
+  "CityName": [
+   {
+    "Locale": "fr-FR",
+    "Description": "New York"
+   }
+  ]
+ }
+}

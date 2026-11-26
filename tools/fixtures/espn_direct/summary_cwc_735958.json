@@ -1,0 +1,704 @@
+{
+ "header": {
+  "competitions": [
+   {
+    "competitors": [
+     {
+      "homeAway": "home",
+      "team": {
+       "id": "363",
+       "displayName": "Chelsea",
+       "abbreviation": "CHE"
+      }
+     },
+     {
+      "homeAway": "away",
+      "team": {
+       "id": "160",
+       "displayName": "Paris Saint-Germain",
+       "abbreviation": "PSG"
+      }
+     }
+    ]
+   }
+  ]
+ },
+ "keyEvents": [
+  {
+   "id": "45463935",
+   "type": {
+    "id": "80",
+    "text": "Kickoff",
+    "type": "kickoff"
+   },
+   "period": {
+    "number": 1
+   },
+   "clock": {
+    "value": 0.0,
+    "displayValue": ""
+   },
+   "scoringPlay": false,
+   "shootout": false
+  },
+  {
+   "id": "45464143",
+   "type": {
+    "id": "70",
+    "text": "Goal",
+    "type": "goal"
+   },
+   "text": "Goal! Chelsea 1, Paris Saint Germain 0. Cole Palmer (Chelsea) left footed shot from the centre of the box to the bottom left corner. Assisted by Malo Gusto.",
+   "period": {
+    "number": 1
+   },
+   "clock": {
+    "value": 1291.0,
+    "displayValue": "22'"
+   },
+   "scoringPlay": true,
+   "shootout": false,
+   "team": {
+    "id": "363",
+    "displayName": "Chelsea"
+   },
+   "participants": [
+    {
+     "athlete": {
+      "id": "296395",
+      "displayName": "Cole Palmer"
+     }
+    },
+    {
+     "athlete": {
+      "id": "308947",
+      "displayName": "Malo Gusto"
+     }
+    }
+   ]
+  },
+  {
+   "id": "45464240",
+   "type": {
+    "id": "70",
+    "text": "Goal",
+    "type": "goal"
+   },
+   "text": "Goal! Chelsea 2, Paris Saint Germain 0. Cole Palmer (Chelsea) left footed shot from the centre of the box to the bottom left corner. Assisted by Levi Colwill following a fast break.",
+   "period": {
+    "number": 1
+   },
+   "clock": {
+    "value": 1747.0,
+    "displayValue": "30'"
+   },
+   "scoringPlay": true,
+   "shootout": false,
+   "team": {
+    "id": "363",
+    "displayName": "Chelsea"
+   },
+   "participants": [
+    {
+     "athlete": {
+      "id": "296395",
+      "displayName": "Cole Palmer"
+     }
+    },
+    {
+     "athlete": {
+      "id": "296410",
+      "displayName": "Levi Colwill"
+     }
+    }
+   ]
+  },
+  {
+   "id": "45464295",
+   "type": {
+    "id": "94",
+    "text": "Yellow Card",
+    "type": "yellow-card"
+   },
+   "text": "Pedro Neto (Chelsea) is shown the yellow card.",
+   "period": {
+    "number": 1
+   },
+   "clock": {
+    "value": 2038.0,
+    "displayValue": "34'"
+   },
+   "scoringPlay": false,
+   "shootout": false,
+   "team": {
+    "id": "363",
+    "displayName": "Chelsea"
+   },
+   "participants": [
+    {
+     "athlete": {
+      "id": "256115",
+      "displayName": "Pedro Neto"
+     }
+    }
+   ]
+  },
+  {
+   "id": "45464317",
+   "type": {
+    "id": "94",
+    "text": "Yellow Card",
+    "type": "yellow-card"
+   },
+   "text": "Moisés Caicedo (Chelsea) is shown the yellow card.",
+   "period": {
+    "number": 1
+   },
+   "clock": {
+    "value": 2138.0,
+    "displayValue": "36'"
+   },
+   "scoringPlay": false,
+   "shootout": false,
+   "team": {
+    "id": "363",
+    "displayName": "Chelsea"
+   },
+   "participants": [
+    {
+     "athlete": {
+      "id": "289877",
+      "displayName": "Moisés Caicedo"
+     }
+    }
+   ]
+  },
+  {
+   "id": "45464372",
+   "type": {
+    "id": "94",
+    "text": "Yellow Card",
+    "type": "yellow-card"
+   },
+   "text": "Malo Gusto (Chelsea) is shown the yellow card for a bad foul.",
+   "period": {
+    "number": 1
+   },
+   "clock": {
+    "value": 2386.0,
+    "displayValue": "40'"
+   },
+   "scoringPlay": false,
+   "shootout": false,
+   "team": {
+    "id": "363",
+    "displayName": "Chelsea"
+   },
+   "participants": [
+    {
+     "athlete": {
+      "id": "308947",
+      "displayName": "Malo Gusto"
+     }
+    }
+   ]
+  },
+  {
+   "id": "45464405",
+   "type": {
+    "id": "70",
+    "text": "Goal",
+    "type": "goal"
+   },
+   "text": "Goal! Chelsea 3, Paris Saint Germain 0. João Pedro (Chelsea) right footed shot from the centre of the box to the top right corner. Assisted by Cole Palmer with a through ball.",
+   "period": {
+    "number": 1
+   },
+   "clock": {
+    "value": 2546.0,
+    "displayValue": "43'"
+   },
+   "scoringPlay": true,
+   "shootout": false,
+   "team": {
+    "id": "363",
+    "displayName": "Chelsea"
+   },
+   "participants": [
+    {
+     "athlete": {
+      "id": "284960",
+      "displayName": "João Pedro"
+     }
+    },
+    {
+     "athlete": {
+      "id": "296395",
+      "displayName": "Cole Palmer"
+     }
+    }
+   ]
+  },
+  {
+   "id": "45464665",
+   "type": {
+    "id": "81",
+    "text": "Halftime",
+    "type": "halftime"
+   },
+   "text": "First Half ends, Chelsea 3, Paris Saint Germain 0.",
+   "period": {
+    "number": 1
+   },
+   "clock": {
+    "value": 2700.0,
+    "displayValue": "45'+7'"
+   },
+   "scoringPlay": false,
+   "shootout": false
+  },
+  {
+   "id": "45464767",
+   "type": {
+    "id": "82",
+    "text": "Start 2nd Half",
+    "type": "start-2nd-half"
+   },
+   "text": "Second Half begins Chelsea 3, Paris Saint Germain 0.",
+   "period": {
+    "number": 2
+   },
+   "clock": {
+    "value": 2700.0,
+    "displayValue": "45'"
+   },
+   "scoringPlay": false,
+   "shootout": false
+  },
+  {
+   "id": "45464911",
+   "type": {
+    "id": "76",
+    "text": "Substitution",
+    "type": "substitution"
+   },
+   "text": "Substitution, Paris Saint Germain. Bradley Barcola replaces Khvicha Kvaratskhelia.",
+   "period": {
+    "number": 2
+   },
+   "clock": {
+    "value": 3475.0,
+    "displayValue": "58'"
+   },
+   "scoringPlay": false,
+   "shootout": false,
+   "team": {
+    "id": "160",
+    "displayName": "Paris Saint-Germain"
+   },
+   "participants": [
+    {
+     "athlete": {
+      "id": "328238",
+      "displayName": "Bradley Barcola"
+     }
+    },
+    {
+     "athlete": {
+      "id": "274745",
+      "displayName": "Khvicha Kvaratskhelia"
+     }
+    }
+   ]
+  },
+  {
+   "id": "45464959",
+   "type": {
+    "id": "76",
+    "text": "Substitution",
+    "type": "substitution"
+   },
+   "text": "Substitution, Chelsea. Andrey Santos replaces Enzo Fernández because of an injury.",
+   "period": {
+    "number": 2
+   },
+   "clock": {
+    "value": 3628.0,
+    "displayValue": "61'"
+   },
+   "scoringPlay": false,
+   "shootout": false,
+   "team": {
+    "id": "363",
+    "displayName": "Chelsea"
+   },
+   "participants": [
+    {
+     "athlete": {
+      "id": "314858",
+      "displayName": "Andrey Santos"
+     }
+    },
+    {
+     "athlete": {
+      "id": "285450",
+      "displayName": "Enzo Fernández"
+     }
+    }
+   ]
+  },
+  {
+   "id": "45465088",
+   "type": {
+    "id": "76",
+    "text": "Substitution",
+    "type": "substitution"
+   },
+   "text": "Substitution, Chelsea. Liam Delap replaces João Pedro.",
+   "period": {
+    "number": 2
+   },
+   "clock": {
+    "value": 4017.0,
+    "displayValue": "67'"
+   },
+   "scoringPlay": false,
+   "shootout": false,
+   "team": {
+    "id": "363",
+    "displayName": "Chelsea"
+   },
+   "participants": [
+    {
+     "athlete": {
+      "id": "307114",
+      "displayName": "Liam Delap"
+     }
+    },
+    {
+     "athlete": {
+      "id": "284960",
+      "displayName": "João Pedro"
+     }
+    }
+   ]
+  },
+  {
+   "id": "45465151",
+   "type": {
+    "id": "76",
+    "text": "Substitution",
+    "type": "substitution"
+   },
+   "text": "Substitution, Paris Saint Germain. Gonçalo Ramos replaces Achraf Hakimi.",
+   "period": {
+    "number": 2
+   },
+   "clock": {
+    "value": 4325.0,
+    "displayValue": "73'"
+   },
+   "scoringPlay": false,
+   "shootout": false,
+   "team": {
+    "id": "160",
+    "displayName": "Paris Saint-Germain"
+   },
+   "participants": [
+    {
+     "athlete": {
+      "id": "288896",
+      "displayName": "Gonçalo Ramos"
+     }
+    },
+    {
+     "athlete": {
+      "id": "240233",
+      "displayName": "Achraf Hakimi"
+     }
+    }
+   ]
+  },
+  {
+   "id": "45465152",
+   "type": {
+    "id": "76",
+    "text": "Substitution",
+    "type": "substitution"
+   },
+   "text": "Substitution, Paris Saint Germain. Senny Mayulu replaces Désiré Doué.",
+   "period": {
+    "number": 2
+   },
+   "clock": {
+    "value": 4327.0,
+    "displayValue": "73'"
+   },
+   "scoringPlay": false,
+   "shootout": false,
+   "team": {
+    "id": "160",
+    "displayName": "Paris Saint-Germain"
+   },
+   "participants": [
+    {
+     "athlete": {
+      "id": "379088",
+      "displayName": "Senny Mayulu"
+     }
+    },
+    {
+     "athlete": {
+      "id": "336388",
+      "displayName": "Désiré Doué"
+     }
+    }
+   ]
+  },
+  {
+   "id": "45465153",
+   "type": {
+    "id": "76",
+    "text": "Substitution",
+    "type": "substitution"
+   },
+   "text": "Substitution, Paris Saint Germain. Warren Zaïre-Emery replaces Fabián Ruiz.",
+   "period": {
+    "number": 2
+   },
+   "clock": {
+    "value": 4328.0,
+    "displayValue": "73'"
+   },
+   "scoringPlay": false,
+   "shootout": false,
+   "team": {
+    "id": "160",
+    "displayName": "Paris Saint-Germain"
+   },
+   "participants": [
+    {
+     "athlete": {
+      "id": "345581",
+      "displayName": "Warren Zaïre-Emery"
+     }
+    },
+    {
+     "athlete": {
+      "id": "214596",
+      "displayName": "Fabián Ruiz"
+     }
+    }
+   ]
+  },
+  {
+   "id": "45465204",
+   "type": {
+    "id": "76",
+    "text": "Substitution",
+    "type": "substitution"
+   },
+   "text": "Substitution, Chelsea. Kiernan Dewsbury-Hall replaces Reece James because of an injury.",
+   "period": {
+    "number": 2
+   },
+   "clock": {
+    "value": 4615.0,
+    "displayValue": "77'"
+   },
+   "scoringPlay": false,
+   "shootout": false,
+   "team": {
+    "id": "363",
+    "displayName": "Chelsea"
+   },
+   "participants": [
+    {
+     "athlete": {
+      "id": "252389",
+      "displayName": "Kiernan Dewsbury-Hall"
+     }
+    },
+    {
+     "athlete": {
+      "id": "189007",
+      "displayName": "Reece James"
+     }
+    }
+   ]
+  },
+  {
+   "id": "45465214",
+   "type": {
+    "id": "76",
+    "text": "Substitution",
+    "type": "substitution"
+   },
+   "text": "Substitution, Chelsea. Christopher Nkunku replaces Pedro Neto.",
+   "period": {
+    "number": 2
+   },
+   "clock": {
+    "value": 4632.0,
+    "displayValue": "78'"
+   },
+   "scoringPlay": false,
+   "shootout": false,
+   "team": {
+    "id": "363",
+    "displayName": "Chelsea"
+   },
+   "participants": [
+    {
+     "athlete": {
+      "id": "222176",
+      "displayName": "Christopher Nkunku"
+     }
+    },
+    {
+     "athlete": {
+      "id": "256115",
+      "displayName": "Pedro Neto"
+     }
+    }
+   ]
+  },
+  {
+   "id": "45465246",
+   "type": {
+    "id": "94",
+    "text": "Yellow Card",
+    "type": "yellow-card"
+   },
+   "text": "Levi Colwill (Chelsea) is shown the yellow card for a bad foul.",
+   "period": {
+    "number": 2
+   },
+   "clock": {
+    "value": 4864.0,
+    "displayValue": "82'"
+   },
+   "scoringPlay": false,
+   "shootout": false,
+   "team": {
+    "id": "363",
+    "displayName": "Chelsea"
+   },
+   "participants": [
+    {
+     "athlete": {
+      "id": "296410",
+      "displayName": "Levi Colwill"
+     }
+    }
+   ]
+  },
+  {
+   "id": "45465287",
+   "type": {
+    "id": "93",
+    "text": "Red Card",
+    "type": "red-card"
+   },
+   "text": "João Neves (Paris Saint Germain) is shown the red card for violent conduct.",
+   "period": {
+    "number": 2
+   },
+   "clock": {
+    "value": 5100.0,
+    "displayValue": "85'"
+   },
+   "scoringPlay": false,
+   "shootout": false,
+   "team": {
+    "id": "160",
+    "displayName": "Paris Saint-Germain"
+   },
+   "participants": [
+    {
+     "athlete": {
+      "id": "355061",
+      "displayName": "João Neves"
+     }
+    }
+   ]
+  },
+  {
+   "id": "45465313",
+   "type": {
+    "id": "94",
+    "text": "Yellow Card",
+    "type": "yellow-card"
+   },
+   "text": "Ousmane Dembélé (Paris Saint Germain) is shown the yellow card.",
+   "period": {
+    "number": 2
+   },
+   "clock": {
+    "value": 5176.0,
+    "displayValue": "87'"
+   },
+   "scoringPlay": false,
+   "shootout": false,
+   "team": {
+    "id": "160",
+    "displayName": "Paris Saint-Germain"
+   },
+   "participants": [
+    {
+     "athlete": {
+      "id": "229744",
+      "displayName": "Ousmane Dembélé"
+     }
+    }
+   ]
+  },
+  {
+   "id": "45465370",
+   "type": {
+    "id": "94",
+    "text": "Yellow Card",
+    "type": "yellow-card"
+   },
+   "text": "Nuno Mendes (Paris Saint Germain) is shown the yellow card for a bad foul.",
+   "period": {
+    "number": 2
+   },
+   "clock": {
+    "value": 5400.0,
+    "displayValue": "90'+4'"
+   },
+   "scoringPlay": false,
+   "shootout": false,
+   "team": {
+    "id": "160",
+    "displayName": "Paris Saint-Germain"
+   },
+   "participants": [
+    {
+     "athlete": {
+      "id": "290591",
+      "displayName": "Nuno Mendes"
+     }
+    }
+   ]
+  },
+  {
+   "id": "45465383",
+   "type": {
+    "id": "83",
+    "text": "End Regular Time",
+    "type": "end-regular-time"
+   },
+   "period": {
+    "number": 2
+   },
+   "clock": {
+    "value": 5400.0,
+    "displayValue": "90'+6'"
+   },
+   "scoringPlay": false,
+   "shootout": false
+  }
+ ]
+}
