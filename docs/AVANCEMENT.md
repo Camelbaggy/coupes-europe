@@ -53,7 +53,7 @@ puis autres continents et amicaux.
 
 ## À vérifier à la reprise
 
-1. **Soir du 26/11** (tâches programmées dans cette session : 15 h 35, 17 h 47, 17 h 52, 20 h 02 UTC) : page en direct pendant Mjällby-Kairat,
+1. **Soir du 26/11** (FAIT pour la page : direct validé en ligne pendant Kairat-Mjällby, 15 h 30 UTC ; statuts ESPN vus : FIRST_HALF, HALFTIME, SECOND_HALF, IN_PROGRESS (en plein match, traité comme « en cours »), FULL_TIME ; sonde supprimée) (tâches programmées dans cette session : 15 h 35, 17 h 47, 17 h 52, 20 h 02 UTC) : page en direct pendant Mjällby-Kairat,
    puis alertes `direct_clubs.yml` (valeur réelle du statut UEFA « en direct », buts, anti-doublon) ; analyse de `tools/sonde_direct.py`, puis
    SUPPRIMER cette sonde (temporaire) ; proposer l'étape 2 du direct (momentum en direct, port JS avec test de parité) au propriétaire.
 2. Week-end du 28-30/11 : notification commune avec les championnats ; journées déduites sur les nouveaux jours (por / ned / bel / gre).

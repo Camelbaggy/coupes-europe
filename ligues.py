@@ -132,7 +132,7 @@ def scoreboard(ligue: str, jour: str) -> Tuple[List[Dict[str, Any]], str]:
 STATUT_FR = {"STATUS_FULL_TIME": "Terminé", "STATUS_FINAL": "Terminé", "STATUS_FINAL_AET": "Terminé",
              "STATUS_FINAL_PEN": "Terminé", "STATUS_SCHEDULED": "À venir", "STATUS_POSTPONED": "Reporté",
              "STATUS_CANCELED": "Annulé", "STATUS_ABANDONED": "Arrêté", "STATUS_SUSPENDED": "Interrompu",
-             "STATUS_FIRST_HALF": "En cours", "STATUS_SECOND_HALF": "En cours", "STATUS_HALFTIME": "Mi-temps"}
+             "STATUS_FIRST_HALF": "En cours", "STATUS_IN_PROGRESS": "En cours", "STATUS_SECOND_HALF": "En cours", "STATUS_HALFTIME": "Mi-temps"}
 
 
 def _equipe(c: Dict[str, Any], ligue: str) -> Dict[str, Any]:
