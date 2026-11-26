@@ -377,7 +377,7 @@ nationalité, photo). La compo et le déroulé référencent les joueurs par `id
   mondes ; joueurs rapprochés par date de naissance + nom), `ficheJoueurSaison`. Tests : `python fiches_ligues.py --test`.
 - **Encyclopédie des clubs de championnat** (`encyclo_ligues.py`, appelé par `fiches_ligues.construire`, jamais bloquant) : club ESPN -> article
   Wikipédia cité par la page de la saison (`journees.json` `correspondances`, vérifiées par les scores ; Serie A : tableau « Squadre partecipanti »
-  IT, nom du calendrier = `{{Calcio <nom>}}` de la même ligne) -> élément Wikidata (`pageprops.wikibase_item`, doit être un club de football
+  IT, nom du calendrier = `{{Calcio <nom>}}` de la même ligne) ; pages locales : titres lus dans le calendrier TR (liens d'article des boîtes de match), NO = modèle `{{fk|Nom}}` développé par l'API `expandtemplates` (`MODELE_NOMS`, `developper_modele` : un seul lien rendu, sinon rien) -> élément Wikidata (`pageprops.wikibase_item`, doit être un club de football
   P31/P279* Q476028) -> `wikidata` (fondation, siège, site, surnom, `uefa_id` P7361 et stade P115 seulement s'ils sont UNIQUES, `preuve: "article"`)
   + `wikipedia` (extrait FR) ; cache 30 jours. Stade : celui d'ESPN reste ; capacité / ville / ouverture Wikidata ajoutées (`complement`) seulement si
   le nom ESPN partage un mot distinctif avec le nom ou un autre nom (libellés, alias) du stade Wikidata ; sans stade ESPN : stade Wikidata
