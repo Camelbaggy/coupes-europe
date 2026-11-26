@@ -184,3 +184,45 @@ ceux des matchs UEFA les identifiants UEFA (rapprochement à faire avec les fich
   l'Euro ou de la Coupe du monde. Un jour sans état international n'est jamais attendu.
 - **Alertes en direct** : Euro, Ligue des nations, Coupe du monde (UEFA) pour l'équipe de France ; cdmc / ci (ESPN + liste FIFA pour
   reconnaître un club français). Rejeu simulé : France 2-1 Turquie (Ligue des nations, 15/11/2026), Chelsea 3-0 PSG (finale CdMC 2025).
+
+## 10. Étape 4 livrée : historique, résultats seuls (26/11/2026)
+
+`histoire_internationale.py` (+ `tools/fixtures_histoire_internationale.py`, fixtures réelles allégées dans `tools/fixtures/histoire_internationale/`, workflow
+`historique_internationales.yml` de donnees-football). Décision 8 du propriétaire : fiches de match complètes pour les éditions récentes seulement ; pour toutes les
+autres, RÉSULTATS (score, tirs au but, tour, groupe, statut), palmarès et bilans calculés. Format et règles : docstring du module et CLAUDE.md.
+
+**Sources mesurées.** FIFA : Coupe du monde (compétition 17) 23 éditions 1930-2026 avec 18 / 17 / 18 / 22 / 26 / 35 / 32 / 32 / 32 / 38 / 38 / 52 ×4 / 64 ×7 / 104 matchs
+(nombres exacts de l'histoire) ; Coupe du monde des clubs 2000, 2005-2023 (107) et 2025 (10005) ; Coupe intercontinentale 2024-2026 (107). UEFA : Euro (3) 17 éditions,
+`seasonYear` = année NOMINALE (Euro 2020 joué en 2021 : 2020 ; 0 match publié pour 2028) ; Ligue des nations (2014) 2019, 2021, 2023, 2025, 2027 (`seasonYear` = année de fin
+de saison).
+
+**`ResultType` FIFA** (vérifié sur des cas connus) : 1 = temps réglementaire (finales 1998, 2018) ; 2 = tirs au but (finales 1994, 2006, 2022) ; 3 = prolongation (finales
+1966, 1978, 2010, 2014, 2026 ; 1934 ; Brésil - Pologne 1938) ; 8 = but en or (France - Paraguay 1998, Sénégal - Suède, Corée - Italie, Sénégal - Turquie en 2002). Le score est
+APRÈS prolongation, tirs au but exclus ; `HomeTeamPenaltyScore` vaut 0 / 0 en l'absence de séance (d'où le test sur `ResultType`). `Winner` est un `IdTeam` (absent sur un nul,
+y compris les matchs à rejouer de 1934 / 1938). `MatchStatus` 9 n'apparaît qu'une fois (Coupe du monde des clubs 2020, Al Duhail - Auckland City 3-0, Auckland s'étant retiré) :
+traité en forfait (jamais compté).
+
+**Pièges de source.**
+- Libellés de tour FIFA hétérogènes (« Matches de groupes », « Group Stage », « 1er tour », « Premier tour », « 2e tour », « Deuxième tour », « 5e place », « Bronze final »,
+  libellés anglais de la Coupe intercontinentale 2025) : ramenés à ceux de l'UEFA ; un libellé inconnu reste tel quel (jamais inventé).
+- UEFA : `round.phase = TOURNAMENT` contient, de 1960 à 1976, les huitièmes et quarts de finale à DEUX MANCHES, qui sont des éliminatoires (la phase finale n'a que 4 équipes) ;
+  la règle (`deux_manches_q`) ne vaut que pour l'Euro (les quarts à deux manches de la Ligue des nations 2025 sont bien de la compétition).
+- UEFA : `kickOffTime.date` est la date LOCALE (décalage de 6 h pour une éliminatoire en Asie centrale) : le jour UTC est lu dans `dateTime`.
+- UEFA : la source dit « nul » sans désigner d'équipe quand une finale se joue aux tirs au but (1976, 1980) ; seul `score.penalty` tranche. Finale de 1960 : raison UEFA
+  « WIN_REGULAR » alors que le score est 1-1 après le temps réglementaire et 2-1 après prolongation (l'équipe désignée est la bonne).
+- FIFA : clubs d'une même nation sous deux noms (« Real Madrid CF » / « Real Madrid C.F. ») : l'identifiant `IdTeam` est stable, le nom est celui de l'édition.
+- Pays disparus : codes d'ÉPOQUE de la source, identiques entre FIFA et UEFA (URS, FRG, GDR, TCH, YUG, SCG), plus CIS (UEFA 1992), ZAI et INH (FIFA). `FLAG_CODES` n'a ni ces
+  codes (voulu : drapeau vide) ni KUW / PRK / PNG, pays existants ajoutés à `FLAGS_COMPLEMENT` ; reste sans drapeau le club de Tahiti (AS Pirae, code pays TAH).
+
+**Résultats de l'essai réel complet** (77 requêtes, 58 s, 69 éditions, 5 388 matchs : cdm 1 068, euro 3 233, ldn 848, cdmc 224, ci 15 ; 1,4 Mo bruts / 0,5 Mo gzip pour 201
+équipes) : vainqueurs de la Coupe du monde 1930-2022 (URU, ITA, ITA, URU, RFA, BRA, BRA, ENG, BRA, RFA, ARG, ITA, ARG, RFA, BRA, FRA, BRA, ITA, ESP, ALL, FRA, ARG) et de l'Euro
+1960-2024 (URS, ESP, ITA, RFA, TCH, RFA, FRA, PAYS-BAS, DAN, ALL, FRA, GRE, ESP, ESP, POR, ITA, ESP) conformes à l'histoire ; finalistes et troisièmes aussi ; Coupe du monde 1950 =
+Uruguay par la poule finale (5 points contre 4 au Brésil). Aucun `ecarts` entre le calcul et la source. Un seul `?` : Coupe du monde des clubs 2019, source FIFA défaillante
+(6 matchs sur 8 à 0-0 sans vainqueur ni tirs au but, dont la finale Liverpool - Flamengo et la demi-finale Monterrey - Liverpool) : vainqueur `?`, `avertissement`, scores affichés tels que
+la source les donne ; ses bilans sont donc faux pour cette édition. Bilan de la France : Coupe du monde 17 participations, 2 titres, 4 finales, 3 tirs au but perdus (1982, 2006,
+2022) ; Euro 11 phases finales, 2 titres (1984, 2000), 3 finales ; Ligue des nations 1 titre (2021), 3e en 2025. Les éditions 2026 (Coupe du monde, Espagne - Argentine 1-0 a.p.) et la
+3e place anglaise de la Coupe du monde 2026 viennent des sources telles quelles.
+
+**Limites.** Hôte de l'Euro et de la Ligue des nations absent (aucune donnée d'époque fiable dans l'API) ; Allemagne (GER) et Allemagne de l'Ouest (FRG) sont deux équipes (la FIFA
+et l'UEFA les distinguent par code d'époque) ; ordre des tours de formats anciens indicatif (`NIVEAUX`) ; éliminatoires de la Coupe du monde absents (hors décision) ; pas de
+classement de groupe, pas de buteurs ; une édition publiée avec des scores faux par la source l'est telle quelle.
