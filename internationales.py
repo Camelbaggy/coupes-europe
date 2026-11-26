@@ -203,7 +203,10 @@ def entree_uefa(m: Dict[str, Any]) -> Dict[str, Any]:
     debut = (m.get("kickOffTime") or {}).get("dateTime") or ""
     h, a = uefa.team_info(m.get("homeTeam") or {}), uefa.team_info(m.get("awayTeam") or {})
     md = m.get("matchday") or {}
+    seq = str(md.get("sequenceNumber") or "")
+    groupe_mode = ((m.get("round") or {}).get("mode") or "") == "GROUP"
     return {"source": "uefa", "uefa_id": str(m.get("id")), "debut": debut, "jour": jour_paris(debut), "phase": phase,
+            "num_journee": int(seq) if groupe_mode and seq.isdigit() else None,
             "tour": tour, "groupe": fr(g.get("translations"), "name") or (g.get("metaData") or {}).get("groupName") or None,
             "journee": fr(md.get("translations"), "name") or None,
             "home_team": h, "away_team": a,
@@ -234,7 +237,32 @@ def liste_edition(comp: str, edition: int) -> Optional[List[Dict[str, Any]]]:
                 return None
             out += [entree_fifa(comp, m) for m in ms]
     out.sort(key=lambda e: (e["debut"], e.get("uefa_id") or e.get("fifa_id") or ""))
+    journees_fifa(out)
+    for e in out:
+        e["tour_court"] = tour_court(e["phase"], e["tour"], e.get("num_journee"))
     return out
+
+
+def journees_fifa(liste: List[Dict[str, Any]]) -> None:
+    """Journée des matchs de groupe FIFA (la FIFA n'en donne pas) : k-ième match de CHACUNE des deux équipes dans l'ordre des coups
+    d'envoi ; attribuée seulement si ce rang est le même pour les deux équipes (sinon absente, jamais devinée)."""
+    vus: Dict[str, int] = {}
+    for e in liste:
+        if e["source"] != "fifa" or e["phase"] != "groupes" or not e.get("home_team") or not e.get("away_team"):
+            continue
+        h, a = e["home_team"]["fifa_id"], e["away_team"]["fifa_id"]
+        vus[h], vus[a] = vus.get(h, 0) + 1, vus.get(a, 0) + 1
+        e["num_journee"] = vus[h] if vus[h] == vus[a] else None
+
+
+def tour_court(phase: str, tour: str, journee: Optional[int]) -> str:
+    """Libellé du tour pour le menu (une entrée = un ensemble de matchs) : journée pour les phases de groupes et les groupes
+    d'éliminatoires, nom du tour sinon."""
+    if phase == "qualification" and journee:
+        return f"Éliminatoires · J{journee}"
+    if phase == "groupes" and journee:
+        return f"{tour} · J{journee}"
+    return tour
 
 
 # ------------------------------------------------------------------------------
@@ -299,14 +327,17 @@ def match_espn(comp: str, ev: Dict[str, Any], liste: List[Dict[str, Any]]) -> Di
         fm = cand[0] if len(cand) == 1 else None
     if fm:
         m.update({"fifa_id": fm["fifa_id"], "phase": fm["phase"], "groupe": fm["groupe"],
-                  "round": {"name": fm["tour"], "type": ""}})
+                  "round": {"name": fm["tour"], "type": ""}, "tour_court": fm.get("tour_court") or fm["tour"],
+                  "journee": fm.get("num_journee")})
+        if fm.get("num_journee"):
+            m["matchday_short"] = f"J{fm['num_journee']}"
         if fm.get("stade"):
             m["venue"] = m["venue_fifa"] = fm["stade"]   # nom officiel FIFA (en français), prioritaire sur celui d'ESPN
     else:
         tour, phase = TOURS_ESPN.get(((ev.get("season") or {}).get("slug") or ""), ("", "finale"))
         g = ((ev.get("competitions") or [{}])[0].get("group") or {}).get("name") or ""
         m.update({"phase": "groupes" if g else phase, "groupe": g.replace("Group", "Groupe") or None,
-                  "round": {"name": tour, "type": ""}})
+                  "round": {"name": tour, "type": ""}, "tour_court": tour, "journee": None})
     m["stage"] = "league" if m["phase"] == "groupes" else "qualifying" if m["phase"] == "qualification" else "knockout"
     return m
 
@@ -370,7 +401,8 @@ def collecter_jour(comp: str, edition: int, jour: str, liste: Optional[List[Dict
         n += 1
         t0 = time.time()
         m = collector.build_match(comp, e["_brut"], detailed=bool(e["home_team"]["is_french"] or e["away_team"]["is_french"]))
-        m.update({"phase": e["phase"], "groupe": e["groupe"], "source": SOURCE_UEFA, "date": jour})
+        m.update({"phase": e["phase"], "groupe": e["groupe"], "source": SOURCE_UEFA, "date": jour,
+                  "tour_court": e["tour_court"], "journee": e.get("num_journee")})
         if e.get("tab"):
             m["tab"] = list(e["tab"])
         print(f"[INFO] {cfg['court']} {m['home_team']['name']} {m['home_team']['score']}-{m['away_team']['score']} "
@@ -544,7 +576,7 @@ def programme(comp: str, liste: List[Dict[str, Any]], maintenant: datetime) -> L
         if e["statut"] != "Reporté" and (e["debut"] or "") < seuil:
             continue
         x = {"id": e.get("uefa_id") or f"fifa-{e.get('fifa_id')}", "debut": e["debut"], "date": e["jour"],
-             "phase": e["phase"], "tour": e["tour"], "statut": e["statut"]}
+             "phase": e["phase"], "tour": e["tour"], "tour_court": e.get("tour_court") or e["tour"], "statut": e["statut"]}
         for side, att in (("home_team", 0), ("away_team", 1)):
             if e.get(side):
                 x[side] = _sans_prive(e[side])
@@ -605,6 +637,14 @@ def _test() -> None:
     assert phase_uefa({"round": {"phase": "QUALIFYING", "mode": "GROUP"}})[0] == "qualification"
     assert phase_uefa({"round": {"phase": "TOURNAMENT", "mode": "GROUP"}})[0] == "groupes"
     assert phase_uefa({"round": {"phase": "TOURNAMENT", "mode": "KNOCK_OUT"}})[0] == "finale"
+    assert tour_court("qualification", "Tour de qualification", 3) == "Éliminatoires · J3"
+    assert tour_court("groupes", "Phase de ligue", 5) == "Phase de ligue · J5"
+    assert tour_court("qualification", "Barrages", None) == "Barrages" and tour_court("finale", "Finale", None) == "Finale"
+    eq = lambda i: {"fifa_id": str(i)}
+    L = [{"source": "fifa", "phase": "groupes", "home_team": eq(a), "away_team": eq(b)} for a, b in
+         ((1, 2), (3, 4), (1, 3), (2, 4), (4, 1), (2, 3), (5, 1))]
+    journees_fifa(L)
+    assert [e["num_journee"] for e in L] == [1, 1, 2, 2, 3, 3, None]
     print("[OK] internationales : tests passés")
 
 
