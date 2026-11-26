@@ -176,13 +176,21 @@ def journees_saison(lg: str, annee: int, dossier: str, avec_wiki: bool) -> Dict[
             print(f"[WARN] {lg} : calendrier ESPN de la saison illisible ; journées et programme inchangés")
             return cache
         res = journees_wiki.calculer(lg, annee, ms, clubs, cache) if besoin_jr else {"erreur": True, "deja_lues": True}
+        if lg in JOURNEES_DEDUITES and res.get("erreur") and not res.get("deja_lues"):
+            # page Wikipédia illisible ou incohérente (Pays-Bas) : la déduction ne dépend pas d'elle. Journées Wikipédia du cache gardées
+            # seulement si le cache n'est pas déjà une déduction (sinon une ancienne déduction primerait sur la nouvelle)
+            wiki_cache = {} if "deduites" in cache else (cache.get("journees") or {})
+            res = {**cache, "journees": wiki_cache, "anomalies": list(res.get("anomalies") or []),
+                   "maj": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")}
+            res.pop("erreur", None)
         if lg in JOURNEES_DEDUITES and not res.get("erreur"):
             # pas de source de journées : numéro déduit du calendrier (journees_ordre.py) ; Wikipédia garde la priorité
             ded, an_d = journees_ordre.calculer(ms)
             wiki_n = len(res.get("journees") or {})
             res["journees"] = {**ded, **(res.get("journees") or {})}
             res["deduites"] = len(res["journees"]) - wiki_n
-            res["source"] = (res.get("source") or "") + " ; journées déduites du calendrier ESPN (journees_ordre.py)"
+            suffixe = " ; journées déduites du calendrier ESPN (journees_ordre.py)"
+            res["source"] = (res.get("source") or "").replace(suffixe, "") + suffixe
             res["anomalies"] = list(res.get("anomalies") or []) + [f"déduction : {a}" for a in an_d]
             print(f"[JOURNÉES] {lg} : {res['deduites']} journée(s) déduite(s) du calendrier")
         jr = cache.get("journees") or {} if res.get("erreur") else res.get("journees") or {}
