@@ -32,6 +32,7 @@ Tout ce qui suit est fusionné sur `main` et en ligne (https://camelbaggy.github
 
 **Suivi en direct (page)** : bloc « En direct » (accueil et compétition, ESPN depuis le navigateur), fiche de match provisoire, pastilles
 « En direct · N » sur les tuiles et point rouge sur les onglets. Pas encore vu sur un vrai match en cours (premier soir : 26/11).
+- 26/11 (améliorations direct & tour du jour) : (1) drapeaux pays obligatoires sur les matchs internationaux/européens en direct (jamais de logo club, logos conservés en championnat, chargement optionnel de `internationales/fiches/clubs/index.json` + résolution renforcée par `espn_id` / nom exact / recoupement sans ambiguïté) ; (2) matchs internationaux impliquant une équipe française remontés en tête du bloc « En direct » (accueil et onglet de compétition) avec `.is-fr` ; (3) `defaultTour` / `defaultTourIntl` ouvrent par défaut la journée ou phase du jour même lorsqu'il y a des matchs programmés ce jour-là (même si > 150 min après coup d'envoi avant collecte).
 
 ## Chantier en cours : compétitions internationales (26/11/2026)
 

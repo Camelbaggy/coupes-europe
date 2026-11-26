@@ -221,11 +221,12 @@
     .acc-m .sc.live { background: rgba(239, 68, 68, 0.16); color: #fca5a5; }
     .acc-m .min { grid-column: 1 / -1; font-size: 0.68rem; color: #fca5a5; text-align: center; margin-top: -4px; font-weight: 700; }
     .acc-m .min.fin { color: var(--text-muted); }
-    .acc-m .eq { font-size: 0.85rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: flex; align-items: center; gap: 6px; }
+    .acc-m .eq { font-size: 0.85rem; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; display: flex; align-items: center; gap: 6px; }
     .acc-m .eq.d { justify-content: flex-end; text-align: right; }
     .acc-m .sc { font-weight: 800; font-variant-numeric: tabular-nums; background: var(--bg-elevated); border-radius: 8px; padding: 2px 10px; min-width: 52px; text-align: center; }
     .acc-m .sc.av { font-weight: 600; color: var(--text-muted); font-size: 0.8rem; }
     .acc-m .is-fr { color: var(--french-accent); font-weight: 700; }
+    .acc-m .direct-tag { grid-column: 1 / -1; font-size: 0.68rem; color: var(--text-muted); text-align: center; margin-top: -2px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     /* Prochains matchs (accueil et onglet de compétition) : lignes .acc-m, étiquette de compétition en dessous */
     .acc-m .nm { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
     .acc-m .pm-c { grid-column: 1 / -1; font-size: 0.68rem; color: var(--c-accent, var(--text-muted)); text-align: center; margin-top: -3px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -1491,6 +1492,8 @@
       por: 'Liga Portugal', ned: 'Eredivisie', bel: 'Pro League (Belgique)', tur: 'Süper Lig', aut: 'Bundesliga (Autriche)',
       gre: 'Super League (Grèce)', nor: 'Eliteserien',
       cdm: 'Coupe du monde', euro: 'Euro', ldn: 'Ligue des nations', cdmc: 'Coupe du monde des clubs', ci: 'Coupe intercontinentale' };
+    const COMP_NAMES = { ucl: 'LDC', uel: 'Ligue Europa', uecl: 'Ligue Conférence', cdmc: 'CdM des clubs', ci: 'Intercontinentale',
+      cdm: 'Coupe du monde', euro: 'Euro', ldn: 'Ligue des nations' };
     // Compétitions internationales (étape 2) : sélections (espace propre) et compétitions mondiales de clubs (rangées avec les coupes d'Europe)
     const SEL_KEYS = ['cdm', 'euro', 'ldn'];
     const CLUB_MONDE = ['cdmc', 'ci'];
@@ -1590,7 +1593,7 @@
           if (!c) return;
           const key = (c.stage || '') + '|' + (c.tour || '');
           let t = map.get(key);
-          if (!t) { t = { comp: k, stage: c.stage || '', tour: c.tour || '', dates: [], matchs: 0, jouee: false, reconstituee: false }; map.set(key, t); }
+          if (!t) { t = { comp: k, stage: c.stage || '', tour: c.tour || '', dates: [], datesProg: [], matchs: 0, jouee: false, reconstituee: false }; map.set(key, t); }
           t.dates.push(l.date); t.matchs += c.matchs || 0;
           if ((l.termines || 0) > 0) t.jouee = true;
           if (l.reconstituee) t.reconstituee = true;
@@ -1624,10 +1627,14 @@
       return new Date(d.getTime() - j * 86400000).toISOString().slice(0, 10);
     }
     function ajouterAvenir(k, ms) {
-      const list = toursByComp[k] || (toursByComp[k] = []), ligue = estLigue(k), futurs = new Map();
+      const list = toursByComp[k] || (toursByComp[k] = []), ligue = estLigue(k), futurs = new Map(), auj = jourParis();
+      const vis = new Set(progVisibles(ms).map(x => x.id));
       const deja = new Set();
-      list.forEach(t => (t.avenir = []));
-      progVisibles(ms).forEach(x => {
+      list.forEach(t => { t.avenir = []; if (!t.datesProg) t.datesProg = []; });
+      (ms || []).forEach(x => {
+        const actif = !/report|annul/i.test(x.statut || '');
+        const visible = vis.has(x.id);
+        if (!visible && (!actif || x.date !== auj)) return;
         let t = ligue
           ? list.find(t => x.journee && t.groupe === 'journees' && t.n === x.journee)
           : list.find(t => !t.futur && t.stage === x.stage && t.tour === x.tour);
@@ -1640,24 +1647,36 @@
                            : { comp: k, stage: 'league', tour: '', n: 0, titre: 'Semaine du ' + datesCourtes([lundi(x.date)]), id: cle })
               : { comp: k, stage: x.stage, tour: x.tour, id: slug(x.tour || x.stage || 'tour') };
             if (!ligue) t.titre = tourTitre(t);
-            Object.assign(t, { dates: [], matchs: 0, jouee: false, futur: true, groupe: 'avenir', avenir: [] });
+            Object.assign(t, { dates: [], datesProg: [], matchs: 0, jouee: false, futur: true, groupe: 'avenir', avenir: [] });
             futurs.set(cle, t);
           }
         }
         if (deja.has(x.id)) return;
-        deja.add(x.id); t.avenir.push(x);
-        if (t.futur) { t.matchs++; if (x.date && !t.dates.includes(x.date)) t.dates.push(x.date); }
+        deja.add(x.id);
+        if (actif && x.date && !t.datesProg.includes(x.date)) t.datesProg.push(x.date);
+        if (visible) {
+          t.avenir.push(x);
+          if (t.futur) { t.matchs++; if (x.date && !t.dates.includes(x.date)) t.dates.push(x.date); }
+        } else if (t.futur) {
+          t.matchs++; if (x.date && !t.dates.includes(x.date)) t.dates.push(x.date);
+        }
       });
       const nv = [...futurs.values()];
       nv.forEach(t => { t.dates.sort(); t.fin = t.dates[t.dates.length - 1] || ''; if (list.some(u => u.id === t.id)) t.id += '-a-venir'; });
       nv.sort((a, b) => (b.dates[0] || '').localeCompare(a.dates[0] || ''));   // la prochaine juste au-dessus de la dernière jouée
       toursByComp[k] = [...nv, ...list];
     }
-    // Par défaut : le tour le plus récent qui a des matchs terminés
+    function tourDuJour(l) {
+      const auj = jourParis();
+      const cs = (l || []).filter(t => (!t.futur && (t.dates || []).includes(auj)) || (t.datesProg || []).includes(auj));
+      if (!cs.length) return null;
+      return cs.sort((a, b) => (!!a.futur - !!b.futur) || (b.fin || '').localeCompare(a.fin || '') || (b.n || 0) - (a.n || 0) || rangTour(b.tour) - rangTour(a.tour))[0];
+    }
+    // Par défaut : le tour du jour s'il y a des matchs aujourd'hui, sinon le tour le plus récent qui a des matchs terminés
     function defaultTour(k) {
       if (estIntl(k)) return defaultTourIntl(k);
       const l = toursByComp[k] || [];
-      return l.filter(t => t.jouee).sort((a, b) => b.fin.localeCompare(a.fin))[0] || l[0] || null;
+      return tourDuJour(l) || l.filter(t => t.jouee).sort((a, b) => b.fin.localeCompare(a.fin))[0] || l[0] || null;
     }
 
     // Championnat : tours = journées (index.json : `par_journee` {n: matchs} de chaque jour ; un match reporté apparaît sous sa
@@ -1669,14 +1688,14 @@
         const ns = Object.keys(pj).length ? Object.keys(pj) : (l.journees || []).map(String);
         ns.forEach(n => {
           let t = map.get(n);
-          if (!t) { t = { comp: k, stage: 'league', tour: 'J' + n, n: Number(n), dates: [], matchs: 0, jouee: false, groupe: 'journees', titre: 'Journée ' + n, id: 'j' + n }; map.set(n, t); }
+          if (!t) { t = { comp: k, stage: 'league', tour: 'J' + n, n: Number(n), dates: [], datesProg: [], matchs: 0, jouee: false, groupe: 'journees', titre: 'Journée ' + n, id: 'j' + n }; map.set(n, t); }
           t.dates.push(l.date); t.matchs += Number(pj[n] || 0);
           if ((l.termines || 0) > 0) t.jouee = true;
           if (l.reconstituee) t.reconstituee = true;
         });
         if ((l.sans_journee || 0) > 0) {
           let t = map.get('autres');
-          if (!t) { t = { comp: k, stage: 'league', tour: '', n: 0, dates: [], matchs: 0, jouee: false, groupe: 'autres', titre: 'Autres matchs', id: 'autres' }; map.set('autres', t); }
+          if (!t) { t = { comp: k, stage: 'league', tour: '', n: 0, dates: [], datesProg: [], matchs: 0, jouee: false, groupe: 'autres', titre: 'Autres matchs', id: 'autres' }; map.set('autres', t); }
           t.dates.push(l.date); t.matchs += l.sans_journee;
           if ((l.termines || 0) > 0) t.jouee = true;
         }
@@ -1825,7 +1844,7 @@
       buildToursIntl(k);
     }
     function buildToursIntl(k) {
-      const joues = [], futurs = new Map();
+      const joues = [], futurs = new Map(), auj = jourParis();
       intlEditions(k).forEach(e => {
         const E = intlEd(k, e.edition);
         if (!E) return;
@@ -1833,7 +1852,7 @@
         E.lignes.forEach(l => Object.entries(l.par_tour || {}).forEach(([tour, n]) => {
           let t = map.get(tour);
           if (!t) {
-            t = { comp: k, edition: e.edition, edLib: e.libelle, stage: '', tour, titre: tour, dates: [], matchs: 0, jouee: false, reconstituee: false, avenir: [],
+            t = { comp: k, edition: e.edition, edLib: e.libelle, stage: '', tour, titre: tour, dates: [], datesProg: [], matchs: 0, jouee: false, reconstituee: false, avenir: [],
                   phase: phaseDeTour(tour, l.phases), groupe: 'ed-' + e.edition, id: e.edition + '-' + slug(tour) };
             map.set(tour, t);
           }
@@ -1844,20 +1863,25 @@
         const list = [...map.values()];
         list.forEach(t => { t.dates.sort(); t.fin = t.dates[t.dates.length - 1]; });
         list.sort((a, b) => b.fin.localeCompare(a.fin) || rangTour(b.tour) - rangTour(a.tour));
-        progVisibles(E.programme).forEach(x => {
+        const vis = new Set(progVisibles(E.programme).map(x => x.id));
+        E.programme.forEach(x => {
+          const actif = !/report|annul/i.test(x.statut || '');
+          const visible = vis.has(x.id);
+          if (!visible && (!actif || x.date !== auj)) return;
           const tour = x.tour_court || x.tour || '';
           let t = map.get(tour);
           if (!t) {
             const cle = e.edition + '|' + tour;
             t = futurs.get(cle);
             if (!t) {
-              t = { comp: k, edition: e.edition, edLib: e.libelle, stage: '', tour, titre: tour || 'À venir', dates: [], matchs: 0, jouee: false, futur: true, avenir: [],
+              t = { comp: k, edition: e.edition, edLib: e.libelle, stage: '', tour, titre: tour || 'À venir', dates: [], datesProg: [], matchs: 0, jouee: false, futur: true, avenir: [],
                     phase: x.phase || phaseDeTour(tour, []), groupe: 'avenir', id: e.edition + '-' + slug(tour || 'a-venir') };
               futurs.set(cle, t);
             }
             t.matchs++; if (x.date && !t.dates.includes(x.date)) t.dates.push(x.date);
           }
-          t.avenir.push(x);
+          if (actif && x.date && !t.datesProg.includes(x.date)) t.datesProg.push(x.date);
+          if (visible) t.avenir.push(x);
         });
         joues.push(...list);
       });
@@ -1866,9 +1890,13 @@
       nv.sort((a, b) => (b.dates[0] || '').localeCompare(a.dates[0] || ''));   // la prochaine juste au-dessus de la dernière jouée
       toursByComp[k] = [...nv, ...joues];
     }
-    // Par défaut : tour le plus récent joué de l'édition la plus récente qui a des matchs terminés ; sinon le prochain tour à venir
+    // Par défaut : tour du jour (dans l'édition la plus récente qui joue aujourd'hui), sinon tour le plus récent joué de l'édition la plus récente qui a des matchs terminés ; sinon le prochain tour à venir
     function defaultTourIntl(k) {
       const l = toursByComp[k] || [];
+      for (const e of intlEditions(k)) {
+        const tj = tourDuJour(l.filter(t => t.edition === e.edition));
+        if (tj) return tj;
+      }
       for (const e of intlEditions(k)) {
         const ts = l.filter(t => t.edition === e.edition && t.jouee && !t.futur).sort((a, b) => b.fin.localeCompare(a.fin) || rangTour(b.tour) - rangTour(a.tour));
         if (ts.length) return ts[0];
@@ -2702,56 +2730,88 @@
     const DIRECT_APRES_FIN_MIN = 165;   // un match terminé reste dans le bloc jusqu'à 165 min après son coup d'envoi
     const directEtat = { live: {}, minuterie: null, jeton: 0, fiche: null, ficheMinuterie: null };
     const jourParisCompact = () => new Date().toLocaleDateString('en-CA', { timeZone: 'Europe/Paris' }).replace(/-/g, '');
+    const normNom = (n) => String(n || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
     const espnEquipe = (c, k) => {
       const t = (c && c.team) || {};
       const e = { id: 'espn-' + t.id, espn_id: String(t.id || ''), name: String(t.shortDisplayName || t.displayName || t.name || '').trim(),
         short: t.abbreviation || '', logo: t.logo || ((t.logos || [])[0] || {}).href || '', score: Number(c && c.score) || 0 };
-      return estIntl(k) ? paysDirect(e, t, k) : e;
+      return !estLigue(k) ? paysDirect(e, t, k) : e;
     };
-    // Compétition internationale, bloc « En direct » : drapeaux partout (décision du 26/11/2026), mais ESPN ne donne pas le pays d'un club.
-    // Pays lu (1) dans la fiche du club (index des fiches : identifiant ESPN des clubs des championnats suivis), sinon (2) dans les équipes
-    // FIFA déjà chargées de l'édition (programme, jours) : sélection = même code, club = un mot distinctif commun, UN SEUL candidat ;
-    // un club absent de l'édition chargée est cherché par son nom dans toutes les fiches (un mot distinctif commun ; tous les candidats du même pays).
-    // Sans correspondance sûre : aucune image (jamais de logo, jamais de pays deviné).
+    // Compétition non domestique (coupes d'Europe, mondiales de clubs, sélections), bloc « En direct » : drapeaux partout (jamais de logo de club).
+    // Pays lu (1) dans la fiche du club (`clubIndex` par `espn-<id>`), sinon (2) dans les équipes connues de la compétition (programme des
+    // coupes / éditions internationales, cache des soirées/jours), sinon (3) dans `clubIndex` par nom (correspondance exacte d'abord, puis
+    // recoupement de mots distinctifs si tous les candidats partagent le même drapeau), sinon (4) drapeau pays ESPN pour les sélections.
+    // Sans correspondance sûre : aucune image (jamais de logo de club, jamais de pays deviné).
     const MOTS_VIDES_CLUB = new Set(['club', 'football', 'futbol', 'sport', 'sports', 'sporting', 'united', 'city', 'real', 'athletic', 'atletico',
       'deportivo', 'saint', 'san', 'santa', 'union', 'racing', 'olympique', 'association']);
     function equipesIntlConnues(k) {
       const out = new Map();
+      const aj = (x) => {
+        if (!x || !x.flag || x.a_determiner) return;
+        const cle = x.espn_id ? 'espn-' + x.espn_id : (x.id || x.fifa_id || x.name);
+        if (cle) out.set(String(cle), x);
+      };
+      (((programmeCoupes || {}).competitions || {})[k] || []).forEach(m => { aj(m.home_team); aj(m.away_team); });
       Object.keys(intlEds).filter(c => c.startsWith(k + '|')).forEach(c => {
-        (intlEds[c].programme || []).forEach(m => [m.home_team, m.away_team].forEach(x => { if (x && x.flag && !x.a_determiner) out.set(x.fifa_id || x.name, x); }));
+        (intlEds[c].programme || []).forEach(m => { aj(m.home_team); aj(m.away_team); });
       });
       soireeCache.forEach((d, cle) => {
-        if (!String(cle).startsWith(k + '@')) return;
-        (((d.competitions || {})[k] || {}).matches || []).forEach(m => [m.home_team, m.away_team].forEach(x => { if (x && x.flag) out.set(x.fifa_id || x.name, x); }));
+        if (estIntl(k) && !String(cle).startsWith(k + '@')) return;
+        (((d && d.competitions) || {})[k] || {}).matches && d.competitions[k].matches.forEach(m => { aj(m.home_team); aj(m.away_team); });
       });
       return [...out.values()];
     }
     function paysDirect(e, t, k) {
       e.intl = true;
-      const f = clubIndex && clubIndex.get(e.id);
-      if (f && f.drapeau) return Object.assign(e, { flag: f.drapeau, country: f.code_pays || '', country_name: f.pays || '', is_french: !!f.francais });
       const ab = String(t.abbreviation || '').toUpperCase();
+      const marquerFr = (x) => {
+        x.is_french = Boolean(x.is_french || x.flag === 'fr' || x.country === 'FRA' || (estSelection(k) && (ab === 'FRA' || /\/fra\.png/i.test(x.logo || ''))));
+        return x;
+      };
+      const f = clubIndex && clubIndex.get(e.id);
+      if (f && f.drapeau) {
+        Object.assign(e, { flag: f.drapeau, country: f.code_pays || '', country_name: f.pays || '', is_french: !!f.francais });
+        return marquerFr(e);
+      }
       const mots = (n) => [...motsNom(n)].filter(x => !MOTS_VIDES_CLUB.has(x));
       const noms = [t.displayName, t.shortDisplayName, t.name, t.location].filter(Boolean);
-      // (3) club : fiche retrouvée par le NOM (fiches UEFA des coupes et fiches des championnats), un seul pays possible
-      const parNom = estSelection(k) || !clubIndex ? [] : [...new Set(clubIndex.values())].filter(x => x.drapeau && noms.some(n =>
-        mots(n).some(w => mots(x.nom).includes(w) || mots(x.nom_officiel).includes(w))));
-      if (parNom.length && new Set(parNom.map(x => x.drapeau)).size === 1) {   // tous les candidats du même pays, sinon rien
-        const x = parNom[0];
-        return Object.assign(e, { flag: x.drapeau, country: x.code_pays || '', country_name: x.pays || '', is_french: !!x.francais });
+      const nomsNorm = noms.map(normNom).filter(Boolean);
+      // (2) Équipes connues de la compétition (programme, soirées en cache, éditions internationales)
+      const connues = equipesIntlConnues(k);
+      let cand = connues.filter(x => (x.espn_id && String(x.espn_id) === e.espn_id) || (x.id && String(x.id) === e.id));
+      if (!cand.length) {
+        cand = connues.filter(x => [x.name, x.official_name, x.short].some(v => v && nomsNorm.includes(normNom(v))));
       }
-      const cand = equipesIntlConnues(k).filter(x => estSelection(k)
-        ? ab && String(x.short || x.country || '').toUpperCase() === ab
-        : noms.some(n => mots(n).some(w => mots(x.name).includes(w) || mots(x.official_name).includes(w))));
-      const pays = new Set(cand.map(x => x.flag));
-      if (cand.length && new Set(cand.map(x => x.fifa_id || x.name)).size === 1 && pays.size === 1) {
+      if (!cand.length) {
+        cand = connues.filter(x => estSelection(k)
+          ? ab && String(x.short || x.country || '').toUpperCase() === ab
+          : noms.some(n => mots(n).some(w => mots(x.name).includes(w) || mots(x.official_name).includes(w))));
+      }
+      if (cand.length && new Set(cand.map(x => x.flag)).size === 1) {
         const x = cand[0];
         Object.assign(e, { flag: x.flag, country: x.country || '', country_name: x.country_name || '', is_french: !!x.is_french });
-      } else if (estSelection(k) && /\/teamlogos\/countries\//.test(e.logo)) {
-        e.intl = false;   // sélection non retrouvée : l'image ESPN d'une sélection EST son drapeau, on la garde
+        return marquerFr(e);
       }
-      return e;
+      // (3) Fiches clubs (`clubIndex`) par nom : correspondance exacte d'abord, sinon recoupement de mots sans ambiguïté de pays
+      if (!estSelection(k) && clubIndex) {
+        const fiches = [...new Set(clubIndex.values())].filter(x => x.drapeau);
+        let parNom = fiches.filter(x => [x.nom, x.nom_officiel].some(v => v && nomsNorm.includes(normNom(v))));
+        if (!parNom.length) {
+          parNom = fiches.filter(x => noms.some(n => mots(n).some(w => mots(x.nom).includes(w) || mots(x.nom_officiel).includes(w))));
+        }
+        if (parNom.length && new Set(parNom.map(x => x.drapeau)).size === 1) {
+          const x = parNom[0];
+          Object.assign(e, { flag: x.drapeau, country: x.code_pays || '', country_name: x.pays || '', is_french: !!x.francais });
+          return marquerFr(e);
+        }
+      }
+      // (4) Repli sélection : l'image ESPN d'une sélection sous `/teamlogos/countries/` est son drapeau
+      if (estSelection(k) && /\/teamlogos\/countries\//.test(e.logo)) {
+        e.intl = false;
+      }
+      return marquerFr(e);
     }
+    const estMatchFrIntl = (x) => !estLigue(x.k) && Boolean((x.home && x.home.is_french) || (x.away && x.away.is_french));
     function directResume(k, ev) {
       const comp = (ev.competitions || [{}])[0], cs = comp.competitors || [];
       const st = ev.status || {}, ty = st.type || {};
@@ -2767,20 +2827,41 @@
     }
     const directVisible = (x, maintenant) => x.state === 'in' ||
       (x.state === 'post' && maintenant - new Date(x.date).getTime() < DIRECT_APRES_FIN_MIN * 60000);
-    function directLigne(x) {
+    function directLigne(x, tagComp) {
       const etat = x.state === 'in' ? (x.mitemps ? 'Mi-temps' : x.minute) : 'Terminé · provisoire';
+      const intl = !estLigue(x.k);
+      const frH = intl && x.home && x.home.is_french ? ' is-fr' : '';
+      const frA = intl && x.away && x.away.is_french ? ' is-fr' : '';
+      const compLab = tagComp ? (COMP_NAMES[x.k] || COMP_FULL[x.k] || '') : '';
       return `<button type="button" class="acc-m" onclick="ouvrirDirect('${esc(x.k)}', '${esc(x.id)}')">
-        <span class="eq d">${esc(x.home.name)} ${flag(x.home)}</span><span class="sc ${x.state === 'in' ? 'live' : ''}">${x.home.score} - ${x.away.score}</span>
-        <span class="eq">${flag(x.away)} ${esc(x.away.name)}</span><span class="min ${x.state === 'in' ? '' : 'fin'}">${esc(etat)}</span></button>`;
+        <span class="eq d${frH}">${esc(x.home.name)} ${flag(x.home)}</span><span class="sc ${x.state === 'in' ? 'live' : ''}">${x.home.score} - ${x.away.score}</span>
+        <span class="eq${frA}">${flag(x.away)} ${esc(x.away.name)}</span><span class="min ${x.state === 'in' ? '' : 'fin'}">${esc(etat)}</span>${compLab ? `<span class="direct-tag">${esc(compLab)}</span>` : ''}</button>`;
     }
     function directHtml(listes, avecComp) {
       const maintenant = Date.now();
-      const blocs = Object.entries(listes).map(([k, l]) => [k, (l || []).filter(x => directVisible(x, maintenant))]).filter(([, l]) => l.length);
+      let blocs = Object.entries(listes).map(([k, l]) => [k, (l || []).filter(x => directVisible(x, maintenant))]).filter(([, l]) => l.length);
       if (!blocs.length) return '';
       const enCours = blocs.reduce((t, [, l]) => t + l.filter(x => x.state === 'in').length, 0);
       const info = infoBtn('<p>Scores, minute et fiches de match <b>en direct</b>, lus sur ESPN toutes les minutes pendant les matchs (fiche ouverte : toutes les 30 secondes). Données <b>provisoires</b> : la collecte habituelle les remplace après le match (UEFA pour les coupes). En direct : buts, cartons, remplacements, compositions et statistiques d\'équipe ; les notes, le momentum et les résumés sont calculés après le match.</p>', 'Le direct');
-      return `<div class="direct-bloc"><div class="direct-h"><span class="pt"></span>En direct${enCours ? ` · ${enCours} match${enCours > 1 ? 's' : ''}` : ''}<small>ESPN · provisoire</small>${info}</div>
-        ${blocs.map(([k, l]) => `${avecComp ? `<div class="direct-comp">${estLigue(k) ? drapeauLigue(k) + ' ' + esc(nomLigue(k)) : esc(COMP_FULL[k])}</div>` : ''}${l.map(directLigne).join('')}`).join('')}</div>`;
+      let corps = '';
+      if (avecComp) {
+        const frIntl = [];
+        blocs = blocs.map(([k, l]) => {
+          const reste = [];
+          l.forEach(x => (estMatchFrIntl(x) ? frIntl : reste).push(x));
+          return [k, reste];
+        }).filter(([, l]) => l.length);
+        if (frIntl.length) {
+          corps += `<div class="direct-comp">${flag({ flag: 'fr', country: 'FRA', country_name: 'France' })} Équipes françaises</div>${frIntl.map(x => directLigne(x, true)).join('')}`;
+        }
+        corps += blocs.map(([k, l]) => `<div class="direct-comp">${estLigue(k) ? drapeauLigue(k) + ' ' + esc(nomLigue(k)) : esc(COMP_FULL[k])}</div>${l.map(x => directLigne(x, false)).join('')}`).join('');
+      } else {
+        corps = blocs.map(([k, l]) => {
+          const ord = estLigue(k) ? l : [...l].sort((a, b) => (estMatchFrIntl(b) ? 1 : 0) - (estMatchFrIntl(a) ? 1 : 0));
+          return ord.map(x => directLigne(x, false)).join('');
+        }).join('');
+      }
+      return `<div class="direct-bloc"><div class="direct-h"><span class="pt"></span>En direct${enCours ? ` · ${enCours} match${enCours > 1 ? 's' : ''}` : ''}<small>ESPN · provisoire</small>${info}</div>${corps}</div>`;
     }
     // Relance l'interrogation pour la vue affichée (accueil : coupes + championnats majeurs ; compétition : celle-ci)
     function directDemarrer() {
@@ -3754,7 +3835,12 @@
     // championnats/clubs/index.json, ids `espn-…`). Un club présent des deux côtés (correspondance PROUVÉE par un match de coupe,
     // fiches_ligues.py) a UNE fiche : les deux entrées pointent l'une vers l'autre (`uefa_id` / `espn`).
     async function loadClubIndex() {
-      const [d, l, eu] = await Promise.all([fetchJson('clubs/index.json'), fetchJson(DONNEES + 'championnats/clubs/index.json'), fetchJson('clubs/europe.json')]);
+      const [d, l, intl, eu] = await Promise.all([
+        fetchJson('clubs/index.json'),
+        fetchJson(DONNEES + 'championnats/clubs/index.json'),
+        fetchJson(DONNEES + 'internationales/fiches/clubs/index.json').catch(() => null),
+        fetchJson('clubs/europe.json'),
+      ]);
       europeSaison = eu && eu.clubs ? eu : null;
       const m = new Map();
       ((d && d.clubs) || []).forEach(c => m.set(String(c.id), c));
@@ -3762,9 +3848,16 @@
         m.set(String(c.id), { ...c, source: 'ligue' });
         if (c.uefa_id && m.has(String(c.uefa_id))) m.set(String(c.uefa_id), { ...m.get(String(c.uefa_id)), espn: String(c.id) });
       });
+      ((intl && intl.clubs) || []).forEach(c => {
+        const id = String(c.id);
+        if (!m.has(id)) m.set(id, { ...c, source: 'intl' });
+      });
       clubIndex = m.size ? m : null;
     }
-    const hasClub = (id) => !!(clubIndex && id != null && clubIndex.has(String(id)));
+    const hasClub = (id) => {
+      const c = clubIndex && id != null && clubIndex.get(String(id));
+      return !!(c && c.source !== 'intl');
+    };
     // Lien vers la fiche d'un club (texte simple si le club n'a pas de fiche) ; `html` est déjà échappé par l'appelant
     function clubLink(id, html) {
       return hasClub(id) && !ctxSelection ? `<button type="button" class="club-link" onclick="event.stopPropagation(); openClub('${esc(id)}')">${html}</button>` : html;
