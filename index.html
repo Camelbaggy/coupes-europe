@@ -191,6 +191,16 @@
     .acc-m .sc { font-weight: 800; font-variant-numeric: tabular-nums; background: var(--bg-elevated); border-radius: 8px; padding: 2px 10px; min-width: 52px; text-align: center; }
     .acc-m .sc.av { font-weight: 600; color: var(--text-muted); font-size: 0.8rem; }
     .acc-m .is-fr { color: var(--french-accent); font-weight: 700; }
+    /* Prochains matchs (accueil et onglet de compétition) : lignes .acc-m, étiquette de compétition en dessous */
+    .acc-m .nm { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+    .acc-m .pm-c { grid-column: 1 / -1; font-size: 0.68rem; color: var(--c-accent, var(--text-muted)); text-align: center; margin-top: -3px; font-weight: 700; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .acc-m.pm .sc.av { color: var(--text-main); }
+    .pm-liste { background: var(--bg-card); border: 1px solid var(--border); border-left: 4px solid var(--c-accent, var(--accent-ucl)); border-radius: 14px; margin-bottom: 12px; overflow: hidden; }
+    .pm-liste .acc-m:first-child { border-top: none; }
+    .pm-plus { width: 100%; min-height: 44px; border: none; border-top: 1px solid var(--border); background: none; color: var(--c-accent, var(--accent-ucl)); font: inherit; font-size: 0.85rem; font-weight: 700; cursor: pointer; }
+    .pm-plus:hover { background: var(--bg-card-hover); }
+    .pm-plus:focus-visible { outline: 2px solid var(--c-accent, var(--accent-ucl)); outline-offset: -2px; }
+    #next-section .acc-jour { margin: 0 2px 8px; }
     .acc-grille { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 18px; }
     .acc-tuile { background: var(--bg-card); border: 1px solid var(--border); border-top: 3px solid var(--c-accent, var(--accent-ucl)); border-radius: 12px; padding: 12px; text-align: left; color: var(--text-main); font: inherit; cursor: pointer; min-height: 86px; display: flex; flex-direction: column; gap: 4px; }
     .acc-tuile:hover { background: var(--bg-card-hover); }
@@ -1267,6 +1277,12 @@
       <div id="standings-container" class="standings-card"></div>
     </section>
 
+    <!-- PROCHAINS MATCHS : jour du prochain match (aujourd'hui ou le suivant), sous le classement -->
+    <section id="next-section" hidden>
+      <div class="section-header"><h2 class="section-title" id="next-title">Prochains matchs</h2></div>
+      <div id="next-container"></div>
+    </section>
+
     <!-- 5. CHAMPIONNATS : CLASSEMENTS FINAUX DES SAISONS PASSÉES (donnees-football championnats/historique/) -->
     <section id="hist-section" hidden>
       <div class="section-header"><h2 class="section-title" id="hist-title">Saisons passées</h2></div>
@@ -2163,6 +2179,7 @@
       } else {
         html += '<div class="acc-note">Aucun résultat disponible pour le moment.</div>';
       }
+      html += prochainsAccueil();
       const tuile = (k) => {
         const t = defaultTour(k);
         const desc = t ? `<span class="tt">${esc(t.titre)}</span><span>${esc(tourSousTitre(t))}</span>`
@@ -2231,6 +2248,77 @@
             </div>
           </div>`;
       }).join('');
+    }
+
+    // ---------- Prochains matchs : jour d'aujourd'hui s'il reste des matchs, sinon le prochain jour programmé ----------
+    // Mêmes données que « Programme » (aucune nouvelle source) ; équipes françaises d'abord (championnats compris), puis heure, puis compétition.
+    const PM_MAX = 10;
+    const jourParis = () => new Date().toLocaleDateString('en-CA', { timeZone: 'Europe/Paris' });
+    function programmeDe(k) {
+      if (estIntl(k)) return Object.keys(intlEds).filter(c => c.startsWith(k + '|')).flatMap(c => intlEds[c].programme || []);
+      if (estLigue(k)) return programmeLigue[k] || [];
+      return ((programmeCoupes || {}).competitions || {})[k] || [];
+    }
+    function prochainsMatchs(ks) {
+      const now = Date.now(), vus = new Set(), tous = [];
+      ks.forEach(k => progVisibles(programmeDe(k)).forEach(x => {
+        if (/annul|report|term|fini/i.test(x.statut || '') || vus.has(k + '|' + x.id)) return;
+        if (x.debut && new Date(x.debut).getTime() <= now) return;   // commencé : c'est le bloc « En direct » / les résultats
+        const jour = x.date || (x.debut ? new Date(x.debut).toLocaleDateString('en-CA', { timeZone: 'Europe/Paris' }) : '');
+        if (!jour || jour < jourParis()) return;
+        vus.add(k + '|' + x.id); tous.push({ k, x, jour });
+      }));
+      if (!tous.length) return null;
+      const jour = tous.map(m => m.jour).sort()[0];
+      const fr = (m) => [m.x.home_team, m.x.away_team].some(t => t && t.is_french) ? 0 : 1;
+      const ordre = (m) => ks.indexOf(m.k);
+      const ms = tous.filter(m => m.jour === jour).sort((a, b) => fr(a) - fr(b) || (a.x.debut || '').localeCompare(b.x.debut || '') || ordre(a) - ordre(b));
+      return { jour, ms };
+    }
+    function jourProchains(jour) {
+      const t = new Date(jour + 'T12:00:00Z').toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' });
+      return jour === jourParis() ? 'Aujourd\'hui, ' + t : t.replace(/^./, c => c.toUpperCase());
+    }
+    function pmLigne(m, avecComp) {
+      const { k, x } = m, ligue = estLigue(k), tour = (toursByComp[k] || []).find(t => (t.avenir || []).some(a => a.id === x.id));
+      const nom = (t) => `<span class="nm">${t.a_determiner ? `<i>${esc(t.name || 'À déterminer')}</i>` : esc(t.name)}</span>`;
+      const fl = (t) => t.a_determiner ? '' : flag(t);
+      const fr = (t) => !ligue && t.is_french ? 'is-fr' : '';
+      const lib = avecComp ? [(ligue ? drapeauLigue(k) + ' ' : '') + (ligue ? nomLigue(k) : COMP_FULL[k]), tour ? tour.titre : ''] : [tour ? tour.titre : (x.groupe || '')];
+      const etiq = lib.filter(Boolean).join(' · ');
+      return `<button type="button" class="acc-m pm" data-k="${esc(k)}" data-tour="${esc(tour ? tour.id : '')}" onclick="prochainClic(this)" style="--c-accent: var(--accent-${esc(k)})">
+        <span class="eq d ${fr(x.home_team)}">${nom(x.home_team)} ${fl(x.home_team)}</span><span class="sc av">${x.debut ? esc(heureParis(x.debut)) : '—'}</span>
+        <span class="eq ${fr(x.away_team)}">${fl(x.away_team)} ${nom(x.away_team)}</span>${etiq ? `<span class="pm-c">${etiq}</span>` : ''}</button>`;
+    }
+    // HTML de la liste (10 premiers + « Voir plus ») ; pref = préfixe d'identifiant ; '' si rien à montrer
+    function prochainsListe(r, pref, avecComp, accent) {
+      const tete = r.ms.slice(0, PM_MAX).map(m => pmLigne(m, avecComp)).join(''), reste = r.ms.slice(PM_MAX);
+      const plus = reste.length ? `<div id="pm-${pref}-plus" hidden>${reste.map(m => pmLigne(m, avecComp)).join('')}</div>
+        <button type="button" class="pm-plus" aria-expanded="false" aria-controls="pm-${pref}-plus" data-n="${reste.length}" onclick="pmBascule(this)">Voir plus (${reste.length})</button>` : '';
+      return `<div class="acc-jour">${esc(jourProchains(r.jour))}</div><div class="pm-liste" style="--c-accent: ${accent}">${tete}${plus}</div>`;
+    }
+    function pmBascule(btn) {
+      const z = document.getElementById(btn.getAttribute('aria-controls')), ouvre = z.hidden;
+      z.hidden = !ouvre; btn.setAttribute('aria-expanded', String(ouvre));
+      btn.textContent = ouvre ? 'Voir moins' : `Voir plus (${btn.dataset.n})`;
+    }
+    function prochainClic(el) {
+      const k = el.dataset.k, id = el.dataset.tour || null;
+      if (vue === 'accueil') { entrer(k, id); return; }
+      if (id) { showTour(k, id); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+    }
+    const PM_INFO = '<p>Matchs du jour s\'il en reste à jouer, sinon du prochain jour programmé (heure de Paris), d\'après le calendrier officiel (UEFA, FIFA ou ESPN) : dates et heures peuvent encore changer. Équipes françaises en premier, puis par heure. Toucher un match ouvre sa journée.</p>';
+    function prochainsAccueil() {
+      const r = prochainsMatchs([...COMP_KEYS, ...INTL_KEYS, ...LIGUE_MAJEURS]);
+      if (!r) return '';
+      return `<h2 class="acc-h">Prochains matchs ${infoBtn(PM_INFO, 'Source et règles des prochains matchs')}</h2>${prochainsListe(r, 'acc', true, 'var(--accent-ucl)')}`;
+    }
+    function renderProchains(k, comp) {
+      const sec = document.getElementById('next-section'), cont = document.getElementById('next-container');
+      const r = comp._futur ? null : prochainsMatchs([k]);   // un tour futur affiche déjà son programme
+      sec.hidden = !r;
+      cont.innerHTML = r ? prochainsListe(r, 'comp', false, `var(--accent-${k})`) : '';
+      document.getElementById('next-title').innerHTML = 'Prochains matchs ' + (r ? infoBtn(PM_INFO, 'Source et règles des prochains matchs') : '');
     }
 
     // ---------- Compétitions internationales : tableaux de groupe et tableau final (rendu) ----------
@@ -2346,6 +2434,7 @@
       document.getElementById('focus-section').hidden = ligue || intl || !!comp._futur;   // championnats et compétitions internationales : pas de cartes de clubs français
       document.getElementById('results-section').hidden = !!comp._futur;           // journée entièrement à venir : programme seul
       renderProgramme(compKey, comp);
+      renderProchains(compKey, comp);
       document.getElementById('comp-view').classList.toggle('ligue', ligue);
       const estFr = (t) => !ligue && t.is_french;   // en championnat, tous les clubs sont du même pays : pas de surlignage
 
