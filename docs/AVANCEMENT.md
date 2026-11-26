@@ -35,9 +35,12 @@ Tout ce qui suit est fusionné sur `main` et en ligne (https://camelbaggy.github
 
 ## Chantier en cours : compétitions internationales (26/11/2026)
 
-Étude faite (`docs/etude_internationales.md`, mesures réelles UEFA / ESPN / FIFA) : sources par compétition, plan en 5 étapes,
-**8 décisions demandées au propriétaire (§ 6)** avant d'écrire le collecteur. Échéance proche : finale de la Coupe intercontinentale
-Paris SG le 16/12/2026 ; prochains matchs de sélection : Ligue des nations, mars 2027.
+Étude et décisions du propriétaire (`docs/etude_internationales.md` § 6-7). **Étape 1 faite** (§ 8) : `internationales.py`,
+`run_internationales.py`, workflow `reconstitution_internationales.yml` dans donnees-football (branche `ccr-6eb51b68-vzkhg2` des deux dépôts,
+à fusionner puis lancer : `gh workflow run reconstitution_internationales.yml --repo Camelbaggy/donnees-football --ref main`, ~2-3 passages).
+Suite : étape 2 (interface : coupes de clubs mondiales avec les coupes d'Europe, sélections à part, groupes, tableau final, focus France), étape 3
+(collecte des soirs, notification France + phases finales, alertes en direct des Bleus). Échéance : finale de la Coupe intercontinentale
+Paris SG le 16/12/2026 (collecte du jour et alertes à prévoir avant) ; Ligue des nations : mars 2027.
 
 ## À vérifier à la reprise
 

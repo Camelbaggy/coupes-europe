@@ -152,3 +152,22 @@ Conséquences sur le plan : deux familles. (a) **Sélections** : Coupe du monde 
 éliminatoires. (b) **Clubs, monde** : Coupe du monde des clubs (`cdmc`), Coupe intercontinentale (`ci`), affichées avec les coupes d'Europe
 (focus clubs français, fiches de club existantes). Même collecteur pour les deux (`internationales.py`), même dépôt de données
 (`donnees-football/internationales/<compétition>/<édition>/`).
+
+## 8. Étape 1 livrée : collecteur et reconstitution (26/11/2026)
+
+`internationales.py` (sources, listes d'édition, collecte d'un jour, classements, programme ; `--test`) et `run_internationales.py` (fichiers de
+donnees-football, reconstitution ; `--test`). Essais réels depuis le conteneur (26/11/2026) :
+
+| Cas | Résultat |
+|---|---|
+| Listes d'édition | CdM 2026 : 308 matchs (204 éliminatoires UEFA + 104 FIFA) ; Euro 2024 : 290 ; Ligue des nations 2026-27 : 180 (dont 24 en mars 2027) ; CdMC 2025 : 63 ; CI 2026 : 5 (finale PSG le 16/12, adversaire « W4 ») |
+| Finale CdM 2026 (ESPN) | Espagne 1-0 Argentine (but de Ferran Torres, 106e), 1 966 actions, momentum, 33 stats dont xG 2,29 - 0,22, 34 joueurs notés (moyenne 6,88), stade officiel FIFA « Stade de New York/New Jersey » |
+| CdM 2026, 16/06 | France 3-1 Sénégal et 2 autres matchs : 1 470-1 580 actions, 80 joueurs notés (6,99 ± 0,72) |
+| Euro 2024, 17/06 (UEFA) | Autriche 0-1 France et 2 autres : momentum, 22 stats, ~31 joueurs, 2 s par match |
+| CdMC 2025, finale | Chelsea 3-0 Paris SG : 191 actions -> flux réduit (ni momentum ni notes), drapeaux par le pays FIFA, PSG `is_french` |
+| CI 2026 | 2 jours reconstitués (14-20 actions, flux réduit) ; programme des 3 matchs de décembre avec places à déterminer |
+| Classements | CdM 2026 : 12 groupes d'éliminatoires (UEFA) + 12 groupes (ESPN, zones) ; Euro 2024 : 10 + 6 ; Ligue des nations 2026-27 : 14 ; CdMC 2025 : 8 |
+
+Limites connues : classement d'une date passée non recalculé (seul l'état final / actuel des groupes est publié) ; pas de tirs au but relevés
+dans la phase finale 2026 chez la FIFA (aucune séance ? à vérifier sur l'interface) ; les joueurs des matchs ESPN ont des identifiants `espn-…`,
+ceux des matchs UEFA les identifiants UEFA (rapprochement à faire avec les fiches de sélection, étape 4).
