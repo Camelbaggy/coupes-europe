@@ -153,24 +153,30 @@ def ecrire_si_change(chemin: str, obj: Any) -> bool:
 
 
 def journees_saison(lg: str, annee: int, dossier: str, avec_wiki: bool) -> Dict[str, Any]:
-    """Journées de la saison (cache relu ; Wikipédia relu une fois par jour au plus). Jamais bloquant."""
+    """Journées de la saison (cache relu ; Wikipédia relu une fois par jour au plus) et programme des matchs à venir
+    (`programme.json`, une fois par jour au plus, indépendamment des journées). Jamais bloquant."""
     chemin = os.path.join(dossier, "journees.json")
     cache = _lire(chemin) or {}
-    if not avec_wiki or (cache.get("maj") or "")[:10] == datetime.now(timezone.utc).date().isoformat():
+    auj = datetime.now(timezone.utc).date().isoformat()
+    besoin_jr = (cache.get("maj") or "")[:10] != auj
+    besoin_prog = ((_lire(os.path.join(dossier, "programme.json")) or {}).get("maj") or "")[:10] != auj
+    if not avec_wiki or not (besoin_jr or besoin_prog):
         return cache
     try:
         clubs = ligues.equipes(lg)
         ms = ligues.saison(lg, annee, clubs)
         if not ms:
-            print(f"[WARN] {lg} : calendrier ESPN de la saison illisible ; journées inchangées")
+            print(f"[WARN] {lg} : calendrier ESPN de la saison illisible ; journées et programme inchangés")
             return cache
-        res = journees_wiki.calculer(lg, annee, ms, clubs, cache)
+        res = journees_wiki.calculer(lg, annee, ms, clubs, cache) if besoin_jr else {"erreur": True, "deja_lues": True}
         jr = cache.get("journees") or {} if res.get("erreur") else res.get("journees") or {}
         prog = ligues.programme(lg, ms, jr, datetime.now(timezone.utc))
         prog["maj"] = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
         ecrire_si_change(os.path.join(dossier, "programme.json"), prog)
         print(f"[PROGRAMME] {lg} : {len(prog['matchs'])} match(s) à venir, "
               f"{sum(1 for x in prog['matchs'] if x.get('journee'))} avec journée")
+        if res.get("deja_lues"):
+            return cache
         if res.get("erreur"):
             print(f"[WARN] {lg} : journées Wikipédia non mises à jour : {res.get('anomalies', [])[:3]}")
             return cache
