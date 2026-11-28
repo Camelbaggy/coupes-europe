@@ -76,5 +76,80 @@ def send_ntfy_alert(titre: str, message: str, click: str = "") -> bool:
     return _poster(payload)
 
 
+def build_football_webhook_event(
+    event_key: str,
+    event_type: str,
+    title: str,
+    body: str,
+    spoiler_safe_title: str = "",
+    spoiler_safe_body: str = "",
+    match_id: str = "",
+    competition: str = "ucl",
+    home_name: str = "",
+    away_name: str = "",
+    home_country: str = "",
+    away_country: str = "",
+    phase: str = "poules",
+) -> dict:
+    """Construit un événement Football conforme au contrat ingest-event de Sport Hub."""
+    mid = str(match_id).strip() if match_id is not None else ""
+    comp = (competition or "ucl").strip().lower()
+    h_name = (home_name or "").strip()
+    a_name = (away_name or "").strip()
+    h_country = (home_country or "").strip().upper()
+    a_country = (away_country or "").strip().upper()
+    raw_phase = (phase or "").strip().lower()
+    norm_phase = "finale" if any(
+        k in raw_phase for k in ("finale", "final", "knockout", "quart", "demi", "huit", "barrage", "playoff")
+    ) else "poules"
+    teams = [
+        {"name": n, "country": c}
+        for n, c in ((h_name, h_country), (a_name, a_country))
+        if n or c
+    ]
+    equipe = [n for n in (h_name, a_name) if n]
+    return {
+        "event_key": event_key,
+        "sport": "football",
+        "event_type": event_type,
+        "title": title,
+        "body": body,
+        "spoiler_safe_title": spoiler_safe_title or title,
+        "spoiler_safe_body": spoiler_safe_body or body,
+        "deep_link": f"sporthub://football/match/{mid}" if mid else "sporthub://football",
+        "is_live": event_type in ("kickoff", "goal", "goal_cancelled"),
+        "attributes": {
+            "competition": comp,
+            "teams": teams,
+            "equipe": equipe,
+            "phase": norm_phase,
+        },
+    }
+
+
+def send_app_webhooks(events: list[dict]) -> bool:
+    """Envoie les événements vers Sport Hub si configuré. 100 % optionnel et non-bloquant."""
+    try:
+        url = os.environ.get("APP_WEBHOOK_URL", "").strip()
+        secret = os.environ.get("APP_WEBHOOK_SECRET", "").strip()
+        if not url or not secret or not events:
+            return False
+        req = urllib.request.Request(
+            url,
+            data=json.dumps({"events": events}, ensure_ascii=False).encode("utf-8"),
+            headers={
+                "Content-Type": "application/json",
+                "X-Webhook-Secret": secret,
+            },
+            method="POST",
+        )
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            print(f"[WEBHOOK] {len(events)} événement(s) envoyé(s) (HTTP {resp.status}).")
+            return True
+    except Exception as e:
+        print(f"[WEBHOOK] Échec non-bloquant : {e}")
+        return False
+
+
 if __name__ == "__main__":
     send_ntfy_notification()

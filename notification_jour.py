@@ -240,6 +240,35 @@ def envoyer_push(comps: List[str]) -> bool:
     return notify._poster(payload)
 
 
+def _emit_day_webhooks(jour: str, comps: List[str]) -> bool:
+    """Émet un événement Sport Hub `fulltime` par compétition terminée dans `comps` (non-bloquant)."""
+    try:
+        import notify
+        events = []
+        for comp_code in comps or []:
+            comp = (comp_code or "").strip().lower()
+            if not comp:
+                continue
+            comp_label = COURT.get(comp, comp.upper())
+            events.append(
+                notify.build_football_webhook_event(
+                    event_key=f"foot:{comp}:{jour}:fulltime",
+                    event_type="fulltime",
+                    title=f"Nouveaux résultats disponibles en {comp_label}",
+                    body=f"Les résultats du {jour} en {comp_label} sont disponibles.",
+                    spoiler_safe_title=f"Résultats du jour ({comp_label})",
+                    spoiler_safe_body=f"Les matchs du {jour} en {comp_label} sont terminés.",
+                    match_id="",
+                    competition=comp,
+                    phase="poules",
+                )
+            )
+        return notify.send_app_webhooks(events)
+    except Exception as e:
+        print(f"[WEBHOOK] Erreur non-bloquante (notification_jour) : {e}")
+        return False
+
+
 def notifier(jour: str, maintenant: Optional[dt.datetime] = None, fetch: Callable[[str], Any] = fetch_json,
              envoyer: Optional[Callable[[List[str]], bool]] = None, topic: Optional[str] = None,
              etat_soirees: Optional[Dict[str, Any]] = None, chemin: str = FICHIER) -> int:
@@ -269,6 +298,7 @@ def notifier(jour: str, maintenant: Optional[dt.datetime] = None, fetch: Callabl
     if not ok and topic:
         print("[ERREUR] Échec de l'envoi ntfy : le jour reste non notifié (le battement retentera).")
         return 1
+    _emit_day_webhooks(jour, comps)
     enregistrer(deja, jour, comps, maintenant, chemin)
     print(f"[OK] {jour} notifié : « {titre_message(comps)} »")
     return 0

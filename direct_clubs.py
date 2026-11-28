@@ -132,7 +132,7 @@ def espn_vers_uefa(comp: str, ev: Dict[str, Any], liste: List[Dict[str, Any]]) -
         "homeTeam": {"id": h["espn_id"], "internationalName": h["name"], "countryCode": h.get("country") or ""},
         "awayTeam": {"id": a["espn_id"], "internationalName": a["name"], "countryCode": a.get("country") or ""},
         "score": {"total": {"home": h["score"], "away": a["score"]}},
-        "_espn": {"comp": comp, "event": m["espn_id"]}}
+        "_espn": {"comp": comp, "event": m["espn_id"], "phase": m.get("phase") or ""}}
     if tab["home"] is not None and tab["away"] is not None:
         out["score"]["penalty"] = tab
     return out
@@ -186,6 +186,70 @@ def buts_espn(m: Dict[str, Any], fetch_resume: Callable[[Dict[str, Any]], Option
         return []
 
 
+def _phase_match(m: Dict[str, Any]) -> str:
+    espn_phase = ((m.get("_espn") or {}).get("phase") or m.get("phase") or "").strip().lower()
+    if espn_phase:
+        return "finale" if ("final" in espn_phase or espn_phase == "knockout") else "poules"
+    stage = (m.get("stage") or "").strip().lower()
+    if stage == "knockout":
+        return "finale"
+    if stage in ("league", "qualifying"):
+        return "poules"
+    r = m.get("round") or {}
+    mode = (r.get("mode") or "").strip().upper()
+    if mode == "GROUP":
+        return "poules"
+    if mode == "KNOCK_OUT":
+        return "finale"
+    if (r.get("phase") or "").strip().upper() == "TOURNAMENT" and mode and mode != "GROUP":
+        return "finale"
+    return "poules"
+
+
+def _emit_webhook(event_type: str, k: str, m: Dict[str, Any], titre: str, message: str, score_tag: str = "") -> bool:
+    try:
+        comp = (k or "").strip().lower()
+        comp_label = LIBELLES.get(comp, comp.upper())
+        mid = str(m.get("id") or "").strip()
+        home_team = m.get("homeTeam") or {}
+        away_team = m.get("awayTeam") or {}
+        home_name = nom(home_team)
+        away_name = nom(away_team)
+        home_country = (home_team.get("countryCode") or "").strip().upper()
+        away_country = (away_team.get("countryCode") or "").strip().upper()
+        event_key = f"foot:{comp}:{mid}:{event_type}:{score_tag}" if score_tag else f"foot:{comp}:{mid}:{event_type}"
+        pair = f"{home_name} – {away_name}"
+        if event_type == "kickoff":
+            spoiler_body = f"Coup d'envoi de {pair} ({comp_label})."
+        elif event_type == "goal":
+            spoiler_body = f"Nouvel événement en direct dans {pair} ({comp_label})."
+        elif event_type == "goal_cancelled":
+            spoiler_body = f"Mise à jour en direct dans {pair} ({comp_label})."
+        elif event_type == "fulltime":
+            spoiler_body = f"Fin du match : {pair} (résumé disponible)."
+        else:
+            spoiler_body = f"Mise à jour de {pair} ({comp_label})."
+        ev = notify.build_football_webhook_event(
+            event_key=event_key,
+            event_type=event_type,
+            title=titre,
+            body=message,
+            spoiler_safe_title=f"{pair} ({comp_label})",
+            spoiler_safe_body=spoiler_body,
+            match_id=mid,
+            competition=comp,
+            home_name=home_name,
+            away_name=away_name,
+            home_country=home_country,
+            away_country=away_country,
+            phase=_phase_match(m),
+        )
+        return notify.send_app_webhooks([ev])
+    except Exception as e:
+        print(f"[WEBHOOK] Erreur non-bloquante ({event_type}) : {e}")
+        return False
+
+
 class Suivi:
     """État d'une soirée de suivi (en mémoire) + règles de notification. `envoyer(titre, message, k, prio)` -> bool."""
 
@@ -197,12 +261,22 @@ class Suivi:
         self.scores: Dict[str, tuple] = {}        # dernier score notifié (ou constaté au premier relevé d'un match fini)
         self.attente: Dict[str, float] = {}       # but constaté sans événement GOAL : depuis quand
         self.vus: Set[str] = set()
+        self._webhooks_emis: Set[str] = set()
 
     def _envoi(self, titre: str, message: str, k: str, prio: int = 3) -> None:
         if titre in self.deja:
             return
         if self.envoyer(titre, message, k, prio):
             self.deja.add(titre)
+
+    def _webhook(self, event_type: str, k: str, m: Dict[str, Any], titre: str, message: str, score_tag: str = "") -> None:
+        comp = (k or "").strip().lower()
+        mid = str(m.get("id") or "").strip()
+        cle = f"foot:{comp}:{mid}:{event_type}:{score_tag}" if score_tag else f"foot:{comp}:{mid}:{event_type}"
+        if cle in self._webhooks_emis:
+            return
+        self._webhooks_emis.add(cle)
+        _emit_webhook(event_type, k, m, titre, message, score_tag)
 
     def passage(self, matchs: Dict[str, List[Dict[str, Any]]], fetch_events, maintenant: float) -> None:
         for k, liste in matchs.items():
@@ -222,11 +296,17 @@ class Suivi:
             self.scores[mid] = sc or (0, 0)       # déjà fini au premier relevé : rien à annoncer
             return
         if st not in FINAUX:
-            self._envoi(f"🟢 Coup d'envoi : {h} - {a}", f"{comp} · c'est parti !", k)
+            t_ko, msg_ko = f"🟢 Coup d'envoi : {h} - {a}", f"{comp} · c'est parti !"
+            if t_ko not in self.deja:
+                self._envoi(t_ko, msg_ko, k)
+                self._webhook("kickoff", k, m, t_ko, msg_ko)
         avant = self.scores.get(mid, (0, 0))
         if sc and sc != avant:
             if sum(sc) < sum(avant):
-                self._envoi(f"❌ But annulé : {ligne_score(m, sc)}", f"{comp} · le score revient à {sc[0]}-{sc[1]}", k, 4)
+                t_ann, msg_ann = f"❌ But annulé : {ligne_score(m, sc)}", f"{comp} · le score revient à {sc[0]}-{sc[1]}"
+                if t_ann not in self.deja:
+                    self._envoi(t_ann, msg_ann, k, 4)
+                    self._webhook("goal_cancelled", k, m, t_ann, msg_ann, f"{sc[0]}-{sc[1]}")
                 self.scores[mid] = sc
             else:
                 buts = buts_uefa(m, fetch_events, self.fetch_resume)
@@ -253,13 +333,19 @@ class Suivi:
                             detail += f", passe de {g['assist']}"
                     else:
                         detail = "buteur pas encore publié par l'UEFA"
-                    self._envoi(titre, f"{detail} · {comp}", k, 4 if fr_marque else 3)
+                    msg_but = f"{detail} · {comp}"
+                    if titre not in self.deja:
+                        self._envoi(titre, msg_but, k, 4 if fr_marque else 3)
+                        self._webhook("goal", k, m, titre, msg_but, f"{etape[0]}-{etape[1]}")
                 self.scores[mid] = sc
         if st == "FINISHED":
             sc = sc or (0, 0)
             tab = (m.get("score") or {}).get("penalty") or {}
             ttab = f" (tirs au but {tab.get('home')}-{tab.get('away')})" if tab.get("home") is not None else ""
-            self._envoi(f"🏁 Fin du match : {ligne_score(m, sc)}{ttab}", comp, k)
+            t_fin = f"🏁 Fin du match : {ligne_score(m, sc)}{ttab}"
+            if t_fin not in self.deja:
+                self._envoi(t_fin, comp, k)
+                self._webhook("fulltime", k, m, t_fin, comp)
         elif st == "ABANDONED":
             self._envoi(f"⚠️ Match arrêté : {ligne_score(m, sc or (0, 0))}", comp, k)
 
